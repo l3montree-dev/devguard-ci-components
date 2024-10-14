@@ -1,0 +1,91 @@
+
+devguard-sca:
+  stage: test
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
+  script:
+    - echo "Running DevGuard SCA..."
+    - devguard-scanner sca --assetName="DEVGUARD_ASSET_NAME" --apiUrl="$DEVGUARD_API_URL" --token="$DEVGUARD_TOKEN" --path="$CI_PROJECT_DIR"
+  only:
+    - main
+        #tmp
+    - fix/devsecops-pipeline
+    
+
+
+
+.oci:login:
+  stage: test
+  script:
+  - &oci_login |
+    export VERSION="1.1.0"
+    export ORAS_SHASUM="e09e85323b24ccc8209a1506f142e3d481e6e809018537c6b3db979c891e6ad7"
+    curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"
+    echo "${ORAS_SHASUM}  oras_${VERSION}_linux_amd64.tar.gz" | sha256sum -c -
+    mkdir -p oras-install/
+    tar -zxf oras_${VERSION}_*.tar.gz -C oras-install/
+    mv oras-install/oras /usr/local/bin/
+    rm -rf oras_${VERSION}_*.tar.gz oras-install/
+    echo "$CI_JOB_TOKEN" | oras login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+# Tag: Creates sortable tags on the main branch for GitOps workflows like FluxCD, ensuring versioned images for deployments.
+tag:
+  stage: tag
+  needs: []
+  dependencies: []
+  script:
+  - |
+    if [ -n "$CI_COMMIT_TAG" ]; then
+      # Set IMAGE_TAG if the pipeline was triggered by a tag
+      echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
+    else
+      # Set IMAGE_TAG if the pipeline was triggered by a push to main
+      branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
+      sha=${CI_COMMIT_SHORT_SHA}
+      ts=$(date +%s)
+      echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
+    fi
+  artifacts:
+    paths:
+    - image-tag.txt
+  only:
+  - main
+  - tags
+      #tmp
+  - fix/devsecops-pipeline
+
+
+# OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
+oci:build:
+  stage: build
+  needs: ["tag"]
+  dependencies: ["tag"]
+  image:
+    name: gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    entrypoint: [""]
+  script:
+  - /kaniko/executor --cleanup --no-push --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $(cat image-tag.txt) --tarPath image.tar
+  artifacts:
+    paths:
+    - image.tar
+    when: on_success
+  only:
+  - main
+  - tags
+      #tmp
+  - fix/devsecops-pipeline
+
+
+devguard-container-scanning:
+  stage: container-scanning
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
+  needs:
+    - oci:build
+  dependencies:
+    - oci:build
+  script:
+    - echo "Running DevGuard Container Scanning..."
+    - devguard-scanner container-scanning --assetName="DEVGUARD_ASSET_NAME" --apiUrl="$DEVGUARD_API_URL" --token="$DEVGUARD_TOKEN" --path="image.tar"
+  only:
+    - main
+        #tmp
+    - fix/devsecops-pipeline
