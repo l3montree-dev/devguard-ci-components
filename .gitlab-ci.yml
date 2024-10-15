@@ -1,2 +1,7 @@
 include:
+    - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
+    inputs:
+      go_image: $GOLANG_IMAGE
+      job_name: build
+
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/devguard@$CI_COMMIT_SHA

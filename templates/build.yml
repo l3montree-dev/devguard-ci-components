@@ -1,0 +1,30 @@
+spec:
+  inputs:
+    job_name:
+      default: 'build'
+      description: 'Defines the job name'  
+    stage:
+      default: 'build'
+      description: 'Defines the stage'
+    go_image:
+      default: 'golang:latest'
+      description: 'Defines the Go container image'
+    binary_directory:
+      default: 'mybinaries'
+      description: 'Output directory for created binary artifacts'
+---
+
+"$[[ inputs.job_name ]]":
+  stage: $[[ inputs.stage ]]
+  image: $[[ inputs.go_image ]]
+  script:
+    - mkdir -p $[[ inputs.binary_directory ]]
+    - |
+      if [ -n "$[[ inputs.binary_directory ]]" ]; then
+        go build -o $[[ inputs.binary_directory ]] ./...
+      else
+        go build ./... 
+      fi 
+  artifacts:
+    paths:
+      - $[[ inputs.binary_directory ]]
