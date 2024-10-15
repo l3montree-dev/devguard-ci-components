@@ -1,7 +1,7 @@
 spec:
   inputs:
     api_url:
-      default: 'https://api.main.devguard.org'
+      default: ''
       description: 'The DevGuard API URL'
     asset_name:
       default: ''
