@@ -1,8 +1,8 @@
 spec:
   inputs:
-    token:
-      default: 'test'
-      description: 'The DevGuard token'  
+    job_name:
+      default: 'build'
+      description: 'Defines the job name'  
 
 
 devguard-sca:
