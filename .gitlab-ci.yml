@@ -3,9 +3,9 @@
 # https://main.devguard.org/l3montree-cybersecurity/projects/devguard-pipeline/assets/devguard-pipeline
 
 stages:
+  - build
   - devguard-software-composition-analysis
   - devguard-container-scanning
-  - build
 
 
 include:
