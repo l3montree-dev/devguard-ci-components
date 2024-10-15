@@ -1,14 +1,10 @@
-stages:
-- test
-- tag
-- build
-- container-scanning
 
 include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/sca@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/devguard@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
