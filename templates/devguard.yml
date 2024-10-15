@@ -1,7 +1,7 @@
 spec:
   inputs:
     api_url:
-      default: ''
+      default: 'https://api.main.devguard.org'
       description: 'The DevGuard API URL'
     asset_name:
       default: ''
@@ -97,7 +97,7 @@ devguard-container-scanning:
     - oci:build
   script:
     - echo "Running DevGuard Container Scanning..."
-    - devguard-scanner container-scanning --assetName="DEVGUARD_ASSET_NAME" --apiUrl="$DEVGUARD_API_URL" --token="$DEVGUARD_TOKEN" --path="image.tar"
+    - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   only:
     - main
         #tmp
