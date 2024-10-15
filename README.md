@@ -23,6 +23,7 @@ include:
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      scan_stage: "devguard-software-composition-analysis"      
 ```
 
 #### Inputs
@@ -31,7 +32,8 @@ include:
 |-------------|----------------------------------------------|----------------------|
 | `api_url`   | The DevGuard API URL                         |       `https://api.main.devguard.org`     |
 | `asset_name`| Name of the asset to scan                    |              |
-| `token`     | API token for authenticating with DevGuard   |              |
+| `token`     | API token for authenticating with DevGuard   |               |
+| `scan_stage`| The stage where the scan is run              |     `test`     |
 
 
 ### devguard-container-scanning
@@ -45,6 +47,7 @@ The `devguard-container-scanning` component scans your container images for vuln
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      scan_stage: "devguard-container-scanning"     
 
 ```
 
@@ -55,6 +58,8 @@ The `devguard-container-scanning` component scans your container images for vuln
 | `api_url`   | The DevGuard API URL                         |       `https://api.main.devguard.org`     |
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |              |
+| `build_stage`| The stage where the image is built and tagged            |     `build`     |
+| `scan_stage`| The stage where the image is scanned             |     `test`     |
 
 
 ## Contributing

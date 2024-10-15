@@ -8,14 +8,17 @@ spec:
       description: 'The DevGuard asset name'
     token:
       default: ''
-      description: 'The DevGuard token'  
+      description: 'The DevGuard token' 
+    scan_stage:
+      default: 'test'
+      description: 'The stage where the scan is run'
 
 
 ---
 
 
 devguard-software-composition-analysis:
-  stage: test
+  stage: "$[[ inputs.scan_stage ]]"
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   script:
     - echo "Running DevGuard SCA..."

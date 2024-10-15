@@ -8,7 +8,13 @@ spec:
       description: 'The DevGuard asset name'
     token:
       default: ''
-      description: 'The DevGuard token'  
+      description: 'The DevGuard token' 
+    build_stage:
+      default: 'build'
+      description: 'The stage where the image is built and tagged'
+    scan_stage:
+      default: 'test'
+      description: 'The stage where the image is scanned'     
     
 
 ---
@@ -19,7 +25,7 @@ spec:
 
 
 .oci:login:
-  stage: build
+  stage: "$[[ inputs.build_stage ]]"
   script:
   - &oci_login |
     export VERSION="1.1.0"
@@ -34,7 +40,7 @@ spec:
 
 # Tag: Creates sortable tags on the main branch for GitOps workflows like FluxCD, ensuring versioned images for deployments.
 tag:
-  stage: build
+  stage: "$[[ inputs.build_stage ]]"
   needs: []
   dependencies: []
   script:
@@ -60,7 +66,7 @@ tag:
 
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 oci:build:
-  stage: build
+  stage: "$[[ inputs.build_stage ]]"
   needs: ["tag"]
   dependencies: ["tag"]
   image:
@@ -79,7 +85,7 @@ oci:build:
 
 
 devguard-container-scanning:
-  stage: test
+  stage: "$[[ inputs.scan_stage ]]"
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   needs:
     - oci:build

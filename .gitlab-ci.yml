@@ -7,9 +7,11 @@ include:
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      scan_stage: "devguard-software-composition-analysis"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      scan_stage: "devguard-container-scanning"
 
