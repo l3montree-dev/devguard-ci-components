@@ -10,7 +10,7 @@ spec:
       default: ''
       description: 'The DevGuard token'  
 
--------------
+
 
 devguard-sca:
   stage: test
