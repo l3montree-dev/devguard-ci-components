@@ -9,25 +9,28 @@ spec:
     token:
       default: ''
       description: 'The DevGuard token'  
+    oci_login_stage:
+      default: 'test'
+      description: 'The stage to run the DevGuard OCI Login'
+    oci_build_stage:
+      default: 'build'
+      description: 'The stage to run the DevGuard OCI Build'
+    tag_stage:
+      default: 'tag'
+      description: 'The stage to run the DevGuard Tag'
+    container_scanning_stage:
+      default: 'container-scanning'
+      description: 'The stage to run the DevGuard Container Scanning'      
 
 ---
 
-devguard-sca:
-  stage: test
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
-  script:
-    - echo "Running DevGuard SCA..."
-    - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
-  only:
-    - main
-        #tmp
-    - fix/devsecops-pipeline
+
     
 
 
 
 .oci:login:
-  stage: test
+  stage: "$[[ inputs.oci_login_stage ]]"
   script:
   - &oci_login |
     export VERSION="1.1.0"
@@ -42,7 +45,7 @@ devguard-sca:
 
 # Tag: Creates sortable tags on the main branch for GitOps workflows like FluxCD, ensuring versioned images for deployments.
 tag:
-  stage: tag
+  stage: "$[[ inputs.tag_stage ]]"
   needs: []
   dependencies: []
   script:
@@ -63,13 +66,12 @@ tag:
   only:
   - main
   - tags
-      #tmp
-  - fix/devsecops-pipeline
+
 
 
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 oci:build:
-  stage: build
+  stage: "$[[ inputs.oci_build_stage ]]"
   needs: ["tag"]
   dependencies: ["tag"]
   image:
@@ -84,12 +86,11 @@ oci:build:
   only:
   - main
   - tags
-      #tmp
-  - fix/devsecops-pipeline
+
 
 
 devguard-container-scanning:
-  stage: container-scanning
+  stage: "$[[ inputs.container_scanning_stage ]]"
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   needs:
     - oci:build
@@ -100,5 +101,3 @@ devguard-container-scanning:
     - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   only:
     - main
-        #tmp
-    - fix/devsecops-pipeline

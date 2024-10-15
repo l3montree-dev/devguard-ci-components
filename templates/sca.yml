@@ -1,0 +1,26 @@
+spec:
+  inputs:
+    api_url:
+      default: 'https://api.main.devguard.org'
+      description: 'The DevGuard API URL'
+    asset_name:
+      default: ''
+      description: 'The DevGuard asset name'
+    token:
+      default: ''
+      description: 'The DevGuard token'  
+    stage: 
+      default: 'sca-scanning'
+      description: 'The stage to run the DevGuard SCA'  
+
+---
+
+
+devguard-software-composition-analysis:
+  stage: "$[[ inputs.stage ]]"
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
+  script:
+    - echo "Running DevGuard SCA..."
+    - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
+  only:
+    - main
