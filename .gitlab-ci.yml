@@ -6,5 +6,4 @@ stages:
 
 include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/devguard@$CI_COMMIT_SHA
-    inputs:
-      token: "$DEVGUARD_TOKEN"
+
