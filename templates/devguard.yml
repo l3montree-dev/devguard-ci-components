@@ -4,7 +4,7 @@ devguard-sca:
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   script:
     - echo "Running DevGuard SCA..."
-    - devguard-scanner sca --assetName="DEVGUARD_ASSET_NAME" --apiUrl="$DEVGUARD_API_URL" --token="$DEVGUARD_TOKEN" --path="$CI_PROJECT_DIR"
+    - devguard-scanner sca --assetName="DEVGUARD_ASSET_NAME" --apiUrl="$[ DEVGUARD_API_URL ]" --token="$DEVGUARD_TOKEN" --path="$CI_PROJECT_DIR"
   only:
     - main
         #tmp
