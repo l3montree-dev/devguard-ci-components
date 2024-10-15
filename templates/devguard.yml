@@ -1,8 +1,14 @@
 spec:
   inputs:
-    job_name:
-      default: 'build'
-      description: 'Defines the job name'  
+    api_url:
+      default: 'https://api.main.devguard.org'
+      description: 'The DevGuard API URL'
+    asset_name:
+      default: ''
+      description: 'The DevGuard asset name'
+    token:
+      default: ''
+      description: 'The DevGuard token'  
 
 
 devguard-sca:
