@@ -1,3 +1,6 @@
+# This is a test configuration for the DevGuard scanner components.
+# The results can be viewed on the DevGuard dashboard at: 
+# https://main.devguard.org/l3montree-cybersecurity/projects/devguard-pipeline/assets/devguard-pipeline
 
 include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/sca@$CI_COMMIT_SHA

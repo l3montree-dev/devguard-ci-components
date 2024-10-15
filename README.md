@@ -1,8 +1,11 @@
 # Vulnerability Scanning with DevGuard CI/CD Components
 
-DevGuard simplifies vulnerability management for developers by integrating various security techniques into the CI/CD workflow. With DevGuard, you can perform Software Composition Analysis (SCA) and Container Scanning, among other security practices, seamlessly within your pipeline.
+DevGuard simplifies vulnerability management for developers by integrating key security practices directly into the CI/CD workflow. With DevGuard, you can seamlessly perform tasks such as Software Composition Analysis (SCA) and Container Scanning, ensuring that vulnerabilities are detected and addressed early in your pipeline.
+
+You can see how DevGuard works in practice [here](https://main.devguard.org/l3montree-cybersecurity/projects/devguard-pipeline/assets/devguard-pipeline), where this repository is scanned using the same components.
 
 Read more about DevGuard and its features [here](https://github.com/l3montree-dev/devguard).
+
 
 ## DevGuard Components
 
@@ -46,13 +49,13 @@ The `devguard-container-scanning` component scans your container images for vuln
 
 #### Inputs
 
-| Name        | Description                                 | Type   | Default Value        |
-|-------------|---------------------------------------------|--------|----------------------|
-| `api_url`   | The DevGuard API URL                        | String |       `https://api.main.devguard.org`     |
-| `asset_name`| Name of the asset to scan                   | String |              |
-| `token`     | API token for authenticating with DevGuard  | String |              |
+| Name        | Description                                  | Default Value        |
+|-------------|----------------------------------------------|----------------------|
+| `api_url`   | The DevGuard API URL                         |       `https://api.main.devguard.org`     |
+| `asset_name`| Name of the asset to scan                    |              |
+| `token`     | API token for authenticating with DevGuard   |              |
 
 
 ## Contributing
 
-We welcome contributions to DevGuard! If you would like to contribute, please refer to our [contribution guidelines] (https://github.com/l3montree-dev/devguard/blob/main/CONTRIBUTING.md) for more information.
+We welcome contributions to DevGuard! If you would like to contribute, please refer to our [contribution guidelines](https://github.com/l3montree-dev/devguard/blob/main/CONTRIBUTING.md) for more information.
