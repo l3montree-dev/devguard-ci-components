@@ -4,7 +4,7 @@ spec:
       default: 'https://api.main.devguard.org'
       description: 'The DevGuard API URL'
     asset_name:
-      default: 
+      default: ''
       description: 'The DevGuard asset name'
     token:
       default: ''
