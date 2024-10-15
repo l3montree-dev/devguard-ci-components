@@ -1,9 +1,11 @@
 # This is a test configuration for the DevGuard scanner components.
 # The results can be viewed on the DevGuard dashboard at: 
 # https://main.devguard.org/l3montree-cybersecurity/projects/devguard-pipeline/assets/devguard-pipeline
+
 stages:
   - devguard-software-composition-analysis
   - devguard-container-scanning
+  - build
 
 
 include:
@@ -18,4 +20,5 @@ include:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
       scan_stage: "devguard-container-scanning"
+      build_stage: "build"
 
