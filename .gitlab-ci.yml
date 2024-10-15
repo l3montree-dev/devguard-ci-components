@@ -7,6 +7,6 @@ stages:
 include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/devguard@$CI_COMMIT_SHA
     inputs:
-      asset_name: "test"
-      api_url: "test"
-      token: "test"
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      api_url: "$DEVGUARD_API_URL"
+      token: "$DEVGUARD_TOKEN"
