@@ -27,11 +27,12 @@ include:
 
 #### Inputs
 
-| Name        | Description                                 | Type   | Default Value        |
-|-------------|---------------------------------------------|--------|----------------------|
-| `api_url`   | The DevGuard API URL                        | String |       `https://api.main.devguard.org`     |
-| `asset_name`| Name of the asset to scan                   | String |              |
-| `token`     | API token for authenticating with DevGuard  | String |              |
+| Name        | Description                                  | Default Value        |
+|-------------|----------------------------------------------|----------------------|
+| `api_url`   | The DevGuard API URL                         |       `https://api.main.devguard.org`     |
+| `asset_name`| Name of the asset to scan                    |              |
+| `token`     | API token for authenticating with DevGuard   |              |
+
 
 ### devguard-container-scanning
 

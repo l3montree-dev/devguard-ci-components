@@ -1,3 +1,5 @@
+#that is just a simple Dockerfile to build the app for testing purposes
+
 FROM golang:1.23.1
 
 WORKDIR /go/src/app
