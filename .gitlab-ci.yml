@@ -1,3 +1,9 @@
+stages:
+- test
+- tag
+- build
+- container-scanning
+
 include:
     - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
     inputs:
