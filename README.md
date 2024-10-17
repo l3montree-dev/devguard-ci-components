@@ -19,7 +19,7 @@ The `devguard-software-composition-analysis` component performs Software Composi
 
 ```yaml
 include:
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/sca@$CI_COMMIT_SHA
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sca@<VERSION>
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
@@ -43,7 +43,7 @@ The `devguard-container-scanning` component scans your container images for vuln
 #### Usage Example
 
 ```yaml
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
+  - component: $CI_SERVER_FQDN/l3montree/devguard/container-scanning@<VERSION>
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
