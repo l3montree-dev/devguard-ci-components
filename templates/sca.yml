@@ -21,5 +21,4 @@ devguard-software-composition-analysis:
   script:
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
-  only:
-    - main
+ 

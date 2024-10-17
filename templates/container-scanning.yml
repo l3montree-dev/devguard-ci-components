@@ -19,10 +19,6 @@ spec:
 ---
 
 
-    
-
-
-
 .oci:login:
   stage: "$[[ inputs.build_stage ]]"
   script:
@@ -57,9 +53,7 @@ tag:
   artifacts:
     paths:
     - image-tag.txt
-  only:
-  - main
-  - tags
+
 
 
 
@@ -77,9 +71,7 @@ oci:build:
     paths:
     - image.tar
     when: on_success
-  only:
-  - main
-  - tags
+
 
 
 
@@ -93,5 +85,3 @@ devguard-container-scanning:
   script:
     - echo "Running DevGuard Container Scanning..."
     - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
-  only:
-    - main
