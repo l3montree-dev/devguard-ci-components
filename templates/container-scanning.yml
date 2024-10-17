@@ -4,13 +4,10 @@ spec:
       default: 'https://api.main.devguard.org'
       description: 'The DevGuard API URL'
     asset_name:
-      default: ''
       description: 'The DevGuard asset name'
-      required: true
     token:
-      default: ''
       description: 'The DevGuard token' 
-      required: true
+
     build_stage:
       default: 'build'
       description: 'The stage where the image is built and tagged'
