@@ -6,9 +6,11 @@ spec:
     asset_name:
       default: ''
       description: 'The DevGuard asset name'
+      required: true
     token:
       default: ''
       description: 'The DevGuard token' 
+      required: true
     scan_stage:
       default: 'test'
       description: 'The stage where the scan is run'
