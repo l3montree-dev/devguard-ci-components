@@ -1,0 +1,36 @@
+spec:
+  inputs:
+    token:
+      description: 'The DevGuard token'
+    asset_name:
+      description: 'The DevGuard asset name'
+    scan_stage:
+      default: 'test'
+      description: 'The stage where the scan is run'
+    build_stage:
+      default: build
+      description: 'The stage where the image is built and tagged'
+    deploy_stage:
+      default: deploy
+      description: 'The stage where the image should be pushed into the registry'
+---
+
+include:
+- local: /templates/sca
+  inputs:
+    asset_name: $[[ inputs.asset_name ]]
+    token: $[[ inputs.token ]]
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
+
+- local: /templates/container-scanning
+  inputs:
+    asset_name: $[[ inputs.asset_name ]]
+    token: $[[ inputs.token ]]
+    #You can change these to the desired stages. Make sure they match one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
+    build_stage: $[[ inputs.build_stage ]]
+- local: /templates/deploy
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    deploy_stage: $[[ inputs.deploy_stage ]]
