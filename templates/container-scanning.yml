@@ -18,12 +18,14 @@ spec:
 
 ---
 
-# Tag: Creates sortable tags on the main branch for GitOps workflows like FluxCD, ensuring versioned images for deployments.
-devguard:tag:
+# OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
+devguard:build-image:
   stage: "$[[ inputs.build_stage ]]"
-  needs: []
-  dependencies: []
-  script:
+  image:
+    name: gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    entrypoint: [""]
+  before_script:
+  - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
   - |
     if [ -n "$CI_COMMIT_TAG" ]; then
       # Set IMAGE_TAG if the pipeline was triggered by a tag
@@ -35,29 +37,13 @@ devguard:tag:
       ts=$(date +%s)
       echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
     fi
-  artifacts:
-    paths:
-    - image-tag.txt
-
-
-
-
-# OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
-devguard:build-image:
-  stage: "$[[ inputs.build_stage ]]"
-  needs: ["devguard:tag"]
-  dependencies: ["devguard:tag"]
-  image:
-    name: gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
-    entrypoint: [""]
   script:
   - /kaniko/executor --cleanup --no-push --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $(cat image-tag.txt) --tarPath image.tar
   artifacts:
     paths:
     - image.tar
+    - image-tag.txt
     when: on_success
-
-
 
 
 devguard:container-scanning:
