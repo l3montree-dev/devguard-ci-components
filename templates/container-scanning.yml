@@ -14,8 +14,6 @@ spec:
     scan_stage:
       default: 'test'
       description: 'The stage where the image is scanned'
-
-
 ---
 
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
