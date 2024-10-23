@@ -6,35 +6,20 @@ spec:
     asset_name:
       description: 'The DevGuard asset name'
     token:
-      description: 'The DevGuard token' 
+      description: 'The DevGuard token'
 
     build_stage:
       default: 'build'
       description: 'The stage where the image is built and tagged'
     scan_stage:
       default: 'test'
-      description: 'The stage where the image is scanned'     
-    
+      description: 'The stage where the image is scanned'
+
 
 ---
 
-
-.oci:login:
-  stage: "$[[ inputs.build_stage ]]"
-  script:
-  - &oci_login |
-    export VERSION="1.1.0"
-    export ORAS_SHASUM="e09e85323b24ccc8209a1506f142e3d481e6e809018537c6b3db979c891e6ad7"
-    curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"
-    echo "${ORAS_SHASUM}  oras_${VERSION}_linux_amd64.tar.gz" | sha256sum -c -
-    mkdir -p oras-install/
-    tar -zxf oras_${VERSION}_*.tar.gz -C oras-install/
-    mv oras-install/oras /usr/local/bin/
-    rm -rf oras_${VERSION}_*.tar.gz oras-install/
-    echo "$CI_JOB_TOKEN" | oras login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
-
 # Tag: Creates sortable tags on the main branch for GitOps workflows like FluxCD, ensuring versioned images for deployments.
-tag:
+devguard:tag:
   stage: "$[[ inputs.build_stage ]]"
   needs: []
   dependencies: []
@@ -58,10 +43,10 @@ tag:
 
 
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
-oci:build:
+devguard:build-image:
   stage: "$[[ inputs.build_stage ]]"
-  needs: ["tag"]
-  dependencies: ["tag"]
+  needs: ["devguard:tag"]
+  dependencies: ["devguard:tag"]
   image:
     name: gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
     entrypoint: [""]
@@ -75,13 +60,13 @@ oci:build:
 
 
 
-devguard-container-scanning:
+devguard:container-scanning:
   stage: "$[[ inputs.scan_stage ]]"
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   needs:
-    - oci:build
+  - devguard:build-image
   dependencies:
-    - oci:build
+  - devguard:build-image
   script:
-    - echo "Running DevGuard Container Scanning..."
-    - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+  - echo "Running DevGuard Container Scanning..."
+  - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
