@@ -16,6 +16,8 @@ spec:
 
 devguard:software-composition-analysis:
   stage: "$[[ inputs.scan_stage ]]"
+  dependencies: []
+  needs: []
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   script:
   - echo "Running DevGuard SCA..."
