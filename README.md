@@ -56,12 +56,11 @@ The `devguard:container-scanning` component scans your container images for vuln
 #### Usage Example
 
 ```yaml
-  - component: $CI_SERVER_FQDN/l3montree/devguard/container-scanning@<VERSION>
-    inputs:
-      asset_name: "$DEVGUARD_ASSET_NAME"
-      token: "$DEVGUARD_TOKEN"
-      scan_stage: "devguard-container-scanning"     
-
+include:
+- component: $CI_SERVER_FQDN/l3montree/devguard/container-scanning@<VERSION>
+  inputs:
+    asset_name: "$DEVGUARD_ASSET_NAME"
+    token: "$DEVGUARD_TOKEN"
 ```
 
 
@@ -85,15 +84,14 @@ The devguard-deploy component deploys the created OCI (Open Container Initiative
 #### Usage Example
 
 ```yaml
-  - component: $CI_SERVER_FQDN/l3montree/devguard/deploy@<VERSION>
-    inputs:
-        deploy_stage: "devguard-deploy"
+include:
+- component: $CI_SERVER_FQDN/l3montree/devguard/deploy@<VERSION>
 ```
 
 #### Inputs
 
 | Name        | Description                                  | Default Value        |
-|-------------|----------------------------------------------|----------------------||
+|-------------|----------------------------------------------|----------------------|
 | `deploy_stage`| The stage where the image is deployed            |     `deploy`     |
 
 
