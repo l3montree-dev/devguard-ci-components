@@ -17,6 +17,7 @@ The `devguard:full` component combines all of the listed components beneath (Sof
 
 #### Usage Example
 ```yaml
+include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/full@<VERSION>
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
