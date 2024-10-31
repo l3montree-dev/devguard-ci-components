@@ -16,7 +16,7 @@ spec:
 ---
 
 include:
-- local: /templates/sca.yml
+- remote: https://gist.githubusercontent.com/timbastin/6fd27626f114d1b4c09b133501fd526c/raw/287a411e46e942fdac3bd09a37f3f3185770946b/gistfile1.txt
   inputs:
     asset_name: $[[ inputs.asset_name ]]
     token: $[[ inputs.token ]]
