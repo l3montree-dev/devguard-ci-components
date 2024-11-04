@@ -19,6 +19,8 @@ spec:
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 devguard:build-image:
   stage: "$[[ inputs.build_stage ]]"
+  needs: []
+  dependencies: []
   image:
     name: gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
     entrypoint: [""]

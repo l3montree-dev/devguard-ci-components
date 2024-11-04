@@ -15,3 +15,7 @@ devguard:deploy:
   - crane push image.tar $(cat image-tag.txt)
   dependencies:
   - devguard:build-image
+  - devguard:container-scanning
+  needs:
+  - devguard:container-scanning
+  - devguard:build-image
