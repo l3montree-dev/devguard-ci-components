@@ -16,6 +16,11 @@ spec:
 ---
 
 include:
+- remote: 'https://gitlab.com/to-be-continuous/gitleaks/-/blob/master/templates/gitlab-ci-gitleaks.yml'
+  stage: secrets
+
+
+
 - local: /templates/sca.yml
   inputs:
     asset_name: $[[ inputs.asset_name ]]
