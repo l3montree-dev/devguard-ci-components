@@ -16,12 +16,17 @@ spec:
 ---
 
 include:
-- remote: 'https://gitlab.com/to-be-continuous/gitleaks/-/blob/master/templates/gitlab-ci-gitleaks.yml'
-  stage: test
+- local: /templates/sast.yml
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
 
+- local: /templates/secret-scanning.yml
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]    
 
-
-- local: /templates/sca.yml
+- local: /templates/software-composition-analysis.yml
   inputs:
     asset_name: $[[ inputs.asset_name ]]
     token: $[[ inputs.token ]]
@@ -35,6 +40,7 @@ include:
     #You can change these to the desired stages. Make sure they match one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
     build_stage: $[[ inputs.build_stage ]]
+
 - local: /templates/deploy.yml
   inputs:
     #You can change this to the desired stage. Make sure it matches one of your defined stages.

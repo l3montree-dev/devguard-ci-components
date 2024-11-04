@@ -1,0 +1,13 @@
+spec:
+  inputs:
+    scan_stage:
+      default: test
+      description: The stage where the scan is run
+
+---
+
+static-application-security-testing:
+  stage: $[[ inputs.scan_stage ]]
+  image: returntocorp/semgrep:1.90.0@sha256:7b625711ba9b6d1a543e308967b18c01b59932490a5536a06422666474bf6ee4
+  script:
+  - semgrep scan --config=p/ci .
