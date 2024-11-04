@@ -3,7 +3,6 @@
 # https://main.devguard.org/l3montree-cybersecurity/projects/devguard-pipeline/assets/devguard-pipeline
 
 stages:
-- secrets
 - build
 - test
 - deploy

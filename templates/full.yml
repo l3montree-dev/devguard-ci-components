@@ -17,7 +17,7 @@ spec:
 
 include:
 - remote: 'https://gitlab.com/to-be-continuous/gitleaks/-/blob/master/templates/gitlab-ci-gitleaks.yml'
-  stage: secrets
+  stage: test
 
 
 
