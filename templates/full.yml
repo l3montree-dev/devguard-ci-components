@@ -10,17 +10,8 @@ spec:
     build_stage:
       default: build
       description: 'The stage where the image is built and tagged'
-
-    build_context:
-      default: $CI_PROJECT_DIR
-      description: 'The build context to pass to the Docker build command'    
-    build_dockerfile:
-      default: $CI_PROJECT_DIR/Dockerfile
-      description: 'The Dockerfile to pass to the Docker build command'  
     build_args:
-      type: array
-      default: 
-      - []
+      default: '--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile'
       description: 'The build arguments to pass to the Docker build command'  
     deploy_stage:
       default: deploy
