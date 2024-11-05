@@ -24,7 +24,7 @@ include:
       token: "$DEVGUARD_TOKEN"
 ```
 ### devguard:secret-scanning:
-
+The `devguard:secret-scanning` component is designed to identify sensitive information such as API keys, passwords, and other secrets within your codebase. By integrating secret scanning into your CI/CD pipeline, developers can proactively prevent the accidental exposure of confidential data, enhancing the overall security posture of the application.
 
 
 #### Usage Example
@@ -44,7 +44,7 @@ include:
 
 
 ### devguard:Static Application Security Testing
-
+The `devguard:sast` component focuses on Static Application Security Testing (SAST) to analyze your source code for vulnerabilities without executing it. This component helps in identifying security flaws early in the development cycle, ensuring that code quality and security are prioritized before deployment.
 
 #### Usage Example
 
