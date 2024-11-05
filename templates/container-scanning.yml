@@ -40,7 +40,7 @@ devguard:build-image:
       echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
     fi
   script:
-   - kaniko_cmd="/kaniko/executor --cleanup --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
+   - kaniko_cmd=/kaniko/executor --cleanup --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
 
 
 
