@@ -18,11 +18,50 @@ The `devguard:full` component combines all of the listed components beneath (Sof
 #### Usage Example
 ```yaml
 include:
-  - component: $CI_SERVER_FQDN/l3montree/devguard/full@<VERSION>
+  - component: $CI_SERVER_FQDN/l3montree/devguard/full@~latest
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
 ```
+### devguard:secret-scanning:
+
+
+
+#### Usage Example
+
+```yaml
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/secret-scanning@~latest
+    inputs:
+      scan_stage: "devguard-secret-scanning"
+```
+
+#### Inputs
+
+| Name        | Description                                  | Default Value        |
+|-------------|----------------------------------------------|----------------------|
+| `scan_stage`| The stage where the scan is run              |     `test`     |
+
+
+### devguard:Static Application Security Testing
+
+
+#### Usage Example
+
+```yaml
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sast@~latest
+    inputs:
+      scan_stage: "devguard-sast"   
+```
+
+#### Inputs
+
+| Name        | Description                                  | Default Value        |
+|-------------|----------------------------------------------|----------------------|
+| `scan_stage`| The stage where the scan is run              |     `test`     |
+
+
 
 ### devguard:software-composition-analysis
 
@@ -32,7 +71,7 @@ The `devguard:software-composition-analysis` component performs Software Composi
 
 ```yaml
 include:
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sca@<VERSION>
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sca@~latest
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
@@ -57,7 +96,7 @@ The `devguard:container-scanning` component scans your container images for vuln
 
 ```yaml
 include:
-- component: $CI_SERVER_FQDN/l3montree/devguard/container-scanning@<VERSION>
+- component: $CI_SERVER_FQDN/l3montree/devguard/container-scanning@~latest
   inputs:
     asset_name: "$DEVGUARD_ASSET_NAME"
     token: "$DEVGUARD_TOKEN"
@@ -72,6 +111,7 @@ include:
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |              |
 | `build_stage`| The stage where the image is built and tagged            |     `build`     |
+| `build_args`| The build arguments to pass to the Kaniko build command'      |     `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile`     |
 | `scan_stage`| The stage where the image is scanned             |     `test`     |
 
 
@@ -85,7 +125,7 @@ The devguard-deploy component deploys the created OCI (Open Container Initiative
 
 ```yaml
 include:
-- component: $CI_SERVER_FQDN/l3montree/devguard/deploy@<VERSION>
+- component: $CI_SERVER_FQDN/l3montree/devguard/deploy@~latest
 ```
 
 #### Inputs
