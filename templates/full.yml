@@ -10,9 +10,7 @@ spec:
     build_stage:
       default: build
       description: 'The stage where the image is built and tagged'
-    build_args:
-      default: ''
-      description: 'The build arguments to pass to the Docker build command'
+
     build_context:
       default: $CI_PROJECT_DIR
       description: 'The build context to pass to the Docker build command'    
@@ -22,7 +20,7 @@ spec:
     build_args:
       type: array
       default: 
-      - "nextjs"
+      - []
       description: 'The build arguments to pass to the Docker build command'  
     deploy_stage:
       default: deploy
