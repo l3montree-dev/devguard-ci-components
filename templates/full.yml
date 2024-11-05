@@ -21,7 +21,7 @@ spec:
       description: 'The Dockerfile to pass to the Docker build command'  
     build_args:
       type: array
-      default: []  
+      default: ["nextjs"]  
       description: 'The build arguments to pass to the Docker build command'  
     deploy_stage:
       default: deploy
