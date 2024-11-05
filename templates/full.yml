@@ -44,8 +44,6 @@ include:
     scan_stage: $[[ inputs.scan_stage ]]
     build_stage: $[[ inputs.build_stage ]]
     build_args: $[[ inputs.build_args ]]
-    build_context: $[[ inputs.build_context ]]
-    build_dockerfile: $[[ inputs.build_dockerfile ]]
 
 - local: /templates/deploy.yml
   inputs:
