@@ -52,7 +52,7 @@ devguard:build-image:
   script:
    - |
 
-    kaniko_cmd="/kaniko/executor --cleanup --no-push --context ${inputs.build_context} --dockerfile ${inputs.build_dockerfile} --destination $(cat image-tag.txt) --tarPath image.tar"
+    kaniko_cmd="/kaniko/executor --cleanup --no-push --build-arg $[[inputs.build_args]] --context $[[inputs.build_context]] --dockerfile $[[inputs.build_dockerfile]] --destination $(cat image-tag.txt) --tarPath image.tar"
  
     for arg in "${inputs.build_args[@]}"; do
       kaniko_cmd="${kaniko_cmd} --build-arg ${arg}"
