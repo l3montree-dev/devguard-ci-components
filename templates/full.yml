@@ -10,6 +10,19 @@ spec:
     build_stage:
       default: build
       description: 'The stage where the image is built and tagged'
+    build_args:
+      default: ''
+      description: 'The build arguments to pass to the Docker build command'
+    build_context:
+      default: $CI_PROJECT_DIR
+      description: 'The build context to pass to the Docker build command'    
+    build_dockerfile:
+      default: $CI_PROJECT_DIR/Dockerfile
+      description: 'The Dockerfile to pass to the Docker build command'  
+    build_args:
+      type: array
+      default: []  
+      description: 'The build arguments to pass to the Docker build command'  
     deploy_stage:
       default: deploy
       description: 'The stage where the image should be pushed into the registry'
@@ -40,6 +53,9 @@ include:
     #You can change these to the desired stages. Make sure they match one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
     build_stage: $[[ inputs.build_stage ]]
+    build_args: $[[ inputs.build_args ]]
+    build_context: $[[ inputs.build_context ]]
+    build_dockerfile: $[[ inputs.build_dockerfile ]]
 
 - local: /templates/deploy.yml
   inputs:

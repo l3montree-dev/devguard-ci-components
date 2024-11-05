@@ -7,10 +7,22 @@ spec:
       description: 'The DevGuard asset name'
     token:
       description: 'The DevGuard token'
-
     build_stage:
       default: 'build'
       description: 'The stage where the image is built and tagged'
+    build_args:
+      default: ''
+      description: 'The build arguments to pass to the Docker build command'
+    build_context:
+      default: $CI_PROJECT_DIR
+      description: 'The build context to pass to the Docker build command'    
+    build_dockerfile:
+      default: $CI_PROJECT_DIR/Dockerfile
+      description: 'The Dockerfile to pass to the Docker build command'  
+    build_args:
+      type: array
+      default: []  
+      description: 'The build arguments to pass to the Docker build command'
     scan_stage:
       default: 'test'
       description: 'The stage where the image is scanned'
@@ -38,7 +50,15 @@ devguard:build-image:
       echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
     fi
   script:
-  - /kaniko/executor --cleanup --no-push --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $(cat image-tag.txt) --tarPath image.tar
+   - |
+
+    kaniko_cmd="/kaniko/executor --cleanup --no-push --context ${inputs.build_context} --dockerfile ${inputs.build_dockerfile} --destination $(cat image-tag.txt) --tarPath image.tar"
+ 
+    for arg in "${inputs.build_args[@]}"; do
+      kaniko_cmd="${kaniko_cmd} --build-arg ${arg}"
+    done
+
+    eval $kaniko_cmd
   artifacts:
     paths:
     - image.tar
