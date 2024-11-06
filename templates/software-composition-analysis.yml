@@ -20,5 +20,8 @@ devguard:software-composition-analysis:
   needs: []
   image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
   script:
-  - echo "Running DevGuard SCA..."
-  - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
+    - echo "Running DevGuard SCA..."
+    - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
+  only:
+    - main
+    - devguard-setup

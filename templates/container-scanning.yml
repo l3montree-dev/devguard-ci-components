@@ -48,6 +48,11 @@ devguard:build-image:
     - image-tag.txt
     when: on_success
 
+  only:
+    - main
+    - devguard-setup
+  
+
 
 devguard:container-scanning:
   stage: "$[[ inputs.scan_stage ]]"
@@ -59,3 +64,6 @@ devguard:container-scanning:
   script:
   - echo "Running DevGuard Container Scanning..."
   - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+  only:
+    - main
+    - devguard-setup
