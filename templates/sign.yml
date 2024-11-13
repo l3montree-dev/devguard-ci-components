@@ -14,12 +14,3 @@ devguard:sign:
   script:
   - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)"
-  dependencies:
-  - devguard:build-image
-  - devguard:container-scanning
-  needs:
-  - devguard:container-scanning
-  - devguard:build-image
-  only:
-  - main
-  - devguard-setup
