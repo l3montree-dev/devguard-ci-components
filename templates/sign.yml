@@ -20,6 +20,6 @@ devguard:sign:
   needs:
   - devguard:container-scanning
   - devguard:build-image
-only:
-- main
-- devguard-setup
+  only:
+  - main
+  - devguard-setup
