@@ -3,7 +3,7 @@ spec:
     token:
       description: 'The DevGuard token'
     sign_stage:
-      default: 'sign'
+      default: 'deploy'
       description: 'The stage where the scan is run'
 ---
 devguard:sign:
