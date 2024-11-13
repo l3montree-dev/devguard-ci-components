@@ -40,6 +40,12 @@ include:
     #You can change this to the desired stage. Make sure it matches one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
 
+- local: /templates/build.yml
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    build_stage: $[[ inputs.build_stage ]]
+    build_args: $[[ inputs.build_args ]]
+
 - local: /templates/container-scanning.yml
   inputs:
     asset_name: $[[ inputs.asset_name ]]
@@ -47,8 +53,6 @@ include:
     token: $[[ inputs.token ]]
     #You can change these to the desired stages. Make sure they match one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
-    build_stage: $[[ inputs.build_stage ]]
-    build_args: $[[ inputs.build_args ]]
 
 - local: /templates/deploy.yml
   inputs:
