@@ -31,8 +31,6 @@ devguard:container-scanning:
 devguard:container-scanning-risk-management:
   stage: "$[[ inputs.scan_stage ]]"
   image: ghcr.io/l3montree-dev/devguard-scanner:main-a2e00929-1731436946
-  needs:
-  - devguard:build-image
   dependencies:
   - devguard:build-image
   script:
