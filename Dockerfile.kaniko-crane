@@ -1,0 +1,9 @@
+FROM gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60
+
+WORKDIR /
+
+COPY crane.tar.gz .
+
+RUN tar -zxvf crane.tar.gz && rm crane.tar.gz
+
+WORKDIR /workspace
