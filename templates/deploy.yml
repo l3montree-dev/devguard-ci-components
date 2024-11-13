@@ -18,7 +18,6 @@ devguard:deploy:
   needs:
   - devguard:container-scanning
   - devguard:build-image
-
   only:
   - main
   - devguard-setup

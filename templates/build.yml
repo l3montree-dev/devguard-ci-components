@@ -13,7 +13,7 @@ devguard:build-image:
   needs: []
   dependencies: []
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:869fa052cd4593cdb38a578a6b41ae2ec3a17f520243994baf9ef67b88869e7a # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:f2a8edc860181ffe23200fece4689e9338a3c2d98db464d0beb28da023aad14b # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
     entrypoint: [ "" ]
   before_script:
   - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
