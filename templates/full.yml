@@ -19,6 +19,9 @@ spec:
     deploy_stage:
       default: deploy
       description: 'The stage where the image should be pushed into the registry'
+    do_risk_management:
+      default: "true"
+      description: 'Whether the results of the scan should be used for risk management'
 ---
 
 include:
@@ -39,6 +42,7 @@ include:
     token: $[[ inputs.token ]]
     #You can change this to the desired stage. Make sure it matches one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
+    do_risk_management: $[[ inputs.do_risk_management ]]
 
 - local: /templates/build.yml
   inputs:
@@ -53,6 +57,7 @@ include:
     token: $[[ inputs.token ]]
     #You can change these to the desired stages. Make sure they match one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
+    do_risk_management: $[[ inputs.do_risk_management ]]
 
 - local: /templates/deploy.yml
   inputs:
