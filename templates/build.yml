@@ -29,7 +29,7 @@ devguard:build-image:
       echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
     fi
   script:
-  - /kaniko/executor --cleanup --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
+  - /kaniko/executor --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
   # install crane 
   - /crane digest --tarball=image.tar > image-digest.txt
 
