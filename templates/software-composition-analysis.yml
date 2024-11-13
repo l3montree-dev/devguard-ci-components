@@ -21,6 +21,7 @@ devguard:software-composition-analysis:
   needs: []
   image: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
   script:
+    - echo $[[ inputs.do_risk_management ]]
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
   rules:
@@ -34,6 +35,7 @@ devguard:software-composition-analysis-risk-management:
   needs: []
   image: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
   script:
+    - echo $[[ inputs.do_risk_management ]]
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
   rules:
