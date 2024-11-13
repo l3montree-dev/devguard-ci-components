@@ -24,8 +24,8 @@ devguard:build-image:
   needs: []
   dependencies: []
   image:
-    name: gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
-    entrypoint: [""]
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:869fa052cd4593cdb38a578a6b41ae2ec3a17f520243994baf9ef67b88869e7a # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    entrypoint: [ "" ]
   before_script:
   - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
   - |
@@ -40,19 +40,20 @@ devguard:build-image:
       echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
     fi
   script:
-   /kaniko/executor --cleanup --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
+  - /kaniko/executor --cleanup --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
+  # install crane 
+  - /crane digest --tarball=image.tar > image-digest.txt
 
   artifacts:
     paths:
     - image.tar
     - image-tag.txt
+    - image-digest.txt
     when: on_success
 
   only:
-    - main
-    - devguard-setup
-  
-
+  - main
+  - devguard-setup
 
 devguard:container-scanning:
   stage: "$[[ inputs.scan_stage ]]"
@@ -65,5 +66,5 @@ devguard:container-scanning:
   - echo "Running DevGuard Container Scanning..."
   - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   only:
-    - main
-    - devguard-setup
+  - main
+  - devguard-setup
