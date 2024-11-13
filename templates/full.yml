@@ -15,7 +15,7 @@ spec:
       description: 'The stage where the image is built and tagged'
     build_args:
       default: '--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile'
-      description: 'The build arguments to pass to the Docker build command'  
+      description: 'The build arguments to pass to the Docker build command'
     deploy_stage:
       default: deploy
       description: 'The stage where the image should be pushed into the registry'
@@ -30,7 +30,7 @@ include:
 - local: /templates/secret-scanning.yml
   inputs:
     #You can change this to the desired stage. Make sure it matches one of your defined stages.
-    scan_stage: $[[ inputs.scan_stage ]]    
+    scan_stage: $[[ inputs.scan_stage ]]
 
 - local: /templates/software-composition-analysis.yml
   inputs:
@@ -39,7 +39,6 @@ include:
     token: $[[ inputs.token ]]
     #You can change this to the desired stage. Make sure it matches one of your defined stages.
     scan_stage: $[[ inputs.scan_stage ]]
-
 
 - local: /templates/container-scanning.yml
   inputs:
@@ -55,3 +54,7 @@ include:
   inputs:
     #You can change this to the desired stage. Make sure it matches one of your defined stages.
     deploy_stage: $[[ inputs.deploy_stage ]]
+
+- local: /templates/sign.yml
+  inputs:
+    token: $[[ inputs.token ]]
