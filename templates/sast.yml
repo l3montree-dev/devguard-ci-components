@@ -13,6 +13,3 @@ devguard:static-application-security-testing:
   needs: []
   script:
   - semgrep scan --config=p/ci .
-  only:
-  - main
-  - devguard-setup
