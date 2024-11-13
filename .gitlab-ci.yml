@@ -29,4 +29,3 @@ create-release:
   release:
     tag_name: $CI_COMMIT_TAG
     description: "Release $CI_COMMIT_TAG of components in $CI_PROJECT_PATH"
-change default 
