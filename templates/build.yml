@@ -32,14 +32,9 @@ devguard:build-image:
   - /kaniko/executor --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
   # install crane 
   - /crane digest --tarball=image.tar > image-digest.txt
-
   artifacts:
     paths:
     - image.tar
     - image-tag.txt
     - image-digest.txt
     when: on_success
-
-  only:
-  - main
-  - devguard-setup
