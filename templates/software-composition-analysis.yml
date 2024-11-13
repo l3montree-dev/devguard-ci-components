@@ -16,7 +16,7 @@ devguard:software-composition-analysis:
   stage: "$[[ inputs.scan_stage ]]"
   dependencies: []
   needs: []
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-3973eb1c-1731498588
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-50b825b3-1731500921
   script:
   - echo "Running DevGuard SCA..."
   - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
