@@ -11,7 +11,7 @@ spec:
       default: 'test'
       description: 'The stage where the scan is run'
     do_risk_management:
-      default: CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == "main"
+      default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == "main"
       description: 'Whether the results of the scan should be used for risk management'
 ---
 
