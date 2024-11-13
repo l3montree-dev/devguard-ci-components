@@ -18,8 +18,6 @@ spec:
 devguard:container-scanning:
   stage: "$[[ inputs.scan_stage ]]"
   image: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
-  needs:
-  - devguard:build-image
   dependencies:
   - devguard:build-image
   script:
