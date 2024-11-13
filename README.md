@@ -44,7 +44,7 @@ include:
 
 
 ### devguard:Static Application Security Testing
-The `devguard:sast` component focuses on Static Application Security Testing (SAST) to analyze your source code for vulnerabilities without executing it. This component helps in identifying security flaws early in the development cycle, ensuring that code quality and security are prioritized before deployment.
+The `devguard:sast` component focuses on Static Application Security Testing (SAST) to analyze your source code for vulnerabilities without executing it. This component helps in identifying security flaws early in the development cycle, ensuring that code quality and security are prioritized before deployment. 
 
 #### Usage Example
 
