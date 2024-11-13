@@ -44,7 +44,7 @@ include:
 
 
 ### devguard:Static Application Security Testing
-The `devguard:sast` component focuses on Static Application Security Testing (SAST) to analyze your source code for vulnerabilities without executing it. This component helps in identifying security flaws early in the development cycle, ensuring that code quality and security are prioritized before deployment.
+The `devguard:sast` component focuses on Static Application Security Testing (SAST) to analyze your source code for vulnerabilities without executing it. This component helps in identifying security flaws early in the development cycle, ensuring that code quality and security are prioritized before deployment. 
 
 #### Usage Example
 
@@ -86,6 +86,7 @@ include:
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |               |
 | `scan_stage`| The stage where the scan is run              |     `test`     |
+| `do_risk_management`| Whether the results of the scan should be used for risk management|     `$CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == "main"`     |
 
 
 ### devguard:container-scanning
@@ -113,6 +114,7 @@ include:
 | `build_stage`| The stage where the image is built and tagged            |     `build`     |
 | `build_args`| The build arguments to pass to the Kaniko build command'      |     `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile`     |
 | `scan_stage`| The stage where the image is scanned             |     `test`     |
+| `do_risk_management`| Whether the results of the scan should be used for risk management|     `$CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == "main"`     |
 
 
 ### devguard:deploy
@@ -134,6 +136,26 @@ include:
 |-------------|----------------------------------------------|----------------------|
 | `deploy_stage`| The stage where the image is deployed            |     `deploy`     |
 
+
+### devguard:sign
+
+The `devguard:sign` component ensures that your container images are signed for verification purposes, providing an additional layer of security before deployment. This component is essential for organizations that prioritize image integrity and wish to validate their images against tampering.
+
+The devguard component signs the previously built OCI (Open Container Initiative) image using a DevGuard token, helping confirm that the image originates from a trusted source.
+
+#### Usage Example
+
+```yaml
+include:
+- component: $CI_SERVER_FQDN/l3montree/devguard/sign@~latest
+```
+
+#### Inputs
+
+| Name        | Description                                  | Default Value        |
+|-------------|----------------------------------------------|----------------------|
+| `token`| The DevGuard token         |         |
+| `sign_stage`| The stage where the scan is run          |     `deploy`     |
 
 ## Contributing
 
