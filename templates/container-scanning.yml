@@ -57,7 +57,7 @@ devguard:build-image:
 
 devguard:container-scanning:
   stage: "$[[ inputs.scan_stage ]]"
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-7e94178b-1727680457
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-3973eb1c-1731498588
   needs:
   - devguard:build-image
   dependencies:
