@@ -26,6 +26,8 @@ devguard:software-composition-analysis:
   rules:
   - if: $[[ inputs.do_risk_management ]]
     when: never
+  - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    when: never
   - when: always
 
 devguard:software-composition-analysis-risk-management:
