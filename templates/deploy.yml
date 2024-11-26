@@ -11,6 +11,6 @@ devguard:deploy:
     entrypoint: [""]
   script:
     - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - crane push image.tar $(cat image-tag.txt) // branch-name-<commit>-<ts>
+    - crane push image.tar $(cat image-tag.txt)
     - branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
     - crane push image.tar $CI_REGISTRY_IMAGE:${branch}-latest
