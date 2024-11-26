@@ -5,6 +5,11 @@ spec:
     sign_stage:
       default: "deploy"
       description: "The stage where the scan is run"
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The DevGuard asset name"
 ---
 devguard:sign:
   stage: "$[[ inputs.sign_stage ]]"
@@ -13,4 +18,4 @@ devguard:sign:
     entrypoint: [""]
   script:
     - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)"
+    - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)" --api-url="$[[ inputs.api_url ]]" --asset-name="$[[ inputs.asset_name ]"
