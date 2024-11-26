@@ -1,47 +1,45 @@
 spec:
   inputs:
     api_url:
-      default: 'https://api.main.devguard.org'
-      description: 'The DevGuard API URL'
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
     asset_name:
-      description: 'The DevGuard asset name'
+      description: "The DevGuard asset name"
     token:
-      description: 'The DevGuard token'
+      description: "The DevGuard token"
     scan_stage:
-      default: 'test'
-      description: 'The stage where the image is scanned'
+      default: "test"
+      description: "The stage where the image is scanned"
     do_risk_management:
       default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      description: 'Whether the results of the scan should be used for risk management'
---- 
-
+      description: "Whether the results of the scan should be used for risk management"
+---
 devguard:container-scanning:
   stage: "$[[ inputs.scan_stage ]]"
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   needs:
-  - devguard:build-image
+    - devguard:build-image
   dependencies:
-  - devguard:build-image
+    - devguard:build-image
   script:
-  - echo "Running DevGuard Container Scanning..."
-  - devguard-scanner container-scanning --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+    - echo "Running DevGuard Container Scanning..."
+    - devguard-scanner container-scanning --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   rules:
-  - if: $[[ inputs.do_risk_management ]]
-    when: never
-  - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    when: never
-  - when: always
+    - if: $[[ inputs.do_risk_management ]]
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: never
+    - when: always
 
 devguard:container-scanning-risk-management:
   stage: "$[[ inputs.scan_stage ]]"
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-a2e00929-1731436946
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   needs:
-  - devguard:build-image
+    - devguard:build-image
   dependencies:
-  - devguard:build-image
+    - devguard:build-image
   script:
-  - echo "Running DevGuard Container Scanning..."
-  - devguard-scanner container-scanning --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+    - echo "Running DevGuard Container Scanning..."
+    - devguard-scanner container-scanning --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   rules:
-  - if: $[[ inputs.do_risk_management ]]
-  
+    - if: $[[ inputs.do_risk_management ]]

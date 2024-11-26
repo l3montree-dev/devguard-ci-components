@@ -1,14 +1,16 @@
 spec:
   inputs:
     deploy_stage:
-      default: 'deploy'
-      description: 'The stage where the image should be pushed into the registry'
+      default: "deploy"
+      description: "The stage where the image should be pushed into the registry"
 ---
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   image:
     name: gcr.io/go-containerregistry/crane:debug@sha256:ff0e08eeae8097d28b2381c7f7123bf542757abc68d11bff58fb882b72843785
-    entrypoint: [ "" ]
+    entrypoint: [""]
   script:
-  - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  - crane push image.tar $(cat image-tag.txt)
+    - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - crane push image.tar $(cat image-tag.txt)
+    - branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
+    - crane push image.tar $CI_REGISTRY_IMAGE:${branch}-latest
