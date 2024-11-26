@@ -1,16 +1,16 @@
 spec:
   inputs:
     token:
-      description: 'The DevGuard token'
+      description: "The DevGuard token"
     sign_stage:
-      default: 'deploy'
-      description: 'The stage where the scan is run'
+      default: "deploy"
+      description: "The stage where the scan is run"
 ---
 devguard:sign:
   stage: "$[[ inputs.sign_stage ]]"
   image:
-    name: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
-    entrypoint: [ "" ]
+    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+    entrypoint: [""]
   script:
-  - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)"
+    - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)"
