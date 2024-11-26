@@ -18,4 +18,4 @@ devguard:sign:
     entrypoint: [""]
   script:
     - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)" --api-url="$[[ inputs.api_url ]]" --asset-name="$[[ inputs.asset_name ]"
+    - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]"
