@@ -1,42 +1,41 @@
 spec:
   inputs:
     api_url:
-      default: 'https://api.main.devguard.org'
-      description: 'The DevGuard API URL'
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
     asset_name:
-      description: 'The DevGuard asset name'
+      description: "The DevGuard asset name"
     token:
-      description: 'The DevGuard token'
+      description: "The DevGuard token"
     scan_stage:
-      default: 'test'
-      description: 'The stage where the scan is run'
+      default: "test"
+      description: "The stage where the scan is run"
     do_risk_management:
       default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      description: 'Whether the results of the scan should be used for risk management'
+      description: "Whether the results of the scan should be used for risk management"
 ---
-
 devguard:software-composition-analysis:
   stage: "$[[ inputs.scan_stage ]]"
   dependencies: []
   needs: []
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   script:
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
   rules:
-  - if: $[[ inputs.do_risk_management ]]
-    when: never
-  - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    when: never
-  - when: always
+    - if: $[[ inputs.do_risk_management ]]
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: never
+    - when: always
 
 devguard:software-composition-analysis-risk-management:
   stage: "$[[ inputs.scan_stage ]]"
   dependencies: []
   needs: []
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-6d49f9ea-1731503037
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   script:
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
   rules:
-  - if: $[[ inputs.do_risk_management ]]
+    - if: $[[ inputs.do_risk_management ]]
