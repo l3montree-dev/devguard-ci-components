@@ -14,7 +14,6 @@ include:
     asset_name: "$DEVGUARD_ASSET_NAME"
     token: "$DEVGUARD_TOKEN"
     version: "$CI_COMMIT_REF_NAME"
-    small_artifact_registry: "true"
 
 create-release:
   stage: release
