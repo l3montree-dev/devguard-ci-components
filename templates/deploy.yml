@@ -4,7 +4,7 @@ spec:
       default: "deploy"
       description: "The stage where the image should be pushed into the registry"
     image_already_in_registry:
-      default: false
+      default: "false"
       description: "If the image is already in the registry, set this to true. This will skip the initial push step."
 ---
 devguard:deploy:

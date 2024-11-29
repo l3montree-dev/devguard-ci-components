@@ -14,7 +14,7 @@ spec:
       default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       description: "Whether the results of the scan should be used for risk management"
     fetch_image_from_registry:
-      default: false
+      default: "false"
       description: "Whether the image should be fetched from the registry or from the artifacts"
 ---
 
