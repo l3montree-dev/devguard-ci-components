@@ -13,7 +13,8 @@ include:
   inputs:
     asset_name: "$DEVGUARD_ASSET_NAME"
     token: "$DEVGUARD_TOKEN"
-    version: "$CI_COMMIT_BRANCH"
+    version: "${CI_COMMIT_BRANCH:-main}"
+    small_artifact_registry: "true"
 
 create-release:
   stage: release
