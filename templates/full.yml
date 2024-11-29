@@ -22,49 +22,55 @@ spec:
     do_risk_management:
       default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       description: "Whether the results of the scan should be used for risk management"
+    small_artifact_registry:
+      default: false
+      description: "If the artifact size is too big for your gitlab instance, set this to true. This will push the image directly to the registry instead of uploading it as artifact."
 ---
 include:
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main//templates/sast.yml"
-    inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main//templates/sast.yml"
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/secret-scanning.yml"
-    inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/secret-scanning.yml"
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/software-composition-analysis.yml"
-    inputs:
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
-      do_risk_management: $[[ inputs.do_risk_management ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/software-composition-analysis.yml"
+  inputs:
+    asset_name: $[[ inputs.asset_name ]]
+    api_url: $[[ inputs.api_url ]]
+    token: $[[ inputs.token ]]
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
+    do_risk_management: $[[ inputs.do_risk_management ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/build.yml"
-    inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      build_stage: $[[ inputs.build_stage ]]
-      build_args: $[[ inputs.build_args ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/build.yml"
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    build_stage: $[[ inputs.build_stage ]]
+    build_args: $[[ inputs.build_args ]]
+    push_image: $[[ inputs.small_artifact_registry ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/container-scanning.yml"
-    inputs:
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
-      #You can change these to the desired stages. Make sure they match one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
-      do_risk_management: $[[ inputs.do_risk_management ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/container-scanning.yml"
+  inputs:
+    asset_name: $[[ inputs.asset_name ]]
+    api_url: $[[ inputs.api_url ]]
+    token: $[[ inputs.token ]]
+    #You can change these to the desired stages. Make sure they match one of your defined stages.
+    scan_stage: $[[ inputs.scan_stage ]]
+    do_risk_management: $[[ inputs.do_risk_management ]]
+    fetch_image_from_registry: $[[ inputs.small_artifact_registry ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/deploy.yml"
-    inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      deploy_stage: $[[ inputs.deploy_stage ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/deploy.yml"
+  inputs:
+    #You can change this to the desired stage. Make sure it matches one of your defined stages.
+    deploy_stage: $[[ inputs.deploy_stage ]]
+    image_already_in_registry: $[[ inputs.small_artifact_registry ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/sign.yml"
-    inputs:
-      token: $[[ inputs.token ]]
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
+- remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/sign.yml"
+  inputs:
+    token: $[[ inputs.token ]]
+    asset_name: $[[ inputs.asset_name ]]
+    api_url: $[[ inputs.api_url ]]
