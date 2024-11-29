@@ -8,13 +8,12 @@ stages:
 - deploy
 - release
 
-
 include:
 - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/full@$CI_COMMIT_SHA
   inputs:
     asset_name: "$DEVGUARD_ASSET_NAME"
     token: "$DEVGUARD_TOKEN"
-
+    version: "$CI_COMMIT_BRANCH"
 
 create-release:
   stage: release
