@@ -13,33 +13,40 @@ spec:
     do_risk_management:
       default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       description: "Whether the results of the scan should be used for risk management"
+    fetch_image_from_registry:
+      default: "false"
+      description: "Whether the image should be fetched from the registry or from the artifacts"
 ---
-devguard:container-scanning:
+
+.devguard:container-scanning-base:
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-193b5c4c-1732884015
   stage: "$[[ inputs.scan_stage ]]"
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   needs:
-    - devguard:build-image
+  - devguard:build-image
   dependencies:
-    - devguard:build-image
+  - devguard:build-image
+  before_script: |
+    if [ "$[[ inputs.fetch_image_from_registry ]]" == "true" ]; then
+      crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+      crane pull $(cat image-tag.txt) image.tar
+    fi
+
+devguard:container-scanning:
+  extends: .devguard:container-scanning-base
   script:
-    - echo "Running DevGuard Container Scanning..."
-    - devguard-scanner container-scanning --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+  - echo "Running DevGuard Container Scanning..."
+  - devguard-scanner container-scanning --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   rules:
-    - if: $[[ inputs.do_risk_management ]]
-      when: never
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      when: never
-    - when: always
+  - if: $[[ inputs.do_risk_management ]]
+    when: never
+  - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    when: never
+  - when: always
 
 devguard:container-scanning-risk-management:
-  stage: "$[[ inputs.scan_stage ]]"
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
-  needs:
-    - devguard:build-image
-  dependencies:
-    - devguard:build-image
+  extends: .devguard:container-scanning-base
   script:
-    - echo "Running DevGuard Container Scanning..."
-    - devguard-scanner container-scanning --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+  - echo "Running DevGuard Container Scanning..."
+  - devguard-scanner container-scanning --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   rules:
-    - if: $[[ inputs.do_risk_management ]]
+  - if: $[[ inputs.do_risk_management ]]

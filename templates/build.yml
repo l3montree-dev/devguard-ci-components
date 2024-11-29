@@ -6,6 +6,9 @@ spec:
     build_args:
       default: '--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile'
       description: 'The build arguments to pass to the Kaniko build command'
+    push_image:
+      default: "false"
+      description: 'It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry.'
 ---
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 devguard:build-image:
@@ -29,9 +32,9 @@ devguard:build-image:
       echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
     fi
   script:
-  - /kaniko/executor --no-push $[[ inputs.build_args ]] --destination $(cat image-tag.txt) --tarPath image.tar
+  - /kaniko/executor $[[ inputs.build_args ]] --destination $(cat image-tag.txt) $([[ $[[ inputs.push_image ]] == "false" ]] && echo "--no-push --tarPath image.tar")
   # install crane 
-  - /crane digest --tarball=image.tar > image-digest.txt
+  - /crane digest $([[ $[[ inputs.push_image ]] == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
   artifacts:
     paths:
     - image.tar
