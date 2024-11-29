@@ -28,7 +28,7 @@ spec:
   before_script: |
     if [ "$[[ inputs.fetch_image_from_registry ]]" == "true" ]; then
       crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-      crane export $(cat image-tag.txt) image.tar
+      crane pull $(cat image-tag.txt) image.tar
     fi
 
 devguard:container-scanning:
