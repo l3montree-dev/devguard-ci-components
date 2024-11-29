@@ -19,7 +19,7 @@ spec:
 ---
 
 .devguard:container-scanning-base:
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-193b5c4c-1732884015
   stage: "$[[ inputs.scan_stage ]]"
   needs:
   - devguard:build-image
