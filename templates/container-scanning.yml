@@ -26,7 +26,7 @@ spec:
   dependencies:
   - devguard:build-image
   before_script: |
-    if [ $[[ inputs.fetch_image_from_registry ]] == "true" ]; then
+    if [ "$[[ inputs.fetch_image_from_registry ]]" == "true" ]; then
       crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
       crane export $(cat image-tag.txt) image.tar
     fi
