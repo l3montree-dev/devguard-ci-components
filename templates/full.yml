@@ -23,7 +23,7 @@ spec:
       default: $CI_COMMIT_TAG != null || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       description: "Whether the results of the scan should be used for risk management"
     small_artifact_registry:
-      default: false
+      default: "false"
       description: "If the artifact size is too big for your gitlab instance, set this to true. This will push the image directly to the registry instead of uploading it as artifact."
 ---
 include:
