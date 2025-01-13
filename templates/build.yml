@@ -57,6 +57,6 @@ devguard:intoto-build-step:
     entrypoint: [""]
   script:
     - echo "Running DevGuard Intoto Build...starting..."
-    - devguard-scanner intoto start --step="build" --ignore="image-digest.txt" --ignore="image-tag.txt" --token="$[[ inputs.token ]]" --apiUrl="${{ inputs.api-url }}" --assetName="${{ inputs.asset-name }}" --supplyChainId="${{ inputs.supply-chain-id }}"
+    - devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="${{ inputs.api_url }}" --assetName="${{ inputs.asset_name }}" --supplyChainId="${CI_COMMIT_SHA}"
     - echo "Running DevGuard Intoto Build...stopping..."
-    - devguard-scanner intoto stop --step="build" --products="image-digest.txt" --products="image-tag.txt" --token="$[[ inputs.token ]]" --apiUrl="${{ inputs.api-url }}" --assetName="${{ inputs.asset-name }}" --supplyChainId="${{ inputs.supply-chain-id }}"
+    - devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="${{ inputs.api_url }}" --assetName="${{ inputs.asset_name }}" --supplyChainId="${CI_COMMIT_SHA}"
