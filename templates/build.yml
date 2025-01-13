@@ -44,7 +44,7 @@ devguard:build-image:
     when: on_success
 
 devguard:intoto-build-step:
-  stage: "$[[ inputs.intoto_stage ]]"
+  stage: "$[[ inputs.build_stage ]]"
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     entrypoint: [""]

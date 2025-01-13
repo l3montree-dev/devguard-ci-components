@@ -21,7 +21,7 @@ devguard:deploy:
     crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
 
 devguard:intoto-deploy-step:
-  stage: "$[[ inputs.intoto_stage ]]"
+  stage: "$[[ inputs.deploy_stage ]]"
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     entrypoint: [""]
