@@ -58,6 +58,9 @@ include:
       build_stage: $[[ inputs.build_stage ]]
       build_args: $[[ inputs.build_args ]]
       push_image: $[[ inputs.small_artifact_registry ]]
+      token: $[[ inputs.token ]]
+      api_url: $[[ inputs.api_url ]]
+      asset_name: $[[ inputs.asset_name ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
@@ -74,6 +77,9 @@ include:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       deploy_stage: $[[ inputs.deploy_stage ]]
       image_already_in_registry: $[[ inputs.small_artifact_registry ]]
+      token: $[[ inputs.token ]]
+      api_url: $[[ inputs.api_url ]]
+      asset_name: $[[ inputs.asset_name ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign.yml"
     inputs:
