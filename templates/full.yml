@@ -31,9 +31,6 @@ spec:
     version:
       default: "main"
       description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
-    intoto_stage:
-      default: "intoto"
-      description: "The stage where the intoto scan should be executed"
 ---
 include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
@@ -83,10 +80,3 @@ include:
       token: $[[ inputs.token ]]
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
-
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/intoto.yml"
-    inputs:
-      token: $[[ inputs.token ]]
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      intoto_stage: $[[ inputs.intoto_stage ]]
