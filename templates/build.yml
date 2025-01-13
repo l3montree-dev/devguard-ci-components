@@ -54,6 +54,8 @@ devguard:intoto-build-step:
   stage: "$[[ inputs.build_stage ]]"
   dependencies:
     - devguard:build-image
+  needs:
+    - devguard:build-image
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     entrypoint: [""]
