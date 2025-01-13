@@ -8,10 +8,10 @@ spec:
       description: "If the image is already in the registry, set this to true. This will skip the initial push step."
     token:
       description: "The token to authenticate against the DevGuard API"
-    api-url:
+    api_url:
       default: "https://api.main.devguard.org"
       description: "The DevGuard API URL"
-    asset-name:
+    asset_name:
       description: "The name of the asset"
 ---
 devguard:deploy:

@@ -11,10 +11,10 @@ spec:
       description: "It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry."
     token:
       description: "The token to authenticate against the DevGuard API"
-    api-url:
+    api_url:
       default: "https://api.main.devguard.org"
       description: "The DevGuard API URL"
-    asset-name:
+    asset_name:
       description: "The name of the asset"
 ---
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
