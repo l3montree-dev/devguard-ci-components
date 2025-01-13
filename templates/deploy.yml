@@ -37,4 +37,4 @@ devguard:intoto-deploy-step:
     - echo "Reading image-digest.txt..."
     - export DIGEST=$(cat image-digest.txt)
     - echo "DIGEST=$DIGEST"
-    - devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="${{ inputs.api_url }}" --assetName="${{ inputs.asset_name }}" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
+    - devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
