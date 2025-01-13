@@ -35,6 +35,7 @@ devguard:intoto-build-step:
       --apiUrl="${{ inputs.api-url }}" \
       --assetName="${{ inputs.asset-name }}" \
       --supplyChainId="${{ inputs.supply-chain-id }}" \
+
 devguard:intoto-depoly-step:
   stage: "$[[ inputs.intoto_stage ]]"
   image:
