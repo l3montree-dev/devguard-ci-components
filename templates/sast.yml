@@ -8,7 +8,7 @@ spec:
 
 devguard:static-application-security-testing:
   stage: $[[ inputs.scan_stage ]]
-  image: returntocorp/semgrep:1.90.0@sha256:7b625711ba9b6d1a543e308967b18c01b59932490a5536a06422666474bf6ee4
+  image: returntocorp/semgrep:1.104.0-nonroot@sha256:3a9ed89d09f0d0e403657547a2ff0507df0317d97fa593acdedb5dfc0da7720d
   dependencies: []
   needs: []
   script:

@@ -7,6 +7,7 @@ stages:
 - test
 - deploy
 - release
+- build-custom-images
 
 include:
 - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/full@$CI_COMMIT_SHA
@@ -21,10 +22,49 @@ create-release:
   - devguard:software-composition-analysis
   - devguard:container-scanning
   - devguard:deploy
-  image: registry.gitlab.com/gitlab-org/release-cli:v0.18.0@sha256:696013aea0f2a20482800ce3a77341f840d7c7ec17bd78bd555e0bd6c00e4f11
+  image: registry.gitlab.com/gitlab-org/release-cli:v0.21.0@sha256:d588d48319b516a8c91ea5d56c2a84f6df04d34927c331f93240ae5cc7f2ac7e
   script: echo "Creating release $CI_COMMIT_TAG"
   rules:
   - if: $CI_COMMIT_TAG
   release:
     tag_name: $CI_COMMIT_TAG
     description: "Release $CI_COMMIT_TAG of components in $CI_PROJECT_PATH"
+
+build-kaniko-crane:
+  stage: build-custom-images
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+    entrypoint: [""]
+  script:
+  - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.kaniko-crane --destination $CI_REGISTRY_IMAGE/kaniko-crane:kaniko-v1.23.2-debug-crane-v0.20.3
+  only:
+  - main
+  - feature/additional-stages
+  when:
+    manual
+
+build-license-finder-go:
+  stage: build-custom-images
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+    entrypoint: [""]
+  script:
+  - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.license_finder-go --destination $CI_REGISTRY_IMAGE/license-finder-go_latest
+  only:
+  - main
+  - feature/additional-stages
+  when:
+    manual
+
+build-license-finder-npm:
+  stage: build-custom-images
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+    entrypoint: [""]
+  script:
+  - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.license_finder-npm --destination $CI_REGISTRY_IMAGE/license-finder-npm:latest
+  only:
+  - main
+  - feature/additional-stages
+  when:
+    manual
