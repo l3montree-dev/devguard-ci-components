@@ -18,4 +18,9 @@ devguard:license-scanning:
   dependencies: []
   needs: []
   script:
-  - license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers $(("$[[ inputs.environment ]]" == "go") && echo "gomodules" || ("$[[ inputs.environment ]]" == "npm") && echo "npm")
+  - |
+    if [ "$[[ inputs.environment ]]" == "go" ]; then
+      license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers gomodules
+    else
+      license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers npm
+    fi
