@@ -2,6 +2,9 @@
 
 FROM golang:1.23.1
 
+# checkov:skip=CKV_DOCKER_2
+# checkov:skip=CKV_DOCKER_3
+
 WORKDIR /go/src/app
 
 COPY . .

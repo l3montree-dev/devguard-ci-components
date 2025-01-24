@@ -1,0 +1,23 @@
+spec:
+  inputs:
+    scan_stage:
+      default: test
+      description: The stage where the scan is run
+    config_file:
+      default: ""
+      description: "The path to the config file (e.g. checkov.yaml)"
+
+---
+
+devguard:infrastructure-as-code-scanning:
+  stage: $[[ inputs.scan_stage ]]
+  image: bridgecrew/checkov:3.2.98@sha256:2a280191e5b9e3890c7b64013955b48870e7e2a6fb5ae10a558d03b3aa81510b
+  dependencies: []
+  needs: []
+  script:
+  - |
+    if [ -n "$([[ inputs.config_file ]])" ]; then
+      checkov -d . --quiet --config-file "$([[ inputs.config_file ]])"
+    else
+      checkov -d . --quiet
+    fi
