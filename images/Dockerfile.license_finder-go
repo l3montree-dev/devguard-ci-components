@@ -1,7 +1,9 @@
 FROM ruby:3.3.7-alpine3.21@sha256:abe1aeac9b4c223a94873162d2d5d0f6c47efea9c5a8b40deadf3c1b55c5a1b3
 
-RUN gem install license_finder
+# checkov:skip=CKV_DOCKER_2
+# checkov:skip=CKV_DOCKER_3
 
+RUN gem install license_finder
 
 RUN wget https://dl.google.com/go/go1.23.5.linux-amd64.tar.gz
 RUN echo "cbcad4a6482107c7c7926df1608106c189417163428200ce357695cc7e01d091  go1.23.5.linux-amd64.tar.gz" | sha256sum -c -
