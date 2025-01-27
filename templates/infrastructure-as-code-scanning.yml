@@ -17,7 +17,7 @@ devguard:infrastructure-as-code-scanning:
   script:
   - |
     if [ -n "$[[ inputs.config_file ]]" ]; then
-      checkov -d . --quiet --config-file "$([[ inputs.config_file ]])"
+      checkov -d . --quiet --config-file "$[[ inputs.config_file ]]"
     else
       checkov -d . --quiet
     fi
