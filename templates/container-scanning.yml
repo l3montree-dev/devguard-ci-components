@@ -21,7 +21,7 @@ spec:
       description: "Whether the image should be fetched from the registry or from the artifacts"
 ---
 .devguard:container-scanning-base:
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-193b5c4c-1732884015
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-7b5c4c0f-1738052442
   stage: "$[[ inputs.scan_stage ]]"
   needs:
     - devguard:build-image
