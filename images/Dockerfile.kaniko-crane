@@ -6,7 +6,8 @@ FROM gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343
 WORKDIR /
 
 COPY crane_v0.20.3_x86_64.tar.gz .
+COPY devguard-scanner-926cde4.tar.gz .
 
-RUN tar -zxvf crane_v0.20.3_x86_64.tar.gz && rm crane_v0.20.3_x86_64.tar.gz
+RUN tar -zxvf crane_v0.20.3_x86_64.tar.gz && rm crane_v0.20.3_x86_64.tar.gz && tar -zxvf devguard-scanner-926cde4.tar.gz && rm devguard-scanner-926cde4.tar.gz
 
 WORKDIR /workspace

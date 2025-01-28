@@ -6,16 +6,25 @@ spec:
     image_already_in_registry:
       default: "false"
       description: "If the image is already in the registry, set this to true. This will skip the initial push step."
+    token:
+      description: "The token to authenticate against the DevGuard API"
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The name of the asset"
 ---
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   image:
-    name: gcr.io/go-containerregistry/crane:debug@sha256:94f61956845714bea3b788445454ae4827f49a90dcd9dac28255c4cccb6220ad
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e
     entrypoint: [ "" ]
   script: |
-    crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     if [ $[[ inputs.image_already_in_registry ]] == "false" ]; then
-      crane push image.tar $(cat image-tag.txt)
+      /crane push image.tar $(cat image-tag.txt)
     fi
     branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-    crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
+    /crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
+    
+    /devguard-scanner-926cde4 intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"

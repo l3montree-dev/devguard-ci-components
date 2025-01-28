@@ -1,14 +1,21 @@
 spec:
   inputs:
     build_stage:
-      default: 'build'
-      description: 'The stage where the image is built and tagged'
+      default: "build"
+      description: "The stage where the image is built and tagged"
     build_args:
-      default: '--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile'
-      description: 'The build arguments to pass to the Kaniko build command'
+      default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
+      description: "The build arguments to pass to the Kaniko build command"
     push_image:
       default: "false"
-      description: 'It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry.'
+      description: "It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry."
+    token:
+      description: "The token to authenticate against the DevGuard API"
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The name of the asset"
 ---
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 devguard:build-image:
@@ -16,29 +23,34 @@ devguard:build-image:
   needs: []
   dependencies: []
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.23.2-debug-crane-v0.20.3@sha256:3e4947f6a967ac304ce328cc2ccd9c569a81da130f55f7a32cafd5fbd5d7450a # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
     entrypoint: [ "" ]
   before_script:
-  - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
-  - |
-    if [ -n "$CI_COMMIT_TAG" ]; then
-      # Set IMAGE_TAG if the pipeline was triggered by a tag
-      echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
-    else
-      # Set IMAGE_TAG if the pipeline was triggered by a push to main
-      branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-      sha=${CI_COMMIT_SHORT_SHA}
-      ts=$(date +%s)
-      echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
-    fi
+    - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
+    - /devguard-scanner-926cde4 intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        # Set IMAGE_TAG if the pipeline was triggered by a tag
+        echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
+      else
+        # Set IMAGE_TAG if the pipeline was triggered by a push to main
+        branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
+        sha=${CI_COMMIT_SHORT_SHA}
+        ts=$(date +%s)
+        echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
+      fi
   script:
-  - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
-  # install crane
-  - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
+    - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
+    # install crane
+    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
+
+    - echo "Running DevGuard Intoto Build...stopping..."
+    - /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
   artifacts:
     paths:
-    - image.tar
-    - image-tag.txt
-    - image-digest.txt
+      - image.tar
+      - image-tag.txt
+      - image-digest.txt
     when: on_success
