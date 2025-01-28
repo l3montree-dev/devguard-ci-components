@@ -42,7 +42,7 @@ devguard:build-image:
       fi
   script:
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner-926cde4 --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
     # install crane
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
 
