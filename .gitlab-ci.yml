@@ -18,7 +18,7 @@ build-kaniko-crane:
   - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.kaniko-crane --destination $CI_REGISTRY_IMAGE/kaniko-crane:kaniko-v1.23.2-debug-crane-v0.20.3
   only:
   - main
-  - feature/additional-stages
+  - feature/intoto-stage
   when:
     manual
 
