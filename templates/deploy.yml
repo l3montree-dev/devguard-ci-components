@@ -17,7 +17,7 @@ spec:
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:5729bf0360ffc855b042812b6ca7a2a60c0dc2ebc59b680bca9bc6caa1b1c658
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e
     entrypoint: [ "" ]
   script: |
     /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
