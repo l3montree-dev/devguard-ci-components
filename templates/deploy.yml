@@ -17,15 +17,15 @@ spec:
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   image:
-    name: gcr.io/go-containerregistry/crane:debug
-    entrypoint: [""]
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.23.2-debug-crane-v0.20.3@sha256:3e4947f6a967ac304ce328cc2ccd9c569a81da130f55f7a32cafd5fbd5d7450a
+    entrypoint: [ "" ]
   script: |
-    crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     if [ $[[ inputs.image_already_in_registry ]] == "false" ]; then
-      crane push image.tar $(cat image-tag.txt)
+      /crane push image.tar $(cat image-tag.txt)
     fi
     branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-    crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
+    /crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
 
 devguard:intoto-deploy-step:
   stage: "$[[ inputs.deploy_stage ]]"

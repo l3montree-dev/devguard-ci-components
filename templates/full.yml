@@ -31,17 +31,39 @@ spec:
     version:
       default: "main"
       description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
+    license_scanning_decision_file:
+      default: "./docs/dependency_decisions.yml"
+      description: "The path to the dependency decisions file"
+    license_scanning_environment:
+      default: "go"
+      description: "The environment to scan [go, npm]"
+    iac_config_file:
+      default: ""
+      description: "The path to the config file (e.g. checkov.yaml)"
 ---
 include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
+    inputs:
+      #You can change this to the desired stage. Make sure it matches one of your defined stages.
+      scan_stage: $[[ inputs.scan_stage ]]
+
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/license-scanning.yml"
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
+      environment: $[[ inputs.license_scanning_environment ]]
+      decision_file: $[[ inputs.license_scanning_decision_file ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
+    inputs:
+      #You can change this to the desired stage. Make sure it matches one of your defined stages.
+      scan_stage: $[[ inputs.scan_stage ]]
+      config_file: $[[ inputs.iac_config_file ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
