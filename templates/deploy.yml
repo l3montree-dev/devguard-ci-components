@@ -27,4 +27,4 @@ devguard:deploy:
     branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
     /crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
     
-    /devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
+    /devguard-scanner-926cde4 intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
