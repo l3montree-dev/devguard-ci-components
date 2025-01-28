@@ -23,10 +23,12 @@ devguard:build-image:
   needs: []
   dependencies: []
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.23.2-debug-crane-v0.20.3@sha256:3e4947f6a967ac304ce328cc2ccd9c569a81da130f55f7a32cafd5fbd5d7450a # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:5729bf0360ffc855b042812b6ca7a2a60c0dc2ebc59b680bca9bc6caa1b1c658 # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
     entrypoint: [ "" ]
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
+    - /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
@@ -43,24 +45,12 @@ devguard:build-image:
     - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
     # install crane
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
+
+    - echo "Running DevGuard Intoto Build...stopping..."
+    - /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
   artifacts:
     paths:
       - image.tar
       - image-tag.txt
       - image-digest.txt
     when: on_success
-
-devguard:intoto-build-step:
-  stage: "$[[ inputs.build_stage ]]"
-  dependencies:
-    - devguard:build-image
-  needs:
-    - devguard:build-image
-  image:
-    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
-    entrypoint: [""]
-  script:
-    - echo "Running DevGuard Intoto Build...starting..."
-    - devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
-    - echo "Running DevGuard Intoto Build...stopping..."
-    - devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
