@@ -51,7 +51,7 @@ devguard:build-image:
         echo "Running DevGuard Intoto Build...stopping..."
         /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
       else
-        echo "Skipping intoto scan: Branch is not protected."
+        echo "Skipping intoto: Branch is not protected."
       fi
   artifacts:
     paths:

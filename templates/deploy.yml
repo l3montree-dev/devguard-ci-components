@@ -30,5 +30,5 @@ devguard:deploy:
     if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         /devguard-scanner-926cde4 intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
     else
-      echo "Skipping intoto scan: Branch is not protected."
+      echo "Skipping intoto: Branch is not protected."
     fi
