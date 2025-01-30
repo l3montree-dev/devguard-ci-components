@@ -46,8 +46,13 @@ devguard:build-image:
     # install crane
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
 
-    - echo "Running DevGuard Intoto Build...stopping..."
-    - /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+    - |
+      if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
+        echo "Running DevGuard Intoto Build...stopping..."
+        /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+      else
+        echo "Skipping intoto: Branch is not protected."
+      fi
   artifacts:
     paths:
       - image.tar
