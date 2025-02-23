@@ -14,7 +14,7 @@ spec:
 devguard:sign:
   stage: "$[[ inputs.sign_stage ]]"
   image:
-    name: ghcr.io/l3montree-dev/devguard-scanner:0.8.2
+    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     entrypoint: [""]
   script:
     - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
