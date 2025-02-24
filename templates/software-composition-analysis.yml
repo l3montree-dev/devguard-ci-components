@@ -1,6 +1,3 @@
-variables:
-  GIT_STRATEGY: clone
-
 spec:
   inputs:
     api_url:
@@ -20,6 +17,9 @@ spec:
         ($CI_COMMIT_BRANCH =~ /^devguard-autosetup-/)
       description: "Whether the results of the scan should be used for risk management"
 ---
+variables:
+  GIT_STRATEGY: clone
+
 devguard:software-composition-analysis:
   stage: "$[[ inputs.scan_stage ]]"
   dependencies: []

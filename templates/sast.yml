@@ -1,13 +1,12 @@
-variables:
-  GIT_STRATEGY: clone
-
 spec:
   inputs:
     scan_stage:
       default: test
       description: The stage where the scan is run
-
 ---
+variables:
+  GIT_STRATEGY: clone
+
 devguard:static-application-security-testing:
   stage: $[[ inputs.scan_stage ]]
   image: returntocorp/semgrep:1.104.0-nonroot@sha256:3a9ed89d09f0d0e403657547a2ff0507df0317d97fa593acdedb5dfc0da7720d

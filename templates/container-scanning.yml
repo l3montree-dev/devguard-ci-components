@@ -1,6 +1,3 @@
-variables:
-  GIT_STRATEGY: clone
-
 spec:
   inputs:
     api_url:
@@ -23,6 +20,9 @@ spec:
       default: "false"
       description: "Whether the image should be fetched from the registry or from the artifacts"
 ---
+variables:
+  GIT_STRATEGY: clone
+
 .devguard:container-scanning-base:
   image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   stage: "$[[ inputs.scan_stage ]]"

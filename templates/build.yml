@@ -1,6 +1,3 @@
-variables:
-  GIT_STRATEGY: clone
-
 spec:
   inputs:
     build_stage:
@@ -20,6 +17,9 @@ spec:
     asset_name:
       description: "The name of the asset"
 ---
+variables:
+  GIT_STRATEGY: clone
+
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 devguard:build-image:
   stage: "$[[ inputs.build_stage ]]"
