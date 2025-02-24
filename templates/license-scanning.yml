@@ -1,3 +1,6 @@
+variables:
+  GIT_STRATEGY: clone
+
 spec:
   inputs:
     scan_stage:
@@ -11,17 +14,16 @@ spec:
       description: "The path to the dependency decisions file"
 
 ---
-
 devguard:license-scanning:
   stage: $[[ inputs.scan_stage ]]
   image: registry.gitlab.com/l3montree/devguard/license-finder-$[[ inputs.environment ]]
   dependencies: []
   needs: []
   script:
-  - export PATH=$PATH:/usr/local/go/bin
-  - |
-    if [ "$[[ inputs.environment ]]" == "go" ]; then
-      license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers gomodules
-    else
-      license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers npm
-    fi
+    - export PATH=$PATH:/usr/local/go/bin
+    - |
+      if [ "$[[ inputs.environment ]]" == "go" ]; then
+        license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers gomodules
+      else
+        license_finder --decisions_file $[[ inputs.decision_file ]] --enabled-package-managers npm
+      fi

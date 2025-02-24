@@ -1,3 +1,6 @@
+variables:
+  GIT_STRATEGY: clone
+
 spec:
   inputs:
     deploy_stage:
@@ -18,7 +21,7 @@ devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   image:
     name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e
-    entrypoint: [ "" ]
+    entrypoint: [""]
   script: |
     /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     if [ $[[ inputs.image_already_in_registry ]] == "false" ]; then
@@ -26,7 +29,7 @@ devguard:deploy:
     fi
     branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
     /crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
-    
+
     if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         /devguard-scanner-926cde4 intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
     else
