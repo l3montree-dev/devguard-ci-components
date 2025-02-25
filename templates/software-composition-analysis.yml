@@ -24,21 +24,4 @@ devguard:software-composition-analysis:
   image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   script:
     - echo "Running DevGuard SCA..."
-    - devguard-scanner sca --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
-  rules:
-    - if: $[[ inputs.do_risk_management ]] == "true"
-      when: never
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      when: never
-    - when: always
-
-devguard:software-composition-analysis-risk-management:
-  stage: "$[[ inputs.scan_stage ]]"
-  dependencies: []
-  needs: []
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
-  script:
-    - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
-  rules:
-    - if: $[[ inputs.do_risk_management ]]  == "true"
