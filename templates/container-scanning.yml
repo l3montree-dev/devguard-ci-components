@@ -11,7 +11,7 @@ spec:
       default: "test"
       description: "The stage where the image is scanned"
     do_risk_management:
-      default: true
+      default: "true"
       description: "Whether the results of the scan should be used for risk management"
     fetch_image_from_registry:
       default: "false"
@@ -39,7 +39,7 @@ devguard:container-scanning:
     - echo "Running DevGuard Container Scanning..."
     - devguard-scanner container-scanning --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   rules:
-    - if: $[[ inputs.do_risk_management ]]
+    - if: $[[ inputs.do_risk_management ]] == "true"
       when: never
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: never
@@ -51,4 +51,4 @@ devguard:container-scanning-risk-management:
     - echo "Running DevGuard Container Scanning..."
     - devguard-scanner container-scanning --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
   rules:
-    - if: $[[ inputs.do_risk_management ]]
+    - if: $[[ inputs.do_risk_management ]] == "true"

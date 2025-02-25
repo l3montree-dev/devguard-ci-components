@@ -20,7 +20,7 @@ spec:
       default: deploy
       description: "The stage where the image should be pushed into the registry"
     do_risk_management:
-      default: true
+      default: "true"
       description: "Whether the results of the scan should be used for risk management"
     small_artifact_registry:
       default: "false"

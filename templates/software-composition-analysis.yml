@@ -11,7 +11,7 @@ spec:
       default: "test"
       description: "The stage where the scan is run"
     do_risk_management:
-      default: true
+      default: "true"
       description: "Whether the results of the scan should be used for risk management"
 ---
 variables:
@@ -26,7 +26,7 @@ devguard:software-composition-analysis:
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=false --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
   rules:
-    - if: $[[ inputs.do_risk_management ]]
+    - if: $[[ inputs.do_risk_management ]] == "true"
       when: never
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: never
@@ -41,4 +41,4 @@ devguard:software-composition-analysis-risk-management:
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
   rules:
-    - if: $[[ inputs.do_risk_management ]]
+    - if: $[[ inputs.do_risk_management ]]  == "true"
