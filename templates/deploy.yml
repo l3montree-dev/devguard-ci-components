@@ -24,9 +24,12 @@ devguard:deploy:
     if [ $[[ inputs.image_already_in_registry ]] == "false" ]; then
       /crane push image.tar $(cat image-tag.txt)
     fi
-    branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-    /crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
-    
+    if [[ -z "$CI_COMMIT_TAG" ]]; then
+      branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
+      /crane cp $(cat image-tag.txt) $CI_REGISTRY_IMAGE:${branch}-latest
+    else
+      echo "Skipping -latest tag: Running on a Git tag."
+    fi
     if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         /devguard-scanner-926cde4 intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
     else
