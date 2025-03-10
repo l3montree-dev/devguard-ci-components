@@ -11,10 +11,14 @@ spec:
     asset_name:
       description: "The DevGuard asset name"
 ---
+variables:
+  GIT_STRATEGY: clone
+
 devguard:sign:
   stage: "$[[ inputs.sign_stage ]]"
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+    pull_policy: always
     entrypoint: [""]
   script:
     - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY

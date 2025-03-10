@@ -6,18 +6,21 @@ spec:
     config_file:
       default: ""
       description: "The path to the config file (e.g. checkov.yaml)"
-
 ---
+variables:
+  GIT_STRATEGY: clone
 
 devguard:infrastructure-as-code-scanning:
   stage: $[[ inputs.scan_stage ]]
-  image: bridgecrew/checkov:3.2.98@sha256:2a280191e5b9e3890c7b64013955b48870e7e2a6fb5ae10a558d03b3aa81510b
+  image:
+    name: bridgecrew/checkov:3.2.98@sha256:2a280191e5b9e3890c7b64013955b48870e7e2a6fb5ae10a558d03b3aa81510b
+    entrypoint: [""]
   dependencies: []
   needs: []
   script:
-  - |
-    if [ -n "$[[ inputs.config_file ]]" ]; then
-      checkov -d . --quiet --config-file "$[[ inputs.config_file ]]"
-    else
-      checkov -d . --quiet
-    fi
+    - |
+      if [ -n "$[[ inputs.config_file ]]" ]; then
+        checkov -d . --quiet --config-file "$[[ inputs.config_file ]]"
+      else
+        checkov -d . --quiet
+      fi
