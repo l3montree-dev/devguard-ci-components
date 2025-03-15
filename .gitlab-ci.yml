@@ -54,6 +54,7 @@ include:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
       version: "$CI_COMMIT_REF_NAME"
+      iac_config_file: "checkov.yaml"
 
 create-release:
   stage: release
