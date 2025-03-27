@@ -22,7 +22,7 @@ variables:
 
 .devguard:container-scanning-base:
   image:
-    name: ghcr.io/l3montree-dev/devguard-scanner:0.9.0
+    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     pull_policy: always
   stage: "$[[ inputs.scan_stage ]]"
   needs:
