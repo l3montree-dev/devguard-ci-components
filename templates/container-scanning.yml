@@ -10,9 +10,6 @@ spec:
     scan_stage:
       default: "test"
       description: "The stage where the image is scanned"
-    do_risk_management:
-      default: "true"
-      description: "Whether the results of the scan should be used for risk management"
     fetch_image_from_registry:
       default: "false"
       description: "Whether the image should be fetched from the registry or from the artifacts"
@@ -39,4 +36,4 @@ devguard:container-scanning:
   extends: .devguard:container-scanning-base
   script:
     - echo "Running DevGuard Container Scanning..."
-    - devguard-scanner container-scanning --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"
+    - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar"

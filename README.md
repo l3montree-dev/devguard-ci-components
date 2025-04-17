@@ -86,7 +86,6 @@ include:
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |               |
 | `scan_stage`| The stage where the scan is run              |     `test`     |
-| `do_risk_management`| Whether the results of the scan should be used for risk management|     `true`     |
 
 
 ### devguard:container-scanning
@@ -114,7 +113,6 @@ include:
 | `build_stage`| The stage where the image is built and tagged            |     `build`     |
 | `build_args`| The build arguments to pass to the Kaniko build command'      |     `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile`     |
 | `scan_stage`| The stage where the image is scanned             |     `test`     |
-| `do_risk_management`| Whether the results of the scan should be used for risk management|     `true`     |
 
 
 ### devguard:deploy

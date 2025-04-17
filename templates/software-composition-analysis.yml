@@ -10,9 +10,6 @@ spec:
     scan_stage:
       default: "test"
       description: "The stage where the scan is run"
-    do_risk_management:
-      default: "true"
-      description: "Whether the results of the scan should be used for risk management"
 ---
 variables:
   GIT_STRATEGY: clone
@@ -26,4 +23,4 @@ devguard:software-composition-analysis:
     pull_policy: always
   script:
     - echo "Running DevGuard SCA..."
-    - devguard-scanner sca --riskManagement=true --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
+    - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
