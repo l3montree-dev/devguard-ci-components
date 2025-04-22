@@ -16,6 +16,7 @@ spec:
 ---
 variables:
   GIT_STRATEGY: clone
+  
 
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"

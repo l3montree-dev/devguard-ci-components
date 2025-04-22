@@ -13,6 +13,7 @@ spec:
 ---
 variables:
   GIT_STRATEGY: clone
+  GIT_DEPTH: 0
 
 devguard:software-composition-analysis:
   stage: "$[[ inputs.scan_stage ]]"
