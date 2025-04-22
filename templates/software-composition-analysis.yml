@@ -22,6 +22,8 @@ devguard:software-composition-analysis:
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     pull_policy: always
+  before_script:
+    - git remote set-head origin -a
   script:
     - echo "Running DevGuard SCA..."
     - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
