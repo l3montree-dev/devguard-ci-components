@@ -43,11 +43,17 @@ include:
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
+      asset_name: $[[ inputs.asset_name ]]
+      api_url: $[[ inputs.api_url ]]
+      token: $[[ inputs.token ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
+      asset_name: $[[ inputs.asset_name ]]
+      api_url: $[[ inputs.api_url ]]
+      token: $[[ inputs.token ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/license-scanning.yml"
     inputs:
@@ -60,7 +66,9 @@ include:
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
-      config_file: $[[ inputs.iac_config_file ]]
+      asset_name: $[[ inputs.asset_name ]]
+      api_url: $[[ inputs.api_url ]]
+      token: $[[ inputs.token ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
