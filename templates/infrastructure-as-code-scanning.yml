@@ -25,7 +25,6 @@ devguard:infrastructure-as-code-scanning:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     pull_policy: always
   before_script:
-
     - git remote set-head origin -a
   script:
     - echo "Running DevGuard IaC Scanning..."
