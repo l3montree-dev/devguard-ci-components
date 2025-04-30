@@ -46,7 +46,6 @@ include:
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
       token: $[[ inputs.token ]]
-      verbose: $[[ inputs.verbose ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
