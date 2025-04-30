@@ -1,26 +1,32 @@
 spec:
   inputs:
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The DevGuard asset name"
+    token:
+      description: "The DevGuard token"
     scan_stage:
       default: test
       description: The stage where the scan is run
-    config_file:
-      default: ""
-      description: "The path to the config file (e.g. checkov.yaml)"
+    scan_stage:
+      default: test
+      description: The stage where the scan is run
 ---
 variables:
   GIT_STRATEGY: clone
 
 devguard:infrastructure-as-code-scanning:
   stage: $[[ inputs.scan_stage ]]
-  image:
-    name: bridgecrew/checkov:3.2.98@sha256:2a280191e5b9e3890c7b64013955b48870e7e2a6fb5ae10a558d03b3aa81510b
-    entrypoint: [""]
   dependencies: []
   needs: []
+  image:
+    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+    pull_policy: always
+  before_script:
+
+    - git remote set-head origin -a
   script:
-    - |
-      if [ -n "$[[ inputs.config_file ]]" ]; then
-        checkov -d . --quiet --config-file "$[[ inputs.config_file ]]"
-      else
-        checkov -d . --quiet
-      fi
+    - echo "Running DevGuard IaC Scanning..."
+    - devguard-scanner iac --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"

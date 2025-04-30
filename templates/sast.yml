@@ -1,5 +1,12 @@
 spec:
   inputs:
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The DevGuard asset name"
+    token:
+      description: "The DevGuard token"
     scan_stage:
       default: test
       description: The stage where the scan is run
@@ -9,8 +16,13 @@ variables:
 
 devguard:static-application-security-testing:
   stage: $[[ inputs.scan_stage ]]
-  image: returntocorp/semgrep:1.104.0-nonroot@sha256:3a9ed89d09f0d0e403657547a2ff0507df0317d97fa593acdedb5dfc0da7720d
   dependencies: []
   needs: []
+  image: 
+    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+    pull_policy: always
+  before_script:
+    - git remote set-head origin -a
   script:
-    - semgrep scan --config=p/ci .
+    - echo "Running DevGuard SAST..."
+    - devguard-scanner sast --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
