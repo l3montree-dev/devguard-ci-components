@@ -10,12 +10,17 @@ spec:
       description: "The DevGuard API URL"
     asset_name:
       description: "The DevGuard asset name"
+    runner_tag:
+      default: ""
+      description: "The runner tag to use for the job"        
 ---
 variables:
   GIT_STRATEGY: clone
 
 devguard:sign:
   stage: "$[[ inputs.sign_stage ]]"
+  tags:
+    - $[[ inputs.runner_tag ]]
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     pull_policy: always

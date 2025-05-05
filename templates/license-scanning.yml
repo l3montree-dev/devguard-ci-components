@@ -9,12 +9,17 @@ spec:
     decision_file:
       default: "./docs/dependency_decisions.yml"
       description: "The path to the dependency decisions file"
+    runner_tag:
+      default: ""
+      description: "The runner tag to use for the job"        
 ---
 variables:
   GIT_STRATEGY: clone
 
 devguard:license-scanning:
   stage: $[[ inputs.scan_stage ]]
+  tags:
+    - $[[ inputs.runner_tag ]]
   image: registry.gitlab.com/l3montree/devguard/license-finder-$[[ inputs.environment ]]
   dependencies: []
   needs: []

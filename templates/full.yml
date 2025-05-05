@@ -34,6 +34,9 @@ spec:
     iac_config_file:
       default: ""
       description: "The path to the config file (e.g. checkov.yaml)"
+    runner_tag:
+      default: ""
+      description: "The runner tag to use for the job"  
 ---
 variables:
   GIT_STRATEGY: clone
@@ -46,6 +49,7 @@ include:
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
       token: $[[ inputs.token ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
@@ -54,6 +58,7 @@ include:
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
       token: $[[ inputs.token ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/license-scanning.yml"
     inputs:
@@ -61,6 +66,7 @@ include:
       scan_stage: $[[ inputs.scan_stage ]]
       environment: $[[ inputs.license_scanning_environment ]]
       decision_file: $[[ inputs.license_scanning_decision_file ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
     inputs:
@@ -77,6 +83,7 @@ include:
       token: $[[ inputs.token ]]
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
     inputs:
@@ -87,6 +94,7 @@ include:
       token: $[[ inputs.token ]]
       api_url: $[[ inputs.api_url ]]
       asset_name: $[[ inputs.asset_name ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
@@ -96,6 +104,7 @@ include:
       #You can change these to the desired stages. Make sure they match one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
       fetch_image_from_registry: $[[ inputs.small_artifact_registry ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/deploy.yml"
     inputs:
@@ -105,9 +114,11 @@ include:
       token: $[[ inputs.token ]]
       api_url: $[[ inputs.api_url ]]
       asset_name: $[[ inputs.asset_name ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign.yml"
     inputs:
       token: $[[ inputs.token ]]
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
+      runner_tag: $[[ inputs.runner_tag ]]

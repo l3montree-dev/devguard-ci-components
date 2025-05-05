@@ -16,6 +16,9 @@ spec:
       description: "The DevGuard API URL"
     asset_name:
       description: "The name of the asset"
+    runner_tag:
+      default: ""
+      description: "The runner tag to use for the job"  
 ---
 variables:
   GIT_STRATEGY: clone
@@ -24,6 +27,8 @@ variables:
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
 devguard:build-image:
   stage: "$[[ inputs.build_stage ]]"
+  tags:
+    - $[[ inputs.runner_tag ]]
   needs: []
   dependencies: []
   image:

@@ -13,12 +13,17 @@ spec:
     scan_stage:
       default: test
       description: The stage where the scan is run
+    runner_tag:
+      default: ""
+      description: "The runner tag to use for the job"        
 ---
 variables:
   GIT_STRATEGY: clone
 
 devguard:infrastructure-as-code-scanning:
   stage: $[[ inputs.scan_stage ]]
+  tags:
+    - $[[ inputs.runner_tag ]]
   dependencies: []
   needs: []
   image:

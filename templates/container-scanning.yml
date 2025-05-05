@@ -13,6 +13,9 @@ spec:
     fetch_image_from_registry:
       default: "false"
       description: "Whether the image should be fetched from the registry or from the artifacts"
+    runner_tag:
+      default: ""
+      description: "The runner tag to use for the job"        
 ---
 variables:
   GIT_STRATEGY: clone
@@ -23,6 +26,8 @@ variables:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
     pull_policy: always
   stage: "$[[ inputs.scan_stage ]]"
+  tags:
+    - "$[[ inputs.runner_tag ]]"
   needs:
     - devguard:build-image
   dependencies:
