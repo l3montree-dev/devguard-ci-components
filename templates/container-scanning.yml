@@ -13,7 +13,7 @@ spec:
     fetch_image_from_registry:
       default: "false"
       description: "Whether the image should be fetched from the registry or from the artifacts"
-    runner_tag:
+    runner_tags:
       default: ""
       description: "The runner tag to use for the job"        
 ---
@@ -27,7 +27,7 @@ variables:
     pull_policy: always
   stage: "$[[ inputs.scan_stage ]]"
   tags:
-    - "$[[ inputs.runner_tag ]]"
+    - "$[[ inputs.runner_tags ]]"
   needs:
     - devguard:build-image
   dependencies:
