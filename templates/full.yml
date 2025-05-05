@@ -75,6 +75,7 @@ include:
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
       token: $[[ inputs.token ]]
+      runner_tag: $[[ inputs.runner_tag ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
