@@ -63,7 +63,7 @@ include:
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
 | `scan_stage`| The stage where the scan is run              |     `test`     |
-| `runner_tags` | The runner tags used to select appropriate CI runners. | `
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 
@@ -91,7 +91,7 @@ include:
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |               |
 | `scan_stage`| The stage where the scan is run              |     `test`     |
-| `runner_tags` | The runner tags used to select appropriate CI runners. | `
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:container-scanning
@@ -120,7 +120,7 @@ include:
 | `build_stage`| The stage where the image is built and tagged            |     `build`     |
 | `build_args`| The build arguments to pass to the Kaniko build command'      |     `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile`     |
 | `scan_stage`| The stage where the image is scanned             |     `test`     |
-| `runner_tags` | The runner tags used to select appropriate CI runners. | `
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:deploy
@@ -145,7 +145,7 @@ include:
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
 | `deploy_stage`| The stage where the image is deployed            |     `deploy`     |
-| `runner_tags` | The runner tags used to select appropriate CI runners. | `
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:sign
@@ -167,7 +167,7 @@ include:
 |-------------|----------------------------------------------|----------------------|
 | `token`| The DevGuard token         |         |
 | `sign_stage`| The stage where the scan is run          |     `deploy`     |
-| `runner_tags` | The runner tags used to select appropriate CI runners. | `
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 ## Contributing
 
