@@ -13,6 +13,9 @@ spec:
       description: "The DevGuard API URL"
     asset_name:
       description: "The name of the asset"
+    runner_tags:
+      default: ""
+      description: "The runner tag to use for the job"        
 ---
 variables:
   GIT_STRATEGY: clone
@@ -20,6 +23,8 @@ variables:
 
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
+  tags:
+    - $[[ inputs.runner_tags ]]
   image:
     name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e
     entrypoint: [""]

@@ -34,6 +34,7 @@ include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/secret-scanning@~latest
     inputs:
       scan_stage: "devguard-secret-scanning"
+      runner_tags: "deployment, production"
 ```
 
 #### Inputs
@@ -41,6 +42,7 @@ include:
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
 | `scan_stage`| The stage where the scan is run              |     `test`     |
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:Static Application Security Testing
@@ -53,6 +55,7 @@ include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/sast@~latest
     inputs:
       scan_stage: "devguard-sast"   
+      runner_tags: "deployment, production"
 ```
 
 #### Inputs
@@ -60,6 +63,7 @@ include:
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
 | `scan_stage`| The stage where the scan is run              |     `test`     |
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 
@@ -75,7 +79,8 @@ include:
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
-      scan_stage: "devguard-software-composition-analysis"      
+      scan_stage: "devguard-software-composition-analysis"   
+      runner_tags: "deployment, production"   
 ```
 
 #### Inputs
@@ -86,6 +91,7 @@ include:
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |               |
 | `scan_stage`| The stage where the scan is run              |     `test`     |
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:container-scanning
@@ -100,6 +106,7 @@ include:
   inputs:
     asset_name: "$DEVGUARD_ASSET_NAME"
     token: "$DEVGUARD_TOKEN"
+    runner_tags: "deployment, production"
 ```
 
 
@@ -113,6 +120,7 @@ include:
 | `build_stage`| The stage where the image is built and tagged            |     `build`     |
 | `build_args`| The build arguments to pass to the Kaniko build command'      |     `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile`     |
 | `scan_stage`| The stage where the image is scanned             |     `test`     |
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:deploy
@@ -126,6 +134,10 @@ The devguard-deploy component deploys the created OCI (Open Container Initiative
 ```yaml
 include:
 - component: $CI_SERVER_FQDN/l3montree/devguard/deploy@~latest
+  inputs:
+    asset_name: "$DEVGUARD_ASSET_NAME"
+    token: "$DEVGUARD_TOKEN"
+    runner_tags: "deployment, production"
 ```
 
 #### Inputs
@@ -133,6 +145,7 @@ include:
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
 | `deploy_stage`| The stage where the image is deployed            |     `deploy`     |
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 
 ### devguard:sign
@@ -154,6 +167,7 @@ include:
 |-------------|----------------------------------------------|----------------------|
 | `token`| The DevGuard token         |         |
 | `sign_stage`| The stage where the scan is run          |     `deploy`     |
+| `runner_tags` | The runner tags used to select appropriate CI runners. | `` |
 
 ## Contributing
 
