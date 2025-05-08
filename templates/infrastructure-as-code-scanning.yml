@@ -27,7 +27,7 @@ devguard:infrastructure-as-code-scanning:
   dependencies: []
   needs: []
   image:
-    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard-scanner:0.11.1
     pull_policy: always
   before_script:
     - git remote set-head origin -a
