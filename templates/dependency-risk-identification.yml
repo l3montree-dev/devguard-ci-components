@@ -19,10 +19,10 @@ spec:
     sbom_file:
       description: "The SBOM file to use for the scan"
     needs:
-      default: ""
+      default: []
       description: "The jobs that this job depends on"
     dependencies:
-      default: ""
+      default: []
       description: "The jobs that this job depends on"
 ---
 variables:
@@ -32,10 +32,8 @@ devguard:dependency-risk-identification:
     stage: "$[[ inputs.scan_stage ]]"
     tags:
         - $[[ inputs.runner_tags ]]
-    needs: 
-        - $[[ inputs.needs ]]
-    dependencies: 
-        - $[[ inputs.dependencies ]]
+    needs: $[[ inputs.needs ]]
+    dependencies: $[[ inputs.dependencies ]]
     image:
         name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
         pull_policy: always
