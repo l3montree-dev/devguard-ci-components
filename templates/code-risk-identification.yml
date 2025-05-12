@@ -29,7 +29,7 @@ spec:
 variables:
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
-devguard:dependency-risk-identification:
+devguard:code-risk-identification:
     stage: "$[[ inputs.scan_stage ]]"
     tags:
       - $[[ inputs.runner_tags ]]
