@@ -19,10 +19,10 @@ spec:
     sarif_file:
       description: "The SARIF file to use for the scan"  
     needs:
-      default: []
+      default: ""
       description: "The jobs that this job depends on"
     dependencies:
-      default: []
+      default: ""
       description: "The jobs that this job depends on"  
 ---
 
