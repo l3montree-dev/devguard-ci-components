@@ -71,8 +71,8 @@ include:
       asset_name: "devtest/projects/mai12/assets/a"
       token: "$DEVGUARD_TOKEN_TEST"
       sarif_file: "./result.sarif"
-      needs: "generate-sarif"
-      dependencies: "generate-sarif"
+      needs: "generate-sarif-for-testing"
+      dependencies: "generate-sarif-for-testing"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
     inputs:
