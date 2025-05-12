@@ -1,0 +1,44 @@
+# Copyright 2025 rafaeishikho.
+# SPDX-License-Identifier: Apache-2.0
+
+spec:
+  inputs:
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The DevGuard asset name"
+    token:
+      description: "The DevGuard token"
+    scan_stage:
+      default: "test"
+      description: "The stage where the scan is run"
+    runner_tags:
+      default: ""
+      description: "The runner tag to use for the job"
+    sbom_file:
+      description: "The SBOM file to use for the scan"
+    needs:
+      default: []
+      description: "The jobs that this job depends on"
+    dependencies:
+      default: []
+      description: "The jobs that this job depends on"
+ ---
+variables:
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
+devguard:dependency-risk-identification:
+    stage: "$[[ inputs.scan_stage ]]"
+    tags:
+        - $[[ inputs.runner_tags ]]
+    dependencies: $[[ inputs.dependencies ]]
+    needs: $[[ inputs.needs ]]
+    image:
+        name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+        pull_policy: always
+    before_script:
+        - git remote set-head origin -a
+    script:
+        - echo "Running DevGuard Dependency Risk Identification..."
+        - devguard-scanner sbom --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --filePath="$[[ inputs.sbom-file ]]"     
