@@ -24,7 +24,7 @@ spec:
     dependencies:
       default: []
       description: "The jobs that this job depends on"
- ---
+---
 variables:
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
