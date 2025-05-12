@@ -55,6 +55,16 @@ generate-sbom:
     paths:
       - sbom.json
 
+generate-sarif:
+  stage: build
+  script:
+    - echo "Generating SARIF..."
+    - touch result.sarif
+    - echo "SARIF generated successfully."
+  artifacts:
+    paths:
+      - result.sarif
+
 include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/full@$CI_COMMIT_SHA
     inputs:
@@ -69,6 +79,8 @@ include:
       asset_name: "devtest/projects/mai12/assets/a"
       token: "$DEVGUARD_TOKEN_TEST"
       sarif_file: "./result.sarif"
+      needs: "generate-sarif"
+      dependencies: "generate-sarif"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
     inputs:
