@@ -33,11 +33,11 @@ devguard:dependency-risk-identification:
     tags:
         - $[[ inputs.runner_tags ]]
     needs:
-    $[[ each need in inputs.needs ]]
-    - $[[ need ]]
+      $[[ each need in inputs.needs ]]
+        - $[[ need ]]
     dependencies:
-    $[[ each dep in inputs.dependencies ]]
-    - $[[ dep ]]
+      $[[ each dep in inputs.dependencies ]]
+        - $[[ dep ]]
 
     image:
         name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
