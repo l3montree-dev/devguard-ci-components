@@ -41,4 +41,4 @@ devguard:dependency-risk-identification:
         - git remote set-head origin -a
     script:
         - echo "Running DevGuard Dependency Risk Identification..."
-        - devguard-scanner sbom --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --filePath="$[[ inputs.sbom-file ]]"     
+        - devguard-scanner sbom --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --filePath="$[[ inputs.sbom_file ]]"     
