@@ -77,9 +77,9 @@ include:
       token: "$DEVGUARD_TOKEN_TEST"
       sbom_file: "./sbom.json"
       needs:
-        - "generate-sbom"
+        - generate-sbom
       dependencies:
-        - "generate-sbom"
+        - generate-sbom
 
 create-release:
   stage: release
