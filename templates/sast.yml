@@ -30,5 +30,7 @@ devguard:static-application-security-testing:
     - git remote set-head origin -a
   script:
     - echo "Running DevGuard SAST..."
-    - devguard-scanner sast --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR"
+    - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
+    - echo "IS_TAG - $IS_TAG"
+    - devguard-scanner sast --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG"
   allow_failure: true    
