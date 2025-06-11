@@ -123,3 +123,11 @@ include:
       asset_name: $[[ inputs.asset_name ]]
       api_url: $[[ inputs.api_url ]]
       runner_tags: $[[ inputs.runner_tags ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
+    inputs:
+      token: $[[ inputs.token ]]
+      api_url: $[[ inputs.api_url ]]
+      asset_name: $[[ inputs.asset_name ]]
+      deploy_stage: $[[ inputs.deploy_stage ]]
+      runner_tags: $[[ inputs.runner_tags ]]

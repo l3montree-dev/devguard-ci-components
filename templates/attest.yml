@@ -1,0 +1,57 @@
+spec:
+  inputs:
+    deploy_stage:
+      default: "deploy"
+      description: "The stage where the image is built and tagged"
+    token:
+      description: "The token to authenticate against the DevGuard API"
+    api_url:
+      default: "https://api.main.devguard.org"
+      description: "The DevGuard API URL"
+    asset_name:
+      description: "The name of the asset"
+    runner_tags:
+      default: ""
+      description: "The runner tag to use for the job"  
+---
+devguard:attest:
+  stage: "$[[ inputs.deploy_stage ]]"
+  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+  tags:
+    - $[[ inputs.runner_tags ]]
+  script:
+    - |
+      # Get artifacts
+      devguard-scanner get "$API_URL/api/v1/organizations/$ASSET_NAME/refs/$CI_COMMIT_REF_NAME/sbom.json" --token="$[[ inputs.token ]]" > sbom.json
+      devguard-scanner get "$API_URL/api/v1/organizations/$ASSET_NAME/refs/$CI_COMMIT_REF_NAME/vex.json" --token="$[[ inputs.token ]]" > vex.json
+      devguard-scanner get "$API_URL/api/v1/organizations/$ASSET_NAME/refs/$CI_COMMIT_REF_NAME/sarif.json" --token="$[[ inputs.token ]]" > sarif.json
+
+      # Attest SBOM
+      if [ -f image-digest.txt ]; then
+        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-digest.txt)" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      else
+        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      fi
+
+      # Attest VEX
+      if [ -f image-digest.txt ]; then
+        devguard-scanner attest vex.json "$(cat image-digest.txt)" --predicateType='https://cyclonedx.org/vex' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      else
+        devguard-scanner attest vex.json --predicateType='https://cyclonedx.org/vex' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      fi
+
+      # Attest SAST
+      if [ -f image-digest.txt ]; then
+        devguard-scanner attest sarif.json "$(cat image-digest.txt)" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      else
+        devguard-scanner attest sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      fi
+
+      # Attest provenance
+      if [ -f build.provenance.json ]; then
+        if [ -f image-digest.txt ]; then
+          devguard-scanner attest build.provenance.json "$(cat image-digest.txt)" --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+        else
+          devguard-scanner attest build.provenance.json --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+        fi
+      fi

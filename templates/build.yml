@@ -62,7 +62,7 @@ devguard:build-image:
     - |
       if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         echo "Running DevGuard Intoto Build...stopping..."
-        /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+        /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
       else
         echo "Skipping intoto: Branch is not protected."
       fi
@@ -71,4 +71,5 @@ devguard:build-image:
       - image.tar
       - image-tag.txt
       - image-digest.txt
+      - build.provenance.json
     when: on_success
