@@ -8,5 +8,5 @@ WORKDIR /
 COPY crane_v0.20.3_x86_64.tar.gz .
 COPY devguard-scanner.tar.gz .
 
-RUN tar -zxvf crane_v0.20.3_x86_64.tar.gz && rm crane_v0.20.3_x86_64.tar.gz && tar -zxvf devguard-scanner && rm devguard-scanner.tar.gz
+RUN tar -zxvf crane_v0.20.3_x86_64.tar.gz && rm crane_v0.20.3_x86_64.tar.gz && tar -zxvf devguard-scanner.tar.gz && rm devguard-scanner.tar.gz
 WORKDIR /workspace
