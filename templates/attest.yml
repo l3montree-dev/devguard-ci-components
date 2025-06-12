@@ -29,11 +29,9 @@ devguard:attest:
       devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
       
       # Attest SBOM
-      if [ -f image-digest.txt ]; then
-        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-tag.txt)@$(cat image-digest.txt)" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
-      else
-        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
-      fi
+     
+      devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-tag.txt)@$(cat image-digest.txt)" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+
 
       # Attest VEX
       if [ -f image-digest.txt ]; then
