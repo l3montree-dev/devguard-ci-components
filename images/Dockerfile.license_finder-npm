@@ -1,8 +1,0 @@
-FROM ruby:3.3.7-alpine3.21@sha256:abe1aeac9b4c223a94873162d2d5d0f6c47efea9c5a8b40deadf3c1b55c5a1b3
-
-# checkov:skip=CKV_DOCKER_2
-# checkov:skip=CKV_DOCKER_3
-
-RUN gem install license_finder
-
-RUN apk add --update npm

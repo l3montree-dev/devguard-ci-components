@@ -32,16 +32,12 @@ devguard:build-image:
   needs: []
   dependencies: []
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:034bde4e093de194f142c813f00bbee7e78083f2f08d582875b6f969ee32f0db # gitlab ci always needs a shell in the container it executes... i would have preferred the non-debug version
     entrypoint: [""]
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
-      if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
-        /devguard-scanner-926cde4 intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
-      else
-        echo "Skipping intoto: Branch is not protected."
-      fi
+        /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
@@ -55,20 +51,17 @@ devguard:build-image:
       fi
   script:
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner-926cde4 --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
     # install crane
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
 
     - |
-      if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         echo "Running DevGuard Intoto Build...stopping..."
-        /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
-      else
-        echo "Skipping intoto: Branch is not protected."
-      fi
+        /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
   artifacts:
     paths:
       - image.tar
       - image-tag.txt
       - image-digest.txt
+      - build.provenance.json
     when: on_success

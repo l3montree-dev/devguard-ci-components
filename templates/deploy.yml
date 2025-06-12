@@ -20,13 +20,12 @@ spec:
 variables:
   GIT_STRATEGY: clone
   
-
 devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:e2281f0cfa7d45a98dd14c0deca9a359db2cd2afcb6fc100043d5def589d335e
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:034bde4e093de194f142c813f00bbee7e78083f2f08d582875b6f969ee32f0db
     entrypoint: [""]
   script: |
     /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -39,8 +38,5 @@ devguard:deploy:
     else
       echo "Skipping -latest tag: Running on a Git tag."
     fi
-    if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
-        /devguard-scanner-926cde4 intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
-    else
-      echo "Skipping intoto: Branch is not protected."
-    fi
+    
+    /devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"
