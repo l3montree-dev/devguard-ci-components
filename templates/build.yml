@@ -37,7 +37,7 @@ devguard:build-image:
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
-        /devguard-scanner-926cde4 intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+        /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
@@ -51,13 +51,13 @@ devguard:build-image:
       fi
   script:
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner-926cde4 --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
     # install crane
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
 
     - |
         echo "Running DevGuard Intoto Build...stopping..."
-        /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
+        /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
   artifacts:
     paths:
       - image.tar
