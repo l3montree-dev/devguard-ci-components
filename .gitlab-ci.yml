@@ -21,30 +21,6 @@ build-kaniko-crane:
     - feature/intoto-stage
   when: manual
 
-build-license-finder-go:
-  stage: build-custom-images
-  image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
-    entrypoint: [""]
-  script:
-    - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.license_finder-go --destination $CI_REGISTRY_IMAGE/license-finder-go:latest
-  only:
-    - main
-    - feature/additional-stages
-  when: manual
-
-build-license-finder-npm:
-  stage: build-custom-images
-  image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
-    entrypoint: [""]
-  script:
-    - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.license_finder-npm --destination $CI_REGISTRY_IMAGE/license-finder-npm:latest
-  only:
-    - main
-    - feature/additional-stages
-  when: manual
-
 include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/full@$CI_COMMIT_SHA
     inputs:
