@@ -22,9 +22,9 @@ devguard:attest:
   script:
     - |
       # Get artifacts
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/sbom.json" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" > sbom.json
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/vex.json" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" > vex.json
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/sarif.json" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" > sarif.json
+      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/sbom.json" --token="$[[ inputs.token ]]" > sbom.json
+      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/vex.json" --token="$[[ inputs.token ]]" > vex.json
+      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/sarif.json" --token="$[[ inputs.token ]]" > sarif.json
 
       devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
       
