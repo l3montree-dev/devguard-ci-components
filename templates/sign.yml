@@ -28,5 +28,4 @@ devguard:sign:
   script:
     - devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - devguard-scanner sign --token="$[[ inputs.token ]]" "$(cat image-tag.txt)@$(cat image-digest.txt)" --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]"
-  rules:
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
+

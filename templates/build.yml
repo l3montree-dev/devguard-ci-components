@@ -37,11 +37,7 @@ devguard:build-image:
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
-      if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         /devguard-scanner-926cde4 intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
-      else
-        echo "Skipping intoto: Branch is not protected."
-      fi
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
@@ -60,12 +56,8 @@ devguard:build-image:
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
 
     - |
-      if [ "$CI_COMMIT_REF_PROTECTED" == "true" ]; then
         echo "Running DevGuard Intoto Build...stopping..."
         /devguard-scanner-926cde4 intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
-      else
-        echo "Skipping intoto: Branch is not protected."
-      fi
   artifacts:
     paths:
       - image.tar
