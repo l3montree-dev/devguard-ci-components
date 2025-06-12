@@ -19,6 +19,13 @@ devguard:attest:
   image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
   tags:
     - $[[ inputs.runner_tags ]]
+  artifacts:
+    paths:
+      - sbom.json
+      - vex.json
+      - sarif.json
+      - build.provenance.json
+    expire_in: 1 week
   script:
     - |
       # Get artifacts
@@ -30,7 +37,7 @@ devguard:attest:
       
       # Attest SBOM
      
-      devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-tag.txt)@$(cat image-digest.txt)" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
+      devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
 
 
       # Attest VEX
@@ -55,3 +62,4 @@ devguard:attest:
           devguard-scanner attest build.provenance.json --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --ref="$CI_COMMIT_REF_NAME"
         fi
       fi
+
