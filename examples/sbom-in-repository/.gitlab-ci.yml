@@ -1,0 +1,11 @@
+variables:
+  GIT_STRATEGY: clone
+
+
+include:
+  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
+    inputs:
+      sbom_file: "sbom-in-repo.json"
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      token: "$DEVGUARD_TOKEN"
+      scanner_id: "sbom-in-repo" # change to whatever scanner you are using
