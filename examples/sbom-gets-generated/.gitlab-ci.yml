@@ -5,7 +5,9 @@ variables:
 # use whatever scanner you like, this is just an example
 generate-sbom:
   stage: build
-  image: docker.io/aquasec/trivy:latest
+  image: 
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
   script:
     - trivy fs . --format cyclonedx --output sbom.json
   artifacts:
