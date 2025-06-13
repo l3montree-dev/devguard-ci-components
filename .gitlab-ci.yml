@@ -25,6 +25,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       version: "$CI_COMMIT_REF_NAME"
       iac_config_file: "checkov.yaml"
+  - examples/sbom-gets-generated/.gitlab-ci.yml
 
 create-release:
   stage: release
