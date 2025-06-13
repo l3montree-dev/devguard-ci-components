@@ -36,7 +36,6 @@ devguard:dependency-risk-identification:
         - $[[ inputs.needs ]]
     dependencies:
         - $[[ inputs.dependencies ]]
-
     image:
         name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
         pull_policy: always

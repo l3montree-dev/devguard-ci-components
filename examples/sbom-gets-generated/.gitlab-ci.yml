@@ -7,7 +7,7 @@ generate-sbom:
   stage: build
   image: aquasec/trivy:0.43.0
   script:
-    - trivy sbom --format cyclonedx --output sbom.json .
+    - trivy fs . --format cyclonedx --output sbom.json
   artifacts:
     paths:
       - sbom.json
