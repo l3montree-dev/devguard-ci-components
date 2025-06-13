@@ -1,0 +1,28 @@
+variables:
+  GIT_STRATEGY: clone
+
+
+# generate an SBOM using trivy?
+# use whatever scanner you like, this is just an example
+generate-sbom:
+  stage: build
+  image: aquasec/trivy:0.43.0
+  script:
+    - trivy sbom --format cyclonedx --output sbom.json .
+  artifacts:
+    paths:
+      - sbom.json
+    expire_in: 1 week
+
+# upload the SBOM to DevGuard
+include:
+  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
+    inputs:
+      sbom_file: "sbom.json"
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      token: "$DEVGUARD_TOKEN"
+      needs:
+        - generate-sbom
+      dependencies:
+        - generate-sbom
+      
