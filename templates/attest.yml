@@ -21,8 +21,7 @@ devguard:attest:
     - $[[ inputs.runner_tags ]]
   script:
     - |
-      # Can you see comments in the pipleine?
-      SLUG="$devguard-scanner slug $CI_COMMIT_REF_NAME"
+      SLUG=$(devguard-scanner slug $CI_COMMIT_REF_NAME)
       echo ----------------------------------------------
       echo "$SLUG"
       echo ----------------------------------------------
