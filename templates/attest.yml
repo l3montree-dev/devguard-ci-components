@@ -21,9 +21,11 @@ devguard:attest:
     - $[[ inputs.runner_tags ]]
   script:
     - |
-      # Get artifacts
+      # Can you see comments in the pipleine?
       SLUG=$( devguard-scanner slug $CI_COMMIT_REF_NAME )
+      echo ----------------------------------------------
       echo $SLUG
+      echo ----------------------------------------------
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/sbom.json" --token="$[[ inputs.token ]]" > sbom.json
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/vex.json" --token="$[[ inputs.token ]]" > vex.json
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$CI_COMMIT_REF_NAME/sarif.json" --token="$[[ inputs.token ]]" > sarif.json
