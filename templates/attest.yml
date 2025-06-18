@@ -21,10 +21,8 @@ devguard:attest:
     - $[[ inputs.runner_tags ]]
   script:
     - |
+      #slugify ref_name so we have a valid url
       SLUG=$(devguard-scanner slug $CI_COMMIT_REF_NAME)
-      echo ----------------------------------------------
-      echo "$SLUG"
-      echo ----------------------------------------------
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/sbom.json" --token="$[[ inputs.token ]]" > sbom.json
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/vex.json" --token="$[[ inputs.token ]]" > vex.json
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.token ]]" > sarif.json
