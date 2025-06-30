@@ -40,7 +40,7 @@ devguard:dependency-risk-identification:
     dependencies:
         - $[[ inputs.dependencies ]]
     image:
-        name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+        name: ghcr.io/l3montree-dev/devguard-scanner:0.12.0
         pull_policy: always
     before_script:
         - git remote set-head origin -a
