@@ -9,6 +9,8 @@ spec:
     push_image:
       default: "false"
       description: "It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry."
+    artifact_name:
+      description: "The name of the artifact that contains the image. This is used to pass the image to the container scanning job."  
     token:
       description: "The token to authenticate against the DevGuard API"
     api_url:
@@ -25,7 +27,7 @@ variables:
   
 
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
-devguard:build-image:
+devguard:build-image:$[[ inputs.artifact_name ]]:
   stage: "$[[ inputs.build_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
@@ -59,6 +61,7 @@ devguard:build-image:
         echo "Running DevGuard Intoto Build...stopping..."
         /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
   artifacts:
+    name: "$[[ inputs.artifact_name ]]"
     paths:
       - image.tar
       - image-tag.txt
