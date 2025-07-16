@@ -10,6 +10,7 @@ spec:
       default: "false"
       description: "It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry."
     artifact_name:
+      default: ""
       description: "The name of the artifact that contains the image. This is used to pass the image to the container scanning job."  
     token:
       description: "The token to authenticate against the DevGuard API"

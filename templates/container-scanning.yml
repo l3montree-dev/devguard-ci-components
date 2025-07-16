@@ -11,6 +11,7 @@ spec:
       default: "test"
       description: "The stage where the image is scanned"
     artifact_name:
+      default: ""
       description: "The name of the artifact that contains the image. This is used to pass the image to the container scanning job."  
     fetch_image_from_registry:
       default: "false"
