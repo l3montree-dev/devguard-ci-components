@@ -21,7 +21,7 @@ variables:
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
 
-devguard:software-composition-analysis:$[[ inputs.artifact_name ]]
+devguard:software-composition-analysis:$[[ inputs.artifact_name ]]:
   stage: "$[[ inputs.scan_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
