@@ -52,7 +52,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       artifact_name: "group"
 
-  - component: $CI_SERVEgit aR_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
+  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
     inputs:
       build_stage: "build"
       build_args: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-test"
