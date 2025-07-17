@@ -41,7 +41,7 @@ variables:
       crane pull $(cat image-tag.txt) image.tar
     fi
     git remote set-head origin -a
-devguard:container-scanning:
+devguard:container-scanning:$[[ inputs.artifact_name ]]:
   extends: .devguard:container-scanning-base
   script:
     - echo "Running DevGuard Container Scanning..."

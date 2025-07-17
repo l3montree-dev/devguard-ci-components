@@ -62,7 +62,6 @@ devguard:build-image:$[[ inputs.artifact_name ]]:
         echo "Running DevGuard Intoto Build...stopping..."
         /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
   artifacts:
-    name: "$[[ inputs.artifact_name ]]"
     paths:
       - image.tar
       - image-tag.txt

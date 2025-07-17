@@ -19,13 +19,13 @@ build-kaniko-crane:
   when: manual
 
 include:
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/full@$CI_COMMIT_SHA
-    inputs:
-      asset_name: "$DEVGUARD_ASSET_NAME"
-      token: "$DEVGUARD_TOKEN"
-      version: "$CI_COMMIT_REF_NAME"
-      iac_config_file: "checkov.yaml"
-  - examples/sbom-gets-generated/.gitlab-ci.yml
+  # - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/full@$CI_COMMIT_SHA
+  #  inputs:
+  #   asset_name: "$DEVGUARD_ASSET_NAME"
+  #  token: "$DEVGUARD_TOKEN"
+  # version: "$CI_COMMIT_REF_NAME"
+  # iac_config_file: "checkov.yaml"
+  #- examples/sbom-gets-generated/.gitlab-ci.yml
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
     inputs:
