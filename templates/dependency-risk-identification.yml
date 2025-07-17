@@ -28,7 +28,7 @@ spec:
       default: "sbom-upload"
       description: "The scanner ID to use for the job"
     artifact_name:
-      default: ""
+      default: "default"
       description: "The name of the artifact that contains the image. This is used to pass the image to the container scanning job."
 ---
 variables:
