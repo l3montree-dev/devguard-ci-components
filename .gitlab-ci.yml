@@ -47,6 +47,11 @@ include:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
       artifact_name: "test-additional-artifact"
+  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/deploy@$CI_COMMIT_SHA
+    inputs:
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      token: "$DEVGUARD_TOKEN"
+      artifact_name: "test-additional-artifact"
 create-release:
   stage: release
   dependencies:
