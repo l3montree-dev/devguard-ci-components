@@ -5,7 +5,7 @@ variables:
 # use whatever scanner you like, this is just an example
 generate-sbom:
   stage: build
-  image: 
+  image:
     name: docker.io/aquasec/trivy:latest
     entrypoint: [""]
   script:
@@ -24,4 +24,3 @@ include:
       token: "$DEVGUARD_TOKEN"
       needs: generate-sbom
       dependencies: generate-sbom
-      scanner_id: "trivy-generate-sbom" # change to whatever scanner you are using
