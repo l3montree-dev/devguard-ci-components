@@ -42,6 +42,19 @@ include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
     inputs:
       build_stage: "build"
+      token: "$DEVGUARD_TOKEN"
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      artifact_name: "group"
+
+  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
+    inputs:
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      token: "$DEVGUARD_TOKEN"
+      artifact_name: "group"
+
+  - component: $CI_SERVEgit aR_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
+    inputs:
+      build_stage: "build"
       build_args: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-test"
       artifact_name: "test"
       token: "$DEVGUARD_TOKEN"

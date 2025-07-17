@@ -1,6 +1,6 @@
 #that is just a simple Dockerfile to build the app for testing purposes
 
-FROM golang:1.23.1
+FROM golang:latest
 
 # checkov:skip=CKV_DOCKER_2
 # checkov:skip=CKV_DOCKER_3
