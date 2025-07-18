@@ -16,7 +16,7 @@ spec:
 ---
 devguard:attest:
   stage: "$[[ inputs.deploy_stage ]]"
-  image: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+  image: ghcr.io/l3montree-dev/devguard-scanner:0.12.3
   tags:
     - $[[ inputs.runner_tags ]]
   script:

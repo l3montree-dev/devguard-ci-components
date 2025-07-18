@@ -38,7 +38,7 @@ devguard:code-risk-identification:
     needs: 
       - $[[ inputs.needs ]]
     image:
-        name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
+        name: ghcr.io/l3montree-dev/devguard-scanner:0.12.3
         pull_policy: always
     before_script:
         - git remote set-head origin -a
