@@ -23,7 +23,10 @@ spec:
       description: "The jobs that this job depends on"
     dependencies:
       default: []
-      description: "The jobs that this job depends on"  
+      description: "The jobs that this job depends on"
+    pull_policy:
+      default: "always"
+      description: "The pull policy for the Docker image"  
 ---
 
 variables:
@@ -38,8 +41,8 @@ devguard:code-risk-identification:
     needs: 
       - $[[ inputs.needs ]]
     image:
-        name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
-        pull_policy: always
+        name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+        pull_policy: "$[[ inputs.pull_policy ]]"
     before_script:
         - git remote set-head origin -a
     script:

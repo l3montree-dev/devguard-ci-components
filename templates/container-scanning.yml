@@ -15,7 +15,10 @@ spec:
       description: "Whether the image should be fetched from the registry or from the artifacts"
     runner_tags:
       default: ""
-      description: "The runner tag to use for the job"        
+      description: "The runner tag to use for the job"
+    pull_policy:
+      default: "always"
+      description: "The pull policy for the Docker image"        
 ---
 variables:
   GIT_STRATEGY: clone
@@ -23,8 +26,8 @@ variables:
 
 .devguard:container-scanning-base:
   image:
-    name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
-    pull_policy: always
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    pull_policy: "$[[ inputs.pull_policy ]]"
   stage: "$[[ inputs.scan_stage ]]"
   tags:
     - "$[[ inputs.runner_tags ]]"
