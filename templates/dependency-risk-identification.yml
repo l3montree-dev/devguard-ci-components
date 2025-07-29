@@ -30,11 +30,14 @@ spec:
     pull_policy:
       default: "always"
       description: "The pull policy for the Docker image"
+    artifact_name:
+      default: "default"
+      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."  
 ---
 variables:
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
-devguard:dependency-risk-identification:
+devguard:dependency-risk-identification:$[[ inputs.artifact_name ]]:
     stage: "$[[ inputs.scan_stage ]]"
     tags:
         - $[[ inputs.runner_tags ]]
@@ -51,4 +54,4 @@ devguard:dependency-risk-identification:
         - echo "Running DevGuard Dependency Risk Identification..."
         - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
         - echo "IS_TAG - $IS_TAG"
-        - devguard-scanner sbom $[[ inputs.sbom_file ]] --scannerId="$[[ inputs.scanner_id ]]"  --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG"
+        - devguard-scanner sbom $[[ inputs.sbom_file ]] --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --artifactName="$[[ inputs.artifact_name ]]"
