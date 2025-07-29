@@ -26,7 +26,7 @@ devguard:software-composition-analysis:
   needs: []
   image:
     name: ghcr.io/l3montree-dev/devguard-scanner:main-latest
-    pull_policy: always
+    #pull_policy: always
   before_script:
     - git remote set-head origin -a
   script:
