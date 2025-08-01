@@ -19,10 +19,10 @@ spec:
     sbom_file:
       description: "The SBOM file to use for the scan"
     needs:
-      default: []
+      type: array
       description: "The jobs that this job depends on"
     dependencies:
-      default: []
+      type: array
       description: "The jobs that this job depends on"
     scanner_id:
       default: "sbom-upload"
