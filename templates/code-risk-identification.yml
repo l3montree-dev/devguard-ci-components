@@ -36,10 +36,8 @@ devguard:code-risk-identification:
     stage: "$[[ inputs.scan_stage ]]"
     tags:
       - $[[ inputs.runner_tags ]]
-    dependencies: 
-      - $[[ inputs.dependencies ]]
-    needs: 
-      - $[[ inputs.needs ]]
+    dependencies: $[[ inputs.dependencies ]]
+    needs: $[[ inputs.needs ]]
     image:
         name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
         pull_policy: "$[[ inputs.pull_policy ]]"

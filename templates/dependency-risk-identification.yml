@@ -41,10 +41,8 @@ devguard:dependency-risk-identification:$[[ inputs.artifact_name ]]:
     stage: "$[[ inputs.scan_stage ]]"
     tags:
         - $[[ inputs.runner_tags ]]
-    needs:
-        - $[[ inputs.needs ]]
-    dependencies:
-        - $[[ inputs.dependencies ]]
+    needs: $[[ inputs.needs ]]
+    dependencies: $[[ inputs.dependencies ]]
     image:
         name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
         pull_policy: "$[[ inputs.pull_policy ]]"
