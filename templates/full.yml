@@ -57,7 +57,7 @@ include:
       token: $[[ inputs.token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_open_code_risk ]]
+      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
@@ -68,7 +68,7 @@ include:
       token: $[[ inputs.token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_open_code_risk ]]
+      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
     inputs:
@@ -79,7 +79,7 @@ include:
       token: $[[ inputs.token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_open_code_risk ]]
+      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
@@ -90,7 +90,7 @@ include:
       scan_stage: $[[ inputs.scan_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_open_code_risk ]]
+      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
     inputs:
