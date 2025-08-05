@@ -90,7 +90,6 @@ include:
       scan_stage: $[[ inputs.scan_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
     inputs:
