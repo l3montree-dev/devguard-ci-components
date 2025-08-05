@@ -42,6 +42,7 @@ spec:
       description: "The pull policy for the Docker image"
     allow_open_code_risk:
       default: true
+      type: boolean
       description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"  
 ---
 variables:
