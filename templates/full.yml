@@ -39,7 +39,10 @@ spec:
       description: "The runner tag to use for the job"
     pull_policy:
       default: "always"
-      description: "The pull policy for the Docker image"  
+      description: "The pull policy for the Docker image"
+    allow_open_code_risk:
+      default: true
+      description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"  
 ---
 variables:
   GIT_STRATEGY: clone
@@ -54,6 +57,7 @@ include:
       token: $[[ inputs.token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
@@ -64,6 +68,7 @@ include:
       token: $[[ inputs.token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
     inputs:
@@ -74,6 +79,7 @@ include:
       token: $[[ inputs.token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
@@ -84,6 +90,7 @@ include:
       scan_stage: $[[ inputs.scan_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_open_code_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
     inputs:

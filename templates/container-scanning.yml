@@ -21,7 +21,7 @@ spec:
       description: "The runner tag to use for the job"
     pull_policy:
       default: "always"
-      description: "The pull policy for the Docker image"        
+      description: "The pull policy for the Docker image"
 ---
 variables:
   GIT_STRATEGY: clone
