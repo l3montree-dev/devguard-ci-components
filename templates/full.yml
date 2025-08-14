@@ -5,7 +5,7 @@ spec:
     asset_name:
       description: "The DevGuard asset name"
     api_url:
-      default: "https://api.main.devguard.org"
+      default: "https://api.devguard.org"
       description: "The DevGuard API URL"
     scan_stage:
       default: "test"

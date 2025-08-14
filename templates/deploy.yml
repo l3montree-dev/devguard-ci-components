@@ -9,7 +9,7 @@ spec:
     token:
       description: "The token to authenticate against the DevGuard API"
     api_url:
-      default: "https://api.main.devguard.org"
+      default: "https://api.devguard.org"
       description: "The DevGuard API URL"
     asset_name:
       description: "The name of the asset"

@@ -87,7 +87,7 @@ include:
 
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
-| `api_url`   | The DevGuard API URL                         |       `https://api.main.devguard.org`     |
+| `api_url`   | The DevGuard API URL                         |       `https://api.devguard.org`     |
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |               |
 | `scan_stage`| The stage where the scan is run              |     `test`     |
@@ -114,7 +114,7 @@ include:
 
 | Name        | Description                                  | Default Value        |
 |-------------|----------------------------------------------|----------------------|
-| `api_url`   | The DevGuard API URL                         |       `https://api.main.devguard.org`     |
+| `api_url`   | The DevGuard API URL                         |       `https://api.devguard.org`     |
 | `asset_name`| Name of the asset to scan                    |              |
 | `token`     | API token for authenticating with DevGuard   |              |
 | `build_stage`| The stage where the image is built and tagged            |     `build`     |
