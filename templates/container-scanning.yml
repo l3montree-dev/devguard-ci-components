@@ -30,7 +30,7 @@ variables:
 
 devguard:container-scanning:$[[ inputs.artifact_name ]]:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:0.13.18
     pull_policy: "$[[ inputs.pull_policy ]]"
   stage: "$[[ inputs.scan_stage ]]"
   tags:
