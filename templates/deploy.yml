@@ -20,7 +20,7 @@ spec:
 variables:
   GIT_STRATEGY: clone
   
-devguard:deploy:$[[ inputs.artifact_name ]]:
+devguard:deploy:
   stage: "$[[ inputs.deploy_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
