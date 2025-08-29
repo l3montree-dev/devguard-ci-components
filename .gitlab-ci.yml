@@ -12,7 +12,7 @@ stages:
 build-kaniko-crane:
   stage: build-custom-images
   image:
-    name: gcr.io/kaniko-project/executor:v1.24.0-debug@sha256:2562c4fe551399514277ffff7dcca9a3b1628c4ea38cb017d7286dc6ea52f4cd
+    name: registry.gitlab.com/l3montree/devguard/kaniko-project/executor:v1.24.0-debug@sha256:0acd73a81eb8a1a2f69cd431d0834bb53dce221f8b996f2d28a62a5e84abfdc9
     entrypoint: [""]
   script:
     - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.kaniko-crane --destination $CI_REGISTRY_IMAGE/kaniko-crane:kaniko-v1.24.0-debug

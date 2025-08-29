@@ -2,7 +2,7 @@ FROM ghcr.io/l3montree-dev/devguard/scanner:main-3ff663b9-1756455617@sha256:0088
 # https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
 # See the Scanner Dockerfile for the used versions of crane and devguard-scanner
 
-FROM gcr.io/kaniko-project/executor:v1.24.0-debug@sha256:2562c4fe551399514277ffff7dcca9a3b1628c4ea38cb017d7286dc6ea52f4cd
+FROM registry.gitlab.com/l3montree/devguard/kaniko-project/executor:v1.24.0-debug@sha256:0acd73a81eb8a1a2f69cd431d0834bb53dce221f8b996f2d28a62a5e84abfdc9
 
 # checkov:skip=CKV_DOCKER_2
 # checkov:skip=CKV_DOCKER_3
