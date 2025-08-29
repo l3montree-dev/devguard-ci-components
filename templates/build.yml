@@ -1,8 +1,8 @@
 spec:
   inputs:
     build_stage:
-      default: "build"
-      description: "The stage where the image is built and tagged"
+  rules:
+    - if: '"$[[ inputs.image_suffix ]]" == ""'
     build_args:
       default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
       description: "The build arguments to pass to the Kaniko build command"
@@ -83,11 +83,11 @@ devguard:build-image:
   needs: []
   dependencies: []
   rules:
-    - if: $[[ inputs.image_suffix ]] == ""
+    - if: '"$[[ inputs.image_suffix ]]" == ""'
 
 devguard:build-image:$[[ inputs.image_suffix ]]:
   <<: *build_image_common
   needs: []
   dependencies: []
   rules:
-    - if: $[[ inputs.image_suffix ]] != ""
+    - if: '"$[[ inputs.image_suffix ]]" != ""'

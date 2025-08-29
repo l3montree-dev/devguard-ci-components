@@ -56,7 +56,7 @@ devguard:container-scanning:
   dependencies:
     - devguard:build-image
   rules:
-    - if: $[[ inputs.image_suffix ]] == ""
+    - if: "\"$[[ inputs.image_suffix ]]\" == \"\""
 
 devguard:container-scanning:$[[ inputs.image_suffix ]]:
   <<: *container_scanning_common
@@ -65,4 +65,4 @@ devguard:container-scanning:$[[ inputs.image_suffix ]]:
   dependencies:
     - devguard:build-image:$[[ inputs.image_suffix ]]
   rules:
-    - if: $[[ inputs.image_suffix ]] != ""
+    - if: "\"$[[ inputs.image_suffix ]]\" != \"\""
