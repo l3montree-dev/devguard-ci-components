@@ -57,8 +57,8 @@ create-release:
   stage: release
   dependencies:
     - devguard:software-composition-analysis
-    - devguard:container-scanning:default
-    - devguard:deploy:default
+    - devguard:container-scanning
+    - devguard:deploy
   image: registry.gitlab.com/gitlab-org/release-cli:v0.21.0@sha256:d588d48319b516a8c91ea5d56c2a84f6df04d34927c331f93240ae5cc7f2ac7e
   script: echo "Creating release $CI_COMMIT_TAG"
   rules:
