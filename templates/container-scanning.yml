@@ -31,7 +31,7 @@ variables:
   GIT_DEPTH: 0
 
 
-container_scanning_common: &container_scanning_common
+.container_scanning_common:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
@@ -50,7 +50,7 @@ container_scanning_common: &container_scanning_common
     - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --artifactName="$[[ inputs.artifact_name ]]"
 
 devguard:container-scanning:
-  <<: *container_scanning_common
+  extends: .container_scanning_common
   needs:
     - devguard:build-image
   dependencies:
@@ -59,7 +59,7 @@ devguard:container-scanning:
     - if: "\"$[[ inputs.image_suffix ]]\" == \"\""
 
 devguard:container-scanning:$[[ inputs.image_suffix ]]:
-  <<: *container_scanning_common
+  extends: .container_scanning_common
   needs:
     - devguard:build-image:$[[ inputs.image_suffix ]]
   dependencies:
