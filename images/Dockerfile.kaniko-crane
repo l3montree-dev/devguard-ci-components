@@ -1,12 +1,15 @@
-FROM gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+FROM ghcr.io/l3montree-dev/devguard/scanner:main-3ff663b9-1756455617@sha256:0088d78a7204605a4831e0079f12cf33429e0753bc869b3345746754c123a76a AS devguard-scanner
+# https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
+# See the Scanner Dockerfile for the used versions of crane and devguard-scanner
+
+FROM gcr.io/kaniko-project/executor:v1.24.0-debug@sha256:2562c4fe551399514277ffff7dcca9a3b1628c4ea38cb017d7286dc6ea52f4cd
 
 # checkov:skip=CKV_DOCKER_2
 # checkov:skip=CKV_DOCKER_3
 
 WORKDIR /
 
-COPY crane_v0.20.3_x86_64.tar.gz .
-COPY devguard-scanner.tar.gz .
+COPY --from=devguard-scanner /usr/local/bin/crane .
+COPY --from=devguard-scanner /usr/local/bin/devguard-scanner .
 
-RUN tar -zxvf crane_v0.20.3_x86_64.tar.gz && rm crane_v0.20.3_x86_64.tar.gz && tar -zxvf devguard-scanner.tar.gz && rm devguard-scanner.tar.gz
 WORKDIR /workspace
