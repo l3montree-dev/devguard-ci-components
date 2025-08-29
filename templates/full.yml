@@ -44,6 +44,12 @@ spec:
       default: true
       type: boolean
       description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"  
+    artifact_name:
+      default: "container"
+      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers)."
+    image_suffix:
+      default: ""
+      description: 'Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image).'
 ---
 variables:
   GIT_STRATEGY: clone
@@ -102,6 +108,8 @@ include:
       api_url: $[[ inputs.api_url ]]
       asset_name: $[[ inputs.asset_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      artifact_name: $[[ inputs.artifact_name ]]
+      image_suffix: $[[ inputs.image_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
@@ -113,6 +121,8 @@ include:
       fetch_image_from_registry: $[[ inputs.small_artifact_registry ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      artifact_name: $[[ inputs.artifact_name ]]
+      image_suffix: $[[ inputs.image_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/deploy.yml"
     inputs:
@@ -123,7 +133,6 @@ include:
       api_url: $[[ inputs.api_url ]]
       asset_name: $[[ inputs.asset_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
-
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign.yml"
     inputs:
       token: $[[ inputs.token ]]
@@ -131,7 +140,6 @@ include:
       api_url: $[[ inputs.api_url ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
-
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
       token: $[[ inputs.token ]]

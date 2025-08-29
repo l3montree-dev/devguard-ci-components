@@ -11,8 +11,11 @@ spec:
       default: "test"
       description: "The stage where the image is scanned"
     artifact_name:
-      default: "default"
-      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."  
+      default: "container"
+      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."
+    image_suffix:
+      default: ""
+      description: "Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image."
     fetch_image_from_registry:
       default: "false"
       description: "Whether the image should be fetched from the registry or from the artifacts"
@@ -28,7 +31,7 @@ variables:
   GIT_DEPTH: 0
 
 
-devguard:container-scanning:$[[ inputs.artifact_name ]]:
+devguard:container-scanning:$[[ inputs.image_suffix ]]:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
@@ -36,9 +39,9 @@ devguard:container-scanning:$[[ inputs.artifact_name ]]:
   tags:
     - "$[[ inputs.runner_tags ]]"
   needs:
-    - devguard:build-image:$[[ inputs.artifact_name ]]
+    - devguard:build-image:$[[ inputs.image_suffix ]]
   dependencies:
-    - devguard:build-image:$[[ inputs.artifact_name ]]
+    - devguard:build-image:$[[ inputs.image_suffix ]]
   before_script: |
     if [ "$[[ inputs.fetch_image_from_registry ]]" == "true" ]; then
       crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY

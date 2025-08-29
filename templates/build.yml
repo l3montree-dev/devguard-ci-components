@@ -10,7 +10,7 @@ spec:
       default: "false"
       description: "It is preferred, that the image gets only pushed to the registry after scanning. Todo so, it gets passed to the container scanning as artifact. Nevertheless, some gitlab instances have a small maximum artifact upload size. If this applies to you, set this flag to true. This wont upload it as artifact but pushes it directly into the registry."
     artifact_name:
-      default: "default"
+      default: "container"
       description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."  
     token:
       description: "The token to authenticate against the DevGuard API"
@@ -22,13 +22,18 @@ spec:
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"  
+    image_suffix:
+      description: 'Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image.'
+      type: string
+      required: false
+      default: ''
 ---
 variables:
   GIT_STRATEGY: clone
   
 
 # OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
-devguard:build-image:$[[ inputs.artifact_name ]]:
+devguard:build-image:$[[ inputs.image-suffix ]]:
   stage: "$[[ inputs.build_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
@@ -44,8 +49,8 @@ devguard:build-image:$[[ inputs.artifact_name ]]:
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
-        if [ "$[[ inputs.artifact_name ]]" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$[[ inputs.artifact_name ]]:$CI_COMMIT_TAG" > image-tag.txt
+        if [ "$[[ inputs.image_suffix ]]" != "" ]; then
+          echo "$CI_REGISTRY_IMAGE/$[[ inputs.image_suffix ]]:$CI_COMMIT_TAG" > image-tag.txt
         else
           echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
         fi
@@ -55,8 +60,8 @@ devguard:build-image:$[[ inputs.artifact_name ]]:
         branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
         sha=${CI_COMMIT_SHORT_SHA}
         ts=$(date +%s)
-        if [ "$[[ inputs.artifact_name ]]" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$[[ inputs.artifact_name ]]:${branch}-${sha}-${ts}" > image-tag.txt
+        if [ "$[[ inputs.image_suffix ]]" != "" ]; then
+          echo "$CI_REGISTRY_IMAGE/$[[ inputs.image_suffix ]]:${branch}-${sha}-${ts}" > image-tag.txt
         else
           echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
         fi
