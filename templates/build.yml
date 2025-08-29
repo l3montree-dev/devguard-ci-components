@@ -1,8 +1,8 @@
 spec:
   inputs:
     build_stage:
-  rules:
-    - if: '"$[[ inputs.image_suffix ]]" == ""'
+      default: "build"
+      description: "The stage where the build is run"
     build_args:
       default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
       description: "The build arguments to pass to the Kaniko build command"
