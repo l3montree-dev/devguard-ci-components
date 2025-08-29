@@ -41,6 +41,7 @@ include:
       artifact_name: "test-additional-artifact"
       token: "$DEVGUARD_TOKEN"
       asset_name: "$DEVGUARD_ASSET_NAME"
+      image_suffix: "test-additional-artifact"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
     inputs:
@@ -51,7 +52,7 @@ include:
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
-      artifact_name: "test-additional-artifact"
+
 create-release:
   stage: release
   dependencies:
