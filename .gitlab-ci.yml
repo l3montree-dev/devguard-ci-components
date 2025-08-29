@@ -25,6 +25,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       version: "$CI_COMMIT_REF_NAME"
       iac_config_file: "checkov.yaml"
+      api_url: "https://api.main.devguard.org"
   - examples/sbom-gets-generated/.gitlab-ci.yml
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
@@ -33,6 +34,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       artifact_name: "test-additional-artifact"
       sbom_file: "sbom-in-repo.json"
+      api_url: "https://api.main.devguard.org"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
     inputs:
@@ -41,17 +43,22 @@ include:
       artifact_name: "test-additional-artifact"
       token: "$DEVGUARD_TOKEN"
       asset_name: "$DEVGUARD_ASSET_NAME"
+      api_url: "https://api.main.devguard.org"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
       artifact_name: "test-additional-artifact"
+      api_url: "https://api.main.devguard.org"
+
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/deploy@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
       artifact_name: "test-additional-artifact"
+      api_url: "https://api.main.devguard.org"
+      
 create-release:
   stage: release
   dependencies:
