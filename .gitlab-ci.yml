@@ -12,10 +12,10 @@ stages:
 build-kaniko-crane:
   stage: build-custom-images
   image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+    name: registry.gitlab.com/l3montree/devguard/kaniko-project/executor:v1.24.0-debug@sha256:0acd73a81eb8a1a2f69cd431d0834bb53dce221f8b996f2d28a62a5e84abfdc9
     entrypoint: [""]
   script:
-    - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.kaniko-crane --destination $CI_REGISTRY_IMAGE/kaniko-crane:kaniko-v1.23.2-debug-crane-v0.20.3
+    - /kaniko/executor --cleanup --context $CI_PROJECT_DIR/images --dockerfile $CI_PROJECT_DIR/images/Dockerfile.kaniko-crane --destination $CI_REGISTRY_IMAGE/kaniko-crane:kaniko-v1.24.0-debug
   when: manual
 
 include:
@@ -25,6 +25,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       version: "$CI_COMMIT_REF_NAME"
       iac_config_file: "checkov.yaml"
+      api_url: "https://api.main.devguard.org"
   - examples/sbom-gets-generated/.gitlab-ci.yml
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
@@ -33,6 +34,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       artifact_name: "test-additional-artifact"
       sbom_file: "sbom-in-repo.json"
+      api_url: "https://api.main.devguard.org"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build@$CI_COMMIT_SHA
     inputs:
@@ -42,6 +44,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       asset_name: "$DEVGUARD_ASSET_NAME"
       image_suffix: "test-additional-artifact"
+      api_url: "https://api.main.devguard.org"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
     inputs:
@@ -49,11 +52,15 @@ include:
       token: "$DEVGUARD_TOKEN"
       artifact_name: "test-additional-artifact"
       image_suffix: "test-additional-artifact"
+      api_url: "https://api.main.devguard.org"
+
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/deploy@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
-
+      artifact_name: "test-additional-artifact"
+      api_url: "https://api.main.devguard.org"
+      
 create-release:
   stage: release
   dependencies:
