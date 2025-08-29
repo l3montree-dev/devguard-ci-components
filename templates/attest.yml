@@ -11,15 +11,14 @@ spec:
     asset_name:
       description: "The name of the asset"
     artifact_name:
-      type: string
-      required: false
       default: "container"
-      description: "The artifact you would like to attest. Prefer passing purls. Example: 'pkg:oci/library/nginx'"
+    description: "The artifact you would like to attest. Prefer passing purls. Example: 'pkg:oci/library/nginx'"
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
     pull_policy:
       default: "always"
+      description: "The pull policy for the Docker image"  
 ---
 devguard:attest:
   stage: "$[[ inputs.deploy_stage ]]"

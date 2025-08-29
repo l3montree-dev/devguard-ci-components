@@ -24,9 +24,7 @@ spec:
       description: "The runner tag to use for the job"  
     image_suffix:
       description: 'Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image.'
-      type: string
-      required: false
-      default: ''
+      default: ""
 ---
 variables:
   GIT_STRATEGY: clone
