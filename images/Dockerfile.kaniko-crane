@@ -1,4 +1,4 @@
-FROM ghcr.io/l3montree-dev/devguard/scanner:main-3ff663b9-1756455617@sha256:0088d78a7204605a4831e0079f12cf33429e0753bc869b3345746754c123a76a AS devguard-scanner
+FROM ghcr.io/l3montree-dev/devguard/scanner:main-b4fe2821-1756465014@sha256:29fbee19625201e211011cdf34089f983b873d035a16813333bcaa42785c8dfd AS devguard-scanner
 # https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
 # See the Scanner Dockerfile for the used versions of crane and devguard-scanner
 
