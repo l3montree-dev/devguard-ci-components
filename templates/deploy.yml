@@ -28,7 +28,7 @@ devguard:deploy:$[[ inputs.artifact_name ]]:
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.24.0-debug@sha256:86595b960fbb314fb26e414833be6401575ff62c7d281710484e3136a1c860d0
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.24.0-debug@sha256:ac73e7be3e243f7f73619b574871d68fd56e18dcce241082acac12c67a77aea9
     entrypoint: [""]
   script: |
     /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
