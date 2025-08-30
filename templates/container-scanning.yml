@@ -66,4 +66,4 @@ devguard:container-scanning:$[[ inputs.image_suffix ]]:
   dependencies:
     - devguard:build-image:$[[ inputs.image_suffix ]]
   rules:
-    - if: '$[[ inputs.image_suffix ]]'
+    - if: '$[[ inputs.image_suffix ]] == ""'
