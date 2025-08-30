@@ -91,4 +91,4 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
   needs: []
   dependencies: []
   rules:
-    - if: '$[[ inputs.image_suffix ]]'
+    - if: '$[[ inputs.image_suffix ]] != ""'
