@@ -14,7 +14,7 @@ spec:
       default: "container"
       description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."
     image_suffix:
-      default: ""
+      default: "default"
       description: "Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image."
     fetch_image_from_registry:
       default: "false"
@@ -49,15 +49,6 @@ variables:
     - echo "IS_TAG - $IS_TAG"
     - devguard-scanner container-scanning --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="image.tar" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --artifactName="$[[ inputs.artifact_name ]]"
 
-devguard:container-scanning:
-  extends: .container_scanning_common
-  needs:
-    - devguard:build-image
-  dependencies:
-    - devguard:build-image
-  rules:
-    - if: '$[[ inputs.image_suffix ]] == null'
-    - if: '$[[ inputs.image_suffix ]] == ""'
 
 devguard:container-scanning:$[[ inputs.image_suffix ]]:
   extends: .container_scanning_common
@@ -65,5 +56,3 @@ devguard:container-scanning:$[[ inputs.image_suffix ]]:
     - devguard:build-image:$[[ inputs.image_suffix ]]
   dependencies:
     - devguard:build-image:$[[ inputs.image_suffix ]]
-  rules:
-    - if: '$[[ inputs.image_suffix ]] != ""'

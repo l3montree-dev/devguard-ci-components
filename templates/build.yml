@@ -23,7 +23,7 @@ spec:
       default: ""
       description: "The runner tag to use for the job"
     image_suffix:
-      default: ""
+      default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
 ---
 variables:
@@ -56,7 +56,7 @@ variables:
         branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
         sha=${CI_COMMIT_SHORT_SHA}
         ts=$(date +%s)
-        if [ "$[[ inputs.image_suffix ]]" != "" ]; then
+        if [ "$[[ inputs.image_suffix ]]" != "" && "$[[ inputs.image_suffix ]]" != "default" ]; then
           echo "$CI_REGISTRY_IMAGE/$[[ inputs.image_suffix ]]:${branch}-${sha}-${ts}" > image-tag.txt
         else
           echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
@@ -78,17 +78,7 @@ variables:
       - build.provenance.json
     when: on_success
 
-devguard:build-image:
-  extends: .build_image_common
-  needs: []
-  dependencies: []
-  rules:
-    - if: '$[[ inputs.image_suffix ]] == null'
-    - if: '$[[ inputs.image_suffix ]] == ""'
-
 devguard:build-image:$[[ inputs.image_suffix ]]:
   extends: .build_image_common
   needs: []
   dependencies: []
-  rules:
-    - if: '$[[ inputs.image_suffix ]] != ""'
