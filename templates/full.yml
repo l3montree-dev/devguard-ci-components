@@ -48,7 +48,7 @@ spec:
       default: "container"
       description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers)."
     image_suffix:
-      default: ""
+      default: "default"
       description: 'Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image).'
 ---
 variables:
