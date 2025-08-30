@@ -26,8 +26,6 @@ include:
       token: "$DEVGUARD_TOKEN"
       version: "$CI_COMMIT_REF_NAME"
       iac_config_file: "checkov.yaml"
-      artifact_name: "container"
-      image_suffix: "main"
       api_url: "https://api.main.devguard.org"
       
   - examples/sbom-gets-generated/.gitlab-ci.yml
