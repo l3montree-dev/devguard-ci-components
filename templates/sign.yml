@@ -25,7 +25,7 @@ devguard:sign:
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:0.15.1
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
   script:
