@@ -45,7 +45,7 @@ spec:
       type: boolean
       description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"  
     artifact_name:
-      required: false
+      default: ""
       description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
     image_suffix:
       default: "default"
