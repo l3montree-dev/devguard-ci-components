@@ -10,6 +10,7 @@ spec:
       default: "false"
       description: "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts."
     artifact_name:
+      required: false
       description: "The name of the artifact you are building. Leave empty to use the generated PURL from the built image."
     token:
       description: "The token to authenticate against the DevGuard API"

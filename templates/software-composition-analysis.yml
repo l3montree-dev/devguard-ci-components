@@ -17,6 +17,7 @@ spec:
       default: "always"
       description: "The pull policy for the Docker image"
     artifact_name:
+      default: "source"
       description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."  
 ---
 variables:
