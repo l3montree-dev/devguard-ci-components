@@ -27,9 +27,7 @@ include:
       version: "$CI_COMMIT_REF_NAME"
       iac_config_file: "checkov.yaml"
       api_url: "https://api.main.devguard.org"
-      artifact_name: "test"
-      image_suffix: "test"
-      
+
   - examples/sbom-gets-generated/.gitlab-ci.yml
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
@@ -65,7 +63,7 @@ include:
       token: "$DEVGUARD_TOKEN"
       image_suffix: "test-additional-artifact"
       api_url: "https://api.main.devguard.org"
-      
+
 create-release:
   stage: release
   dependencies:
