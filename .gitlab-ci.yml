@@ -61,6 +61,7 @@ include:
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      image_suffix: "test-additional-artifact"
       api_url: "https://api.main.devguard.org"
       
 create-release:
