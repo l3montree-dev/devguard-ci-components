@@ -11,7 +11,7 @@ spec:
     asset_name:
       description: "The name of the asset"
     artifact_name:
-      required: false
+      default: ""
       description: "The artifact you would like to attest. If not provided, will use the generated PURL from the built image. Example: 'pkg:oci/library/nginx'"
     runner_tags:
       default: ""
