@@ -28,10 +28,10 @@ spec:
 ---
 variables:
   GIT_STRATEGY: clone
-  
 
-# OCI Build: Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access). The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry.
-.build_image_common:
+devguard:build-image:$[[ inputs.image_suffix ]]:
+  needs: []
+  dependencies: []
   stage: "$[[ inputs.build_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
@@ -77,8 +77,3 @@ variables:
       - image-digest.txt
       - build.provenance.json
     when: on_success
-
-devguard:build-image:$[[ inputs.image_suffix ]]:
-  extends: .build_image_common
-  needs: []
-  dependencies: []
