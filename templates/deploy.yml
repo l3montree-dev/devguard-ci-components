@@ -15,12 +15,15 @@ spec:
       description: "The name of the asset"
     runner_tags:
       default: ""
-      description: "The runner tag to use for the job"     
+      description: "The runner tag to use for the job"
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
 ---
 variables:
   GIT_STRATEGY: clone
   
-devguard:deploy:
+.deploy_common:
   stage: "$[[ inputs.deploy_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
@@ -40,3 +43,11 @@ devguard:deploy:
     fi
     
     /devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}" 
+
+
+devguard:deploy:$[[ inputs.image_suffix ]]:
+  extends: .deploy_common
+  needs:
+    - devguard:container-scanning:$[[ inputs.image_suffix ]]
+  dependencies:
+    - devguard:container-scanning:$[[ inputs.image_suffix ]]
