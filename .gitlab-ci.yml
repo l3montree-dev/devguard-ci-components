@@ -48,14 +48,14 @@ include:
       image_suffix: "test-additional-artifact"
       api_url: "https://api.main.devguard.org"
 
-  #- component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
-  #  inputs:
-  #    scan_stage: "test-additional"
-  #    asset_name: "$DEVGUARD_ASSET_NAME"
-  #    token: "$DEVGUARD_TOKEN"
-  #    artifact_name: "test-additional-artifact"
-  #    image_suffix: "test-additional-artifact"
-  #    api_url: "https://api.main.devguard.org"
+  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$CI_COMMIT_SHA
+    inputs:
+      scan_stage: "test-additional"
+      asset_name: "$DEVGUARD_ASSET_NAME"
+      token: "$DEVGUARD_TOKEN"
+      artifact_name: "test-additional-artifact"
+      image_suffix: "test-additional-artifact"
+      api_url: "https://api.main.devguard.org"
 
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/deploy@$CI_COMMIT_SHA
     inputs:
