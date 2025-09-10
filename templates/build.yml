@@ -10,8 +10,8 @@ spec:
       default: "false"
       description: "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts."
     artifact_name:
-      default: "container"
-      description: "The name of the artifact you are building. Leave empty if you build a single artifact."
+      default: ""
+      description: "The name of the artifact you are building. Leave empty to use the generated PURL from the built image."
     token:
       description: "The token to authenticate against the DevGuard API"
     api_url:
@@ -39,9 +39,10 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
     name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized@sha256:e26e87bf8f762c4e2447212e02b29c68b2f775bdb0de68aebaa8d825c215d636
     entrypoint: [""]
   before_script:
+    - apk add jq
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
-        /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+        /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --ignore=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
@@ -66,14 +67,46 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || cat image-tag.txt) > image-digest.txt
+    - |
+      # Generate PURL from OCI image for artifact name
+      IMAGE_TAG=$(cat image-tag.txt)
+      echo "Image tag: $IMAGE_TAG"
+      
+      # Parse registry, namespace, name, and version
+      # Example: registry.gitlab.com/namespace/project/suffix:version
+      REGISTRY_AND_IMAGE=${IMAGE_TAG%:*}
+      VERSION=${IMAGE_TAG##*:}
+            
+      # Extract namespace/name (everything after registry)
+      NAMESPACE_AND_NAME=${REGISTRY_AND_IMAGE#*/}
+
+      # Extract name (without namespace)
+      NAME=${NAMESPACE_AND_NAME##*/}
+      
+      # URL encode registry for repository_url parameter
+      REPOSITORY_URL="$REGISTRY_AND_IMAGE"
+      
+      # Generate PURL: pkg:oci/name?repository_url=registry&tag=version
+      PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL&tag=$VERSION"
+      
+      echo "Generated PURL: $PURL"
+      echo "$PURL" > artifact-purl.txt
+      
+      # Create safe filename version for API calls (replace special chars)
+      SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @uri)
+      echo "$SAFE_PURL" > artifact-name-safe.txt
+      
+      echo "Safe artifact name: $SAFE_PURL"
 
     - |
         echo "Running DevGuard Intoto Build...stopping..."
-        /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
+        /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --products=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
   artifacts:
     paths:
       - image.tar
       - image-tag.txt
       - image-digest.txt
+      - artifact-purl.txt
+      - artifact-name-safe.txt
       - build.provenance.json
     when: on_success
