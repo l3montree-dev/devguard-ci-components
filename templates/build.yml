@@ -82,12 +82,15 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       
       # Extract namespace/name (everything after registry)
       NAMESPACE_AND_NAME=${REGISTRY_AND_IMAGE#*/}
+
+      # Extract name (without namespace)
+      NAME=${NAMESPACE_AND_NAME##*/}
       
       # URL encode registry for repository_url parameter
       REPOSITORY_URL="https://$REGISTRY"
       
-      # Generate PURL: pkg:oci/namespace/name@version?repository_url=registry
-      PURL="pkg:oci/$NAMESPACE_AND_NAME@$VERSION?repository_url=$REPOSITORY_URL"
+      # Generate PURL: pkg:oci/name@version?repository_url=registry
+      PURL="pkg:oci/$NAME@$VERSION?repository_url=$REPOSITORY_URL"
       
       echo "Generated PURL: $PURL"
       echo "$PURL" > artifact-purl.txt
@@ -97,10 +100,6 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       echo "$SAFE_PURL" > artifact-name-safe.txt
       
       echo "Safe artifact name: $SAFE_PURL"
-
-
-      echo -n "$PURL" | jq -s -R -r @uri
-      echo "$PURL" | jq -s -R -r @uri
 
     - |
         echo "Running DevGuard Intoto Build...stopping..."
