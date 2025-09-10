@@ -19,8 +19,11 @@ spec:
     pull_policy:
       default: "always"
       description: "The pull policy for the Docker image"  
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."  
 ---
-devguard:attest:
+devguard:attest:$[[ inputs.image_suffix ]]:
   stage: "$[[ inputs.deploy_stage ]]"
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
