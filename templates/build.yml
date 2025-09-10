@@ -76,10 +76,7 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       # Example: registry.gitlab.com/namespace/project/suffix:version
       REGISTRY_AND_IMAGE=${IMAGE_TAG%:*}
       VERSION=${IMAGE_TAG##*:}
-      
-      # Extract registry (everything before first '/')
-      REGISTRY=${REGISTRY_AND_IMAGE%%/*}
-      
+            
       # Extract namespace/name (everything after registry)
       NAMESPACE_AND_NAME=${REGISTRY_AND_IMAGE#*/}
 
@@ -87,10 +84,10 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       NAME=${NAMESPACE_AND_NAME##*/}
       
       # URL encode registry for repository_url parameter
-      REPOSITORY_URL="$REGISTRY"
+      REPOSITORY_URL="$REGISTRY_AND_IMAGE"
       
       # Generate PURL: pkg:oci/name?repository_url=registry&tag=version
-      PURL="pkg:oci/$NAME?repository_url=$REGISTRY&tag=$VERSION"
+      PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL&tag=$VERSION"
       
       echo "Generated PURL: $PURL"
       echo "$PURL" > artifact-purl.txt
