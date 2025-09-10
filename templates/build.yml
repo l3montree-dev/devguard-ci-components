@@ -90,7 +90,7 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       REPOSITORY_URL="$REGISTRY"
       
       # Generate PURL: pkg:oci/name?repository_url=registry&tag=version
-      PURL="pkg:oci/$NAME@$VERSION?repository_url=$REPOSITORY_URL&tag=$VERSION"
+      PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL&tag=$VERSION"
       
       echo "Generated PURL: $PURL"
       echo "$PURL" > artifact-purl.txt
