@@ -24,6 +24,8 @@ spec:
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."  
 ---
 devguard:attest:$[[ inputs.image_suffix ]]:
+  dependencies:
+    - devguard:build-image:$[[ inputs.image_suffix ]]
   stage: "$[[ inputs.deploy_stage ]]"
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
