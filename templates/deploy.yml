@@ -23,12 +23,18 @@ spec:
 variables:
   GIT_STRATEGY: clone
   
-.deploy_common:
+devguard:deploy:$[[ inputs.image_suffix ]]:
+  needs:
+    - devguard:build-image:$[[ inputs.image_suffix ]]
+    - devguard:container-scanning:$[[ inputs.image_suffix ]]
+  dependencies:
+    - devguard:build-image:$[[ inputs.image_suffix ]]
+    - devguard:container-scanning:$[[ inputs.image_suffix ]]
   stage: "$[[ inputs.deploy_stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.24.0-debug@sha256:cf1daeb5c44994441df3dd0ec60a0ec9ba973c71f715f3a6f583545440357eed
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized@sha256:e26e87bf8f762c4e2447212e02b29c68b2f775bdb0de68aebaa8d825c215d636
     entrypoint: [""]
   script: |
     /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -43,11 +49,3 @@ variables:
     fi
     
     /devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}" 
-
-
-devguard:deploy:$[[ inputs.image_suffix ]]:
-  extends: .deploy_common
-  needs:
-    - devguard:container-scanning:$[[ inputs.image_suffix ]]
-  dependencies:
-    - devguard:container-scanning:$[[ inputs.image_suffix ]]
