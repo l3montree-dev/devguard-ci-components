@@ -50,6 +50,9 @@ devguard:attest:
       
       #slugify ref_name so we have a valid url
       SLUG=$(devguard-scanner slug $CI_COMMIT_REF_NAME)
+
+      echo "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json" --token="$[[ inputs.token ]]"
+
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json" --token="$[[ inputs.token ]]" > sbom.json
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json" --token="$[[ inputs.token ]]" > vex.json
       devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.token ]]" > sarif.json
