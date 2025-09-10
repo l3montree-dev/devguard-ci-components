@@ -89,7 +89,7 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       # URL encode registry for repository_url parameter
       REPOSITORY_URL="$REGISTRY"
       
-      # Generate PURL: pkg:oci/name@version?repository_url=registry
+      # Generate PURL: pkg:oci/name?repository_url=registry&tag=version
       PURL="pkg:oci/$NAME@$VERSION?repository_url=$REPOSITORY_URL&tag=$VERSION"
       
       echo "Generated PURL: $PURL"
