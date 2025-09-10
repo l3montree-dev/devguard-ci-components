@@ -93,14 +93,14 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       echo "$PURL" > artifact-purl.txt
       
       # Create safe filename version for API calls (replace special chars)
-      SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @PURL)
+      SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @uri)
       echo "$SAFE_PURL" > artifact-name-safe.txt
       
       echo "Safe artifact name: $SAFE_PURL"
 
 
-      echo -n "$url" | jq -s -R -r @uri
-      echo "$url" | jq -s -R -r @uri
+      echo -n "$PURL" | jq -s -R -r @uri
+      echo "$PURL" | jq -s -R -r @uri
 
     - |
         echo "Running DevGuard Intoto Build...stopping..."
