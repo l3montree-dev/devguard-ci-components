@@ -39,6 +39,7 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
     name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized@sha256:e26e87bf8f762c4e2447212e02b29c68b2f775bdb0de68aebaa8d825c215d636
     entrypoint: [""]
   before_script:
+    - apk add jq
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
         /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --ignore=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
