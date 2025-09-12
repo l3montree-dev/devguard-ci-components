@@ -45,6 +45,7 @@ include:
       artifact_name: "test-additional-artifact"
       token: "$DEVGUARD_TOKEN"
       asset_name: "$DEVGUARD_ASSET_NAME"
+      push_image: "true"
       image_suffix: "test-additional-artifact"
       api_url: "https://api.main.devguard.org"
 
