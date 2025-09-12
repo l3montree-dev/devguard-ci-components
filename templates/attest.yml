@@ -11,16 +11,21 @@ spec:
     asset_name:
       description: "The name of the asset"
     artifact_name:
-      default: "container"
-      description: "The artifact you would like to attest. Prefer passing purls. Example: 'pkg:oci/library/nginx'"
+      default: ""
+      description: "The artifact you would like to attest. If not provided, will use the generated PURL from the built image. Example: 'pkg:oci/library/nginx'"
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
     pull_policy:
       default: "always"
       description: "The pull policy for the Docker image"  
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."  
 ---
-devguard:attest:
+devguard:attest:$[[ inputs.image_suffix ]]:
+  dependencies:
+    - devguard:build-image:$[[ inputs.image_suffix ]]
   stage: "$[[ inputs.deploy_stage ]]"
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
@@ -29,40 +34,62 @@ devguard:attest:
     - $[[ inputs.runner_tags ]]
   script:
     - |
+      # Determine artifact name: use PURL if no artifact_name provided, otherwise use provided name
+      if [ -z "$[[ inputs.artifact_name ]]" ] && [ -f artifact-purl.txt ]; then
+        ARTIFACT_NAME=$(cat artifact-purl.txt)
+        echo "Using PURL as artifact name: $ARTIFACT_NAME"
+        # For API calls, use safe version if available
+        if [ -f artifact-name-safe.txt ]; then
+          API_ARTIFACT_NAME=$(cat artifact-name-safe.txt)
+          echo "Using safe artifact name for API calls: $API_ARTIFACT_NAME"
+        else
+          API_ARTIFACT_NAME="$ARTIFACT_NAME"
+        fi
+      else
+        ARTIFACT_NAME="$[[ inputs.artifact_name ]]"
+        API_ARTIFACT_NAME="$ARTIFACT_NAME"
+        echo "Using provided artifact name: $ARTIFACT_NAME"
+      fi
+      
+      echo "Attesting artifact: $ARTIFACT_NAME"
+      
       #slugify ref_name so we have a valid url
       SLUG=$(devguard-scanner slug $CI_COMMIT_REF_NAME)
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$[[ inputs.artifact_name ]]/sbom.json" --token="$[[ inputs.token ]]" > sbom.json
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$[[ inputs.artifact_name ]]/vex.json" --token="$[[ inputs.token ]]" > vex.json
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.token ]]" > sarif.json
+
+      echo "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json" --token="$[[ inputs.token ]]"
+
+      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.token ]]" > sbom.json
+      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.token ]]" > vex.json
+      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/sarif.json/" --token="$[[ inputs.token ]]" > sarif.json
 
       devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
       
       # Attest SBOM
       if [ -f image-digest.txt ]; then
-        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-tag.txt)@$(cat image-digest.txt)" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --artifactName=$[[ inputs.artifact_name ]]
+        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-tag.txt)@$(cat image-digest.txt)" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
       else
-        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName=$[[ inputs.artifact_name ]]
+        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
       fi
 
       # Attest VEX
       if [ -f image-digest.txt ]; then
-        devguard-scanner attest vex.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://cyclonedx.org/vex' --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName=$[[ inputs.artifact_name ]]
+        devguard-scanner attest vex.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://cyclonedx.org/vex' --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
       else
-        devguard-scanner attest vex.json --predicateType='https://cyclonedx.org/vex' --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --artifactName=$[[ inputs.artifact_name ]]
+        devguard-scanner attest vex.json --predicateType='https://cyclonedx.org/vex' --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
       fi
 
       # Attest SAST
       if [ -f image-digest.txt ]; then
-        devguard-scanner attest sarif.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --assetName="$[[ inputs.asset_name ]]" --artifactName=$[[ inputs.artifact_name ]]
+        devguard-scanner attest sarif.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
       else
-        devguard-scanner attest sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName=$[[ inputs.artifact_name ]]
+        devguard-scanner attest sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
       fi
 
       # Attest provenance
       if [ -f build.provenance.json ]; then
         if [ -f image-digest.txt ]; then
-          devguard-scanner attest build.provenance.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --artifactName=$[[ inputs.artifact_name ]]
+          devguard-scanner attest build.provenance.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --artifactName="$ARTIFACT_NAME"
         else
-          devguard-scanner attest build.provenance.json --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --artifactName=$[[ inputs.artifact_name ]]
+          devguard-scanner attest build.provenance.json --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --artifactName="$ARTIFACT_NAME"
         fi
       fi

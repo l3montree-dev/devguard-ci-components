@@ -45,8 +45,8 @@ spec:
       type: boolean
       description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"  
     artifact_name:
-      default: "container"
-      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers)."
+      default: ""
+      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
     image_suffix:
       default: "default"
       description: 'Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image).'
@@ -97,6 +97,7 @@ include:
       scan_stage: $[[ inputs.scan_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      artifact_name: $[[ inputs.artifact_name ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
     inputs:
@@ -148,3 +149,5 @@ include:
       deploy_stage: $[[ inputs.deploy_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      artifact_name: $[[ inputs.artifact_name ]]
+      image_suffix: $[[ inputs.image_suffix ]]
