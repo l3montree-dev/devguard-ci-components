@@ -36,7 +36,7 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane@sha256:034bde4e093de194f142c813f00bbee7e78083f2f08d582875b6f969ee32f0db
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized-busybox-jq@sha256:451d56ef53ebf75808bf5f92dae58275d09d5eb8e99468399c3f4440f0c02167
     entrypoint: [""]
   before_script:
     - apk add jq

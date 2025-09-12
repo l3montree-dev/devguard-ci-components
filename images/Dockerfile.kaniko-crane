@@ -17,7 +17,7 @@ COPY --from=devguard-scanner /usr/local/bin/devguard-scanner .
 COPY --from=kaniko-executor /kaniko /kaniko
 COPY --from=kaniko-executor /workspace /workspace
 
-RUN apk update && apk add --no-cache git dbus dbus-x11 gnome-keyring
+RUN apk update && apk add --no-cache git dbus dbus-x11 gnome-keyring busybox jq
 
 WORKDIR /workspace
 

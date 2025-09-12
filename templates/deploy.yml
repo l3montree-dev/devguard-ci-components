@@ -34,7 +34,7 @@ devguard:deploy:$[[ inputs.image_suffix ]]:
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.24.0-debug@sha256:cf1daeb5c44994441df3dd0ec60a0ec9ba973c71f715f3a6f583545440357eed
+    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized-busybox-jq@sha256:451d56ef53ebf75808bf5f92dae58275d09d5eb8e99468399c3f4440f0c02167
     entrypoint: [""]
   script: |
     /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
