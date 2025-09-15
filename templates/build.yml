@@ -98,7 +98,11 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
   script:
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
+    
+    # kaniko might remove all files after building - thus a second login is necessary.
+    - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo $FINAL_IMAGE_TAG) > image-digest.txt
+
     - |
         echo "Running DevGuard Intoto Build...stopping..."
         /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --products=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
