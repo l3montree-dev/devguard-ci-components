@@ -40,7 +40,7 @@ devguard:container-scanning:$[[ inputs.image_suffix ]]:
   dependencies:
     - devguard:build-image:$[[ inputs.image_suffix ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v0.17.1
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
   stage: "$[[ inputs.scan_stage ]]"
   tags:
