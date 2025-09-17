@@ -54,6 +54,7 @@ include:
       scan_stage: "test-additional"
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
+      fetch_image_from_registry: "true"
       artifact_name: "test-additional-artifact"
       image_suffix: "test-additional-artifact"
       api_url: "https://api.main.devguard.org"
