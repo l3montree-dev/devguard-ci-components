@@ -19,7 +19,10 @@ spec:
     allow_open_code_risk:
       default: true
       type: boolean
-      description: "Whether the job is allowed to fail without stopping the pipeline"        
+      description: "Whether the job is allowed to fail without stopping the pipeline"
+    web_ui:
+      default: "https://app.devguard.org"
+      description: "The DevGuard web UI URL"
 ---
 variables:
   GIT_STRATEGY: clone

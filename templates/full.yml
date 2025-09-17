@@ -50,6 +50,9 @@ spec:
     image_suffix:
       default: "default"
       description: 'Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image).'
+    web_ui:
+      default: "https://app.devguard.org"
+      description: "The DevGuard web UI URL"
 ---
 variables:
   GIT_STRATEGY: clone
@@ -65,6 +68,7 @@ include:
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
+      web_ui: $[[ inputs.web_ui ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
     inputs:
@@ -76,6 +80,7 @@ include:
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
+      web_ui: $[[ inputs.web_ui ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
     inputs:
@@ -87,6 +92,7 @@ include:
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
+      web_ui: $[[ inputs.web_ui ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
@@ -98,6 +104,7 @@ include:
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       artifact_name: $[[ inputs.artifact_name ]]
+      web_ui: $[[ inputs.web_ui ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
     inputs:
@@ -124,6 +131,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       artifact_name: $[[ inputs.artifact_name ]]
       image_suffix: $[[ inputs.image_suffix ]]
+      web_ui: $[[ inputs.web_ui ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/deploy.yml"
     inputs:
