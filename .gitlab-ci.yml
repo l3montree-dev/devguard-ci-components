@@ -27,6 +27,7 @@ include:
       version: "$CI_COMMIT_REF_NAME"
       iac_config_file: "checkov.yaml"
       api_url: "https://api.main.devguard.org"
+      web_ui: "https://app1.devguard.org"
 
   - examples/sbom-gets-generated/.gitlab-ci.yml
 
