@@ -30,6 +30,12 @@ include:
 
   - examples/sbom-gets-generated/.gitlab-ci.yml
 
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/full.yml"
+    inputs:
+      asset_name: "@opencode/projects/opencode-analyzer/assets/dashboard"
+      token: "$DEVGUARD_TOKEN"
+      api_url: "https://api.devguard.opencode.de"
+
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
     inputs:
       asset_name: "$DEVGUARD_ASSET_NAME"
@@ -58,7 +64,6 @@ include:
       artifact_name: "test-additional-artifact"
       image_suffix: "test-additional-artifact"
       api_url: "https://api.main.devguard.org"
-
 
 create-release:
   stage: release
