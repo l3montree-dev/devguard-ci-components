@@ -23,7 +23,7 @@ spec:
 variables:
   GIT_STRATEGY: clone
 
-devguard:sign$[[ inputs.image_suffix ]]:
+devguard:sign:$[[ inputs.image_suffix ]]:
   needs:
     - devguard:build-image:$[[ inputs.image_suffix ]]
   dependencies:
