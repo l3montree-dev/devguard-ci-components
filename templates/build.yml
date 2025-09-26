@@ -46,26 +46,31 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
     - |
         /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --ignore=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
     - |
-      echo "Image suffix: $IMAGE_SUFFIX"
-      if [ -n "$CI_COMMIT_TAG" ]; then
-        # Set IMAGE_TAG if the pipeline was triggered by a tag
-        if [ "$IMAGE_SUFFIX" != "" && "$IMAGE_SUFFIX" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG" > image-tag.txt
+        echo "Image suffix: '$IMAGE_SUFFIX'"
+        echo "Length of IMAGE_SUFFIX: ${#IMAGE_SUFFIX}"
+        
+        if [ -n "$CI_COMMIT_TAG" ]; then
+          # Set IMAGE_TAG if the pipeline was triggered by a tag
+          if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
+            echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG" > image-tag.txt
+            echo "Using tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG"
+          else
+            echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
+            echo "Using tag without suffix: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+          fi
         else
-          echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
+          # Set IMAGE_TAG if the pipeline was triggered by a push to main
+          branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
+          sha=${CI_COMMIT_SHORT_SHA}
+          ts=$(date +%s)
+          if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
+            echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}" > image-tag.txt
+            echo "Using branch tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}"
+          else
+            echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
+            echo "Using branch tag without suffix: $CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}"
+          fi
         fi
-
-      else
-        # Set IMAGE_TAG if the pipeline was triggered by a push to main
-        branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-        sha=${CI_COMMIT_SHORT_SHA}
-        ts=$(date +%s)
-        if [ "$IMAGE_SUFFIX" != "" && "$IMAGE_SUFFIX" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}" > image-tag.txt
-        else
-          echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
-        fi
-      fi
     - |
       # Generate PURL from OCI image for artifact name
       IMAGE_TAG=$(cat image-tag.txt)
