@@ -38,6 +38,8 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
   image:
     name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized-busybox-jq@sha256:451d56ef53ebf75808bf5f92dae58275d09d5eb8e99468399c3f4440f0c02167
     entrypoint: [""]
+  variables:
+    IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
   before_script:
     - apk add jq
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
@@ -46,8 +48,8 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         # Set IMAGE_TAG if the pipeline was triggered by a tag
-        if [ "$[[ inputs.image_suffix ]]" != "" && "$[[ inputs.image_suffix ]]" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$[[ inputs.image_suffix ]]:$CI_COMMIT_TAG" > image-tag.txt
+        if [ "$IMAGE_SUFFIX" != "" && "$IMAGE_SUFFIX" != "default" ]; then
+          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG" > image-tag.txt
         else
           echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
         fi
@@ -57,8 +59,8 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
         branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
         sha=${CI_COMMIT_SHORT_SHA}
         ts=$(date +%s)
-        if [ "$[[ inputs.image_suffix ]]" != "" && "$[[ inputs.image_suffix ]]" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$[[ inputs.image_suffix ]]:${branch}-${sha}-${ts}" > image-tag.txt
+        if [ "$IMAGE_SUFFIX" != "" && "$IMAGE_SUFFIX" != "default" ]; then
+          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}" > image-tag.txt
         else
           echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
         fi
