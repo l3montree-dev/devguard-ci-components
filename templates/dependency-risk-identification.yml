@@ -38,6 +38,12 @@ spec:
     web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard web UI URL"
+    fail_on_risk:
+      default: "critical"
+      description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
+    fail_on_cvss:
+      default: "critical"
+      description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
 ---
 variables:
   GIT_STRATEGY: clone
@@ -55,4 +61,4 @@ devguard:dependency-risk-identification:$[[ inputs.artifact_name ]]:
         - echo "Running DevGuard Dependency Risk Identification..."
         - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
         - echo "IS_TAG - $IS_TAG"
-        - devguard-scanner sbom $[[ inputs.sbom_file ]] --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --artifactName="$[[ inputs.artifact_name ]]" --webUI=$[[ inputs.web_ui ]]
+        - devguard-scanner sbom $[[ inputs.sbom_file ]] --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --artifactName="$[[ inputs.artifact_name ]]" --webUI=$[[ inputs.web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
