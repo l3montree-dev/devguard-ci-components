@@ -32,7 +32,7 @@ devguard:sign:$[[ inputs.image_suffix ]]:
   tags:
     - $[[ inputs.runner_tags ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
   script:
