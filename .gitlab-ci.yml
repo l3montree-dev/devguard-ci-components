@@ -9,4 +9,4 @@ include:
       asset_name: "$DEVGUARD_ASSET_NAME"
       token: "$DEVGUARD_TOKEN"
       api_url: "$DEVGUARD_API_URL"
-      web_ui: "https://devguard.opencode.de"
+      web_ui: "$DEVGUARD_WEB_UI"
