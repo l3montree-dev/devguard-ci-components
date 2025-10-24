@@ -23,9 +23,12 @@ spec:
     devguard_token:
       description: "The DevGuard API token (your private key)"
       default: "$DEVGUARD_TOKEN"
+    job_suffix:
+      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+      default: "default"
 
 ---
-sign-oci-image:
+sign-oci-image-$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
