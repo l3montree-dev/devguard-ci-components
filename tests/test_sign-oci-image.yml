@@ -13,7 +13,7 @@ include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@chore/generalization
     inputs:
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
-      token: "$DEVGUARD_TOKEN"
+      devguard_token: "$DEVGUARD_TOKEN"
       devguard_api_url: "$DEVGUARD_API_URL"
       images:
         - "$CI_REGISTRY_IMAGE/testing/signing:latest"
