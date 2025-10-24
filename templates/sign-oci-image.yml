@@ -26,13 +26,13 @@ spec:
 
 ---
 sign-oci-image:
-  stage: sign
+  stage: $[[ inputs.stage ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
     entrypoint: [""]
+  parallel:
+    matrix:
+      - IMAGE: $[[ inputs.images ]]
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - |
-      for image in $[[ inputs.images | join(" ") ]]; do
-        devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$image"
-      done
+    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE"
