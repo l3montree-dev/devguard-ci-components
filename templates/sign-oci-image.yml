@@ -1,0 +1,38 @@
+spec:
+  inputs:
+    devguard_api_url:
+      description: "The DevGuard API URL"
+      default: "https://api.devguard.org"
+    devguard_asset_name:
+      description: "The DevGuard asset name"
+    images: 
+      description: "The image tags to sign (array)"
+      type: array
+    registry:
+      description: "The container registry URL"
+      default: "$CI_REGISTRY"
+    registry_user:
+      description: "The container registry username"
+      default: "$CI_REGISTRY_USER"
+    registry_password:
+      description: "The container registry password"
+      default: "$CI_REGISTRY_PASSWORD"
+    stage:
+      default: "sign"
+      description: "CI stage to run this job in"
+    devguard_token:
+      description: "The DevGuard API token (your private key)"
+      default: "$DEVGUARD_TOKEN"
+
+---
+sign-oci-image:
+  stage: sign
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
+    entrypoint: [""]
+  script:
+    - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - |
+      for image in $[[ inputs.images | join(" ") ]]; do
+        devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$image"
+      done
