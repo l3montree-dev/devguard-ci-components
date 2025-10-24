@@ -1,5 +1,6 @@
 stages:
   - sign
+  - verify-singature # just for testing purposes
 
 include:
   - 'tests/test_sign-oci-image.yml'

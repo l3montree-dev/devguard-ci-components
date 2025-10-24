@@ -22,3 +22,11 @@ include:
   #### Test case: sign multiple images in projects own registry
   # ...
   #### Test case: sign multiple images in third party registry
+
+verify_image_signature:
+  stage: verify-singature
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
+    entrypoint: [""]
+  script:
+    - cosign verify "$CI_REGISTRY_IMAGE/testing/signing:latest" --key cosign.pub --insecure-ignore-tlog=true
