@@ -20,11 +20,11 @@ spec:
       description: "The SARIF file to use for the scan"  
     needs:
       type: array
-      default: null
+      default: []
       description: "The jobs that this job depends on"
     dependencies:
       type: array
-      default: null
+      default: []
       description: "The jobs that this job depends on"
     pull_policy:
       default: "always"
