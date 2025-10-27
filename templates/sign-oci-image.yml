@@ -26,12 +26,21 @@ spec:
     job_suffix:
       description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
       default: "default"
+    runner_tags:
+      default: ""
+      description: "The runner tag to use for the job"
+    pull_policy:
+      default: "IfNotPresent"
+      description: "The pull policy for the container image"
 
 ---
-sign_oci_image_$[[ inputs.job_suffix ]]:
+devguard:sign_oci_image_$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
+  tags:
+    - $[[ inputs.runner_tags ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
+    pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
   parallel:
     matrix:
