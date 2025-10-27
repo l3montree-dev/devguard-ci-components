@@ -1,12 +1,17 @@
 stages:
+  - test
   - sign
   - verify-singature # just for testing purposes
 
 include:
-  #- remote: "https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/v0.17.1/templates/full.yml"
-  #  inputs:
-  #    asset_name: "$DEVGUARD_ASSET_NAME"
-  #    token: "$DEVGUARD_TOKEN"
-  #    api_url: "$DEVGUARD_API_URL"
-  #    web_ui: "$DEVGUARD_WEB_UI"
+  ## Sign OCI Image Test
   - 'tests/test_sign-oci-image.yml'
+
+## Secret Scanning Test
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/secret-scanning/.gitlab-ci.yml
+trigger_secret_scanning_test_pipeline:
+  trigger:
+    include:
+      - project: 'l3montree/devguard-ci-components-test-project'
+        ref: 'secret-scanning'
+        file: '.gitlab-ci.yml'
