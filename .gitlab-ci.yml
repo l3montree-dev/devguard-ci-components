@@ -6,12 +6,5 @@ stages:
 include:
   ## Sign OCI Image Test
   - 'tests/test_sign-oci-image.yml'
-
-## Secret Scanning Test
-# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/secret-scanning/.gitlab-ci.yml
-trigger_secret_scanning_test_pipeline:
-  trigger:
-    include:
-      - project: 'l3montree/devguard-ci-components-test-project'
-        ref: 'secret-scanning'
-        file: '.gitlab-ci.yml'
+  ## Secret Scanning Test
+  - 'tests/test_secret-scanning.yml'
