@@ -1,58 +1,74 @@
 spec:
   inputs:
-    api_url:
-      default: "https://api.devguard.org"
+    devguard_api_url:
       description: "The DevGuard API URL"
-    asset_name:
+      default: "https://api.devguard.org"
+    devguard_asset_name:
       description: "The DevGuard asset name"
-    token:
-      description: "The DevGuard token"
-    scan_stage:
-      default: "test"
-      description: "The stage where the scan is run"
-    runner_tags:
-      default: ""
-      description: "The runner tag to use for the job"
-    pull_policy:
-      default: "always"
-      description: "The pull policy for the Docker image"
-    artifact_name:
+    devguard_token:
+      description: "The DevGuard API token (your private key)"
+      default: "$DEVGUARD_TOKEN"
+    devguard_artifact_name:
       default: "source"
       description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
-    web_ui:
+    devguard_web_ui:
       default: "https://app.devguard.org"
-      description: "The DevGuard web UI URL"
+      description: "The DevGuard Web-UI Instance URL"
     fail_on_risk:
       default: "critical"
       description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
     fail_on_cvss:
       default: "critical"
       description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
+    path:
+      default: "$CI_PROJECT_DIR"
+      description: "The path to the git repository to scan"
+    default_ref:
+      default: "$CI_DEFAULT_BRANCH"
+      description: "The default branch reference"
+    ref: 
+      default: "$CI_COMMIT_REF_NAME"
+      description: "The branch or tag reference to scan"
+    stage:
+      default: "test"
+      description: "The stage where the scan is executed"
+    runner_tags:
+      default: ""
+      description: "The runner tag to use for the job"
+    pull_policy:
+      default: "if-not-present"
+      description: "The pull policy for the container image (can be [always, if-not-present, never])"
+    job_suffix:
+      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+      default: "default"
+    git_strategy:
+      description: "The Git strategy to use for the job"
+      default: "clone"
+    git_depth:
+      description: "The Git depth to use for the job"
+      default: 0
 ---
-variables:
-  GIT_STRATEGY: clone
-  GIT_DEPTH: 0
-
-devguard:software-composition-analysis:
-  stage: "$[[ inputs.scan_stage ]]"
+devguard:software_composition_analysis_$[[ inputs.job_suffix ]]:
+  stage: "$[[ inputs.stage ]]"
+  variables:
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
+    GIT_DEPTH: $[[ inputs.git_depth ]]
   tags:
     - $[[ inputs.runner_tags ]]
-  dependencies: []
-  needs: []
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
-    - echo "Running DevGuard SCA..."
+    - echo "Running DevGuard SCA (based on the Trivy Project)..."
     - |
       # Determine artifact name: use PURL if no artifact_name provided, otherwise use provided name
-      if [ -z "$[[ inputs.artifact_name ]]" ] && [ -f artifact-purl.txt ]; then
+      if [ -z "$[[ inputs.devguard_artifact_name ]]" ] && [ -f artifact-purl.txt ]; then
         ARTIFACT_NAME=$(cat artifact-purl.txt)
         echo "Using PURL as artifact name: $ARTIFACT_NAME"
       else
-        ARTIFACT_NAME="$[[ inputs.artifact_name ]]"
+        ARTIFACT_NAME="$[[ inputs.devguard_artifact_name ]]"
         echo "Using provided artifact name: $ARTIFACT_NAME"
       fi
     - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
-    - echo "IS_TAG - $IS_TAG"
-    - devguard-scanner sca --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --path="$CI_PROJECT_DIR" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --artifactName="$ARTIFACT_NAME" --webUI=$[[ inputs.web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - echo "Running on a tag? $IS_TAG"
+    - devguard-scanner sca --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$IS_TAG" --webUI=$[[ inputs.web_ui ]] --artifactName="$ARTIFACT_NAME" --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
