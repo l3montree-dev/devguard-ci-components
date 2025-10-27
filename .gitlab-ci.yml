@@ -8,3 +8,9 @@ include:
   - 'tests/test_sign-oci-image.yml'
   ## Secret Scanning Test
   - 'tests/test_secret-scanning.yml'
+
+trigger_test_pipeline:
+  trigger:
+    strategy: mirror
+    project: 'l3montree/devguard-ci-components-test-project'
+    branch: 'main'
