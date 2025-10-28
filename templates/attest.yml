@@ -2,94 +2,139 @@ spec:
   inputs:
     deploy_stage:
       default: "deploy"
-      description: "The stage where the image is built and tagged"
-    token:
-      description: "The token to authenticate against the DevGuard API"
-    api_url:
-      default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
-    asset_name:
-      description: "The name of the asset"
+      description: "Pipeline stage for attestation job"
+    image:
+      default: "To which container image to attest"
+      description: "Docker image to use for attestation"
     artifact_name:
-      default: ""
-      description: "The artifact you would like to attest. If not provided, will use the generated PURL from the built image. Example: 'pkg:oci/library/nginx'"
-    runner_tags:
-      default: ""
-      description: "The runner tag to use for the job"
-    pull_policy:
-      default: "always"
-      description: "The pull policy for the Docker image"  
+      description: "Artifact name in purl format (e.g., pkg:oci/k8s-tools)"
+    devguard_asset_name:
+      description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
+    devguard_token:
+      description: "DevGuard API token (use CI/CD variable)"
+    devguard_api_url:
+      default: "https://api.devguard.opencode.de"
+      description: "DevGuard API URL"
+    registry_user:
+      default: "$CI_REGISTRY_USER"
+      description: "Container registry username"
+    registry_password:
+      default: "$CI_REGISTRY_PASSWORD"
+      description: "Container registry password"
+    registry:
+      default: "$CI_REGISTRY"
+      description: "Container registry URL"
+    default_ref:
+      default: "$CI_DEFAULT_BRANCH"
+      description: "Default branch reference"
+    commit_ref:
+      default: "$CI_COMMIT_REF_NAME"
+      description: "Current commit reference"
+    needs:
+      default: []
+      type: array
+      description: "List of jobs this attestation depends on"
+    dependencies:
+      default: []
+      type: array
+      description: "List of jobs to download artifacts from"
+    attestations:
+      description: |
+        List of attestations to create. Each item should have:
+        - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
+        - predicate_type: the predicate type URL
+      default: []
+      type: array
     image_suffix:
       default: "default"
-      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."  
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
+    pull_policy:
+      default: "if-not-present"
+      description: "The pull policy for the container image (can be [always, if-not-present, never])"
 ---
 devguard:attest:$[[ inputs.image_suffix ]]:
-  dependencies:
-    - devguard:build-image:$[[ inputs.image_suffix ]]
-  stage: "$[[ inputs.deploy_stage ]]"
+  stage: $[[ inputs.deploy_stage ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
-  tags:
-    - $[[ inputs.runner_tags ]]
+    entrypoint: [""]
+
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
+  before_script: |
+    apk add --no-cache jq gettext
   script:
     - |
-      # Determine artifact name: use PURL if no artifact_name provided, otherwise use provided name
-      if [ -z "$[[ inputs.artifact_name ]]" ] && [ -f artifact-purl.txt ]; then
-        ARTIFACT_NAME=$(cat artifact-purl.txt)
-        echo "Using PURL as artifact name: $ARTIFACT_NAME"
-        # For API calls, use safe version if available
-        if [ -f artifact-name-safe.txt ]; then
-          API_ARTIFACT_NAME=$(cat artifact-name-safe.txt)
-          echo "Using safe artifact name for API calls: $API_ARTIFACT_NAME"
+      echo "Attesting artifacts for $[[ inputs.image ]]"
+      echo "Artifact Name: $[[ inputs.artifact_name ]]"
+      echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
+
+      # URL encode artifact name for API calls
+      API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.artifact_name ]]', safe=''))")
+      echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
+      echo 'Attestations: $[[ inputs.attestations ]]'
+
+      # Login to registry
+      devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+
+      ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
+      | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
+      | sed 's/=>/:/g' \
+      | sed "s/'/\"/g")
+      # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
+
+      ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
+
+      # Process each attestation
+      echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
+        SOURCE=$(echo "$attestation" | jq -r '.source')
+        PREDICATE_TYPE=$(echo "$attestation" | jq -r '.predicate_type')
+        
+        echo ""
+        echo "========================================"
+        echo "Processing attestation with predicate: $PREDICATE_TYPE"
+        
+        # Check if source is a URL (starts with http:// or https://)
+        if [[ "$SOURCE" =~ ^https?:// ]]; then
+          # Replace ARTIFACT_NAME placeholder with URL-encoded artifact name
+          URL="${SOURCE//ARTIFACT_NAME/$API_ARTIFACT_NAME}"
+          URL=$(echo "$URL" | envsubst)
+          
+          # Extract filename from URL or use a default
+          FILENAME=$(basename "$URL" | cut -d'?' -f1)
+          if [ -z "$FILENAME" ] || [ "$FILENAME" = "/" ]; then
+            FILENAME="downloaded-$(echo "$PREDICATE_TYPE" | md5sum | cut -d' ' -f1).json"
+          fi
+          
+          echo "Downloading from URL: $URL"
+          echo "Saving as: $FILENAME"
+          
+          devguard-scanner get "$URL" --token="$[[ inputs.devguard_token ]]" > "$FILENAME"
+          FILE_PATH="$FILENAME"
         else
-          API_ARTIFACT_NAME="$ARTIFACT_NAME"
+          # It's a file path
+          FILE_PATH="$SOURCE"
+          echo "Using local file: $FILE_PATH"
         fi
-      else
-        ARTIFACT_NAME="$[[ inputs.artifact_name ]]"
-        API_ARTIFACT_NAME="$ARTIFACT_NAME"
-        echo "Using provided artifact name: $ARTIFACT_NAME"
-      fi
-      
-      echo "Attesting artifact: $ARTIFACT_NAME"
-      
-      #slugify ref_name so we have a valid url
-      SLUG=$(devguard-scanner slug $CI_COMMIT_REF_NAME)
-
-      echo "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json" --token="$[[ inputs.token ]]"
-
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.token ]]" > sbom.json
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.token ]]" > vex.json
-      devguard-scanner get "$[[ inputs.api_url ]]/api/v1/organizations/$[[ inputs.asset_name ]]/refs/$SLUG/sarif.json/" --token="$[[ inputs.token ]]" > sarif.json
-
-      devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-      
-      # Attest SBOM
-      if [ -f image-digest.txt ]; then
-        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' "$(cat image-tag.txt)@$(cat image-digest.txt)" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
-      else
-        devguard-scanner attest sbom.json --predicateType='https://cyclonedx.org/bom' --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
-      fi
-
-      # Attest VEX
-      if [ -f image-digest.txt ]; then
-        devguard-scanner attest vex.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://cyclonedx.org/vex' --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
-      else
-        devguard-scanner attest vex.json --predicateType='https://cyclonedx.org/vex' --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
-      fi
-
-      # Attest SAST
-      if [ -f image-digest.txt ]; then
-        devguard-scanner attest sarif.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
-      else
-        devguard-scanner attest sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --artifactName="$ARTIFACT_NAME"
-      fi
-
-      # Attest provenance
-      if [ -f build.provenance.json ]; then
-        if [ -f image-digest.txt ]; then
-          devguard-scanner attest build.provenance.json "$(cat image-tag.txt)@$(cat image-digest.txt)" --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --artifactName="$ARTIFACT_NAME"
+        
+        # Create attestation
+        if [ -f "$FILE_PATH" ]; then
+          echo "Creating attestation for $FILE_PATH"
+          devguard-scanner attest "$FILE_PATH" \
+            --predicateType="$PREDICATE_TYPE" \
+            $[[ inputs.image ]] \
+            --defaultRef="$[[ inputs.default_ref ]]" \
+            --ref="$[[ inputs.commit_ref ]]" \
+            --token="$[[ inputs.devguard_token ]]" \
+            --apiUrl="$[[ inputs.devguard_api_url ]]" \
+            --assetName="$[[ inputs.devguard_asset_name ]]" \
+            --artifactName="$[[ inputs.artifact_name ]]"
+          echo "✓ Attestation created successfully"
         else
-          devguard-scanner attest build.provenance.json --predicateType='https://slsa.dev/provenance/v1' --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]"  --assetName="$[[ inputs.asset_name ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --artifactName="$ARTIFACT_NAME"
+          echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
         fi
-      fi
+        echo "========================================"
+      done
+
+      echo ""
+      echo "All attestations completed"

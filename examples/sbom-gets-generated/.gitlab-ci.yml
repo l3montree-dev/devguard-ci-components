@@ -20,10 +20,10 @@ include:
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/dependency-risk-identification@$CI_COMMIT_SHA
     inputs:
       sbom_file: "sbom.json"
-      asset_name: "$DEVGUARD_ASSET_NAME"
-      token: "$DEVGUARD_TOKEN"
-      api_url: "https://api.main.devguard.org"
-      needs: 
-      - generate-sbom
-      dependencies: 
-      - generate-sbom
+      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
+      devguard_token: "$DEVGUARD_TOKEN"
+      devguard_api_url: "https://api.main.devguard.org"
+      needs:
+        - generate-sbom
+      dependencies:
+        - generate-sbom

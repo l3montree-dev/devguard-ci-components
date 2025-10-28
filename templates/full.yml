@@ -1,10 +1,10 @@
 spec:
   inputs:
-    token:
+    devguard_token:
       description: "The DevGuard token"
-    asset_name:
+    devguard_asset_name:
       description: "The DevGuard asset name"
-    api_url:
+    devguard_api_url:
       default: "https://api.devguard.org"
       description: "The DevGuard API URL"
     scan_stage:
@@ -43,13 +43,13 @@ spec:
     allow_open_code_risk:
       default: true
       type: boolean
-      description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"  
+      description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"
     artifact_name:
       default: ""
       description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
     image_suffix:
       default: "default"
-      description: 'Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image).'
+      description: "Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image)."
     web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard web UI URL"
@@ -62,9 +62,9 @@ include:
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
@@ -74,9 +74,9 @@ include:
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
@@ -86,9 +86,9 @@ include:
     inputs:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
@@ -96,9 +96,9 @@ include:
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
@@ -112,18 +112,18 @@ include:
       build_stage: $[[ inputs.build_stage ]]
       build_args: $[[ inputs.build_args ]]
       push_image: $[[ inputs.small_artifact_registry ]]
-      token: $[[ inputs.token ]]
-      api_url: $[[ inputs.api_url ]]
-      asset_name: $[[ inputs.asset_name ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
       artifact_name: $[[ inputs.artifact_name ]]
       image_suffix: $[[ inputs.image_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
-      token: $[[ inputs.token ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       #You can change these to the desired stages. Make sure they match one of your defined stages.
       scan_stage: $[[ inputs.scan_stage ]]
       fetch_image_from_registry: $[[ inputs.small_artifact_registry ]]
@@ -138,22 +138,22 @@ include:
       #You can change this to the desired stage. Make sure it matches one of your defined stages.
       deploy_stage: $[[ inputs.deploy_stage ]]
       image_already_in_registry: $[[ inputs.small_artifact_registry ]]
-      token: $[[ inputs.token ]]
-      api_url: $[[ inputs.api_url ]]
-      asset_name: $[[ inputs.asset_name ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign.yml"
     inputs:
-      token: $[[ inputs.token ]]
-      asset_name: $[[ inputs.asset_name ]]
-      api_url: $[[ inputs.api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
-      token: $[[ inputs.token ]]
-      api_url: $[[ inputs.api_url ]]
-      asset_name: $[[ inputs.asset_name ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       deploy_stage: $[[ inputs.deploy_stage ]]
       runner_tags: $[[ inputs.runner_tags ]]
       pull_policy: $[[ inputs.pull_policy ]]
