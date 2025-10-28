@@ -36,8 +36,7 @@ spec:
 ---
 devguard:sign_oci_image_$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
-  tags:
-    - $[[ inputs.runner_tags ]]
+  tags: $[[ inputs.runner_tags ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
     pull_policy: "$[[ inputs.pull_policy ]]"
