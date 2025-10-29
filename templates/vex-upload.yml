@@ -46,11 +46,11 @@ spec:
       description: "Is the current commit a tag"
     git_strategy:
       description: "The Git strategy to use for the job"
-      default: "none"
+      default: "fetch"
 ---
 variables:
   GIT_STRATEGY: $[[ inputs.git_strategy ]]
-devguard:vex-upload:$[[ inputs.job_suffix ]]:
+devguard:vex-upload$[[ inputs.job_suffix ]]:
   stage: "$[[ inputs.stage ]]"
   tags:
     - $[[ inputs.runner_tags ]]
