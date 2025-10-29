@@ -8,6 +8,7 @@ include:
   - 'tests/test_sign-oci-image.yml'
   ## Secret Scanning Test
   - 'tests/test_secret-scanning.yml'
+  - 'tests/test_discover-baseimage-attestations.yml'
 
 trigger_test_pipeline:
   trigger:
