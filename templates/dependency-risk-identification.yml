@@ -26,9 +26,6 @@ spec:
       type: array
       default: []
       description: "The jobs that this job depends on"
-    scanner_id:
-      default: "sbom-upload"
-      description: "The scanner ID to use for the job"
     pull_policy:
       default: "always"
       description: "The pull policy for the Docker image"
