@@ -59,6 +59,9 @@ spec:
       default: "$CI_REGISTRY_PASSWORD"
       description: "Container registry password"
 
+    image:
+      default: "image.tar"
+      description: "The image file to scan (e.g. image.tar)"
     image_tag:
       default: "$CI_REGISTRY_IMAGE"
       description: "The tag of the image to scan. Leave empty to use the generated tag from the 'generate-tag' component."
@@ -89,7 +92,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   before_script: |
     if [ "$[[ inputs.fetch_image_from_registry ]]" == "true" ]; then
       crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-      crane pull $[[ inputs.image_tag ]] image.tar
+      crane pull $[[ inputs.image_tag ]] $[[ inputs.image ]]
     fi
 
   script:
@@ -97,4 +100,4 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
     - echo "Artifact Name - $ARTIFACT_NAME"
     - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
     - echo "IS_TAG - $IS_TAG"
-    - devguard-scanner container-scanning --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="image.tar" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$IS_TAG" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - devguard-scanner container-scanning --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path=$[[ inputs.image ]] --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$IS_TAG" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]

@@ -52,9 +52,6 @@ spec:
       default: "$CI_COMMIT_REF_NAME"
       description: "Current commit reference"
 
-    scanner_id:
-      default: "sbom-upload"
-      description: "The scanner ID to use for the job"
     sbom_file:
       description: "The SBOM file to use for the scan"
     fail_on_risk:
