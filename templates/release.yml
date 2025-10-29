@@ -14,12 +14,33 @@
 
 spec:
   inputs:
-    release_stage:
-      default: "release"
-      description: "The stage where the release should be created"
-    release_description:
-      description: "Custom release description (optional, leave empty for auto-generated)"
+    runner_tags:
       default: ""
+      description: "The runner tag to use for the job"
+    stage:
+      default: "test"
+      description: "The stage where the image is scanned"
+    job_suffix:
+      default: ""
+      description: "Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image."
+    git_strategy:
+      description: "The Git strategy to use for the job"
+      default: "none"
+    pull_policy:
+      default: "always"
+      description: "The pull policy for the Docker image"
+    allow_failure:
+      default: false
+      type: boolean
+      description: "Whether the job is allowed to fail without stopping the pipeline"
+    needs:
+      type: array
+      default: []
+      description: "The jobs that this job depends on"
+    dependencies:
+      type: array
+      default: []
+      description: "The jobs to download artifacts from"
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
@@ -31,21 +52,42 @@ spec:
       default: []
       type: array
       description: "List of jobs to download artifacts from"
+
+    release_tag:
+      description: "The tag to create the release for"
+      default: "$CI_COMMIT_TAG"
+    release_name:
+      description: "The name of the release (e.g., Release v1.0.0)"
+      default: "Release $CI_COMMIT_TAG"
+    release_description:
+      description: "Custom release description (optional, leave empty for auto-generated)"
+      default: ""
+    rules:
+      type: array
+      default:
+        - if: $CI_COMMIT_TAG
+      description: "The rules to determine when to create a release"  
 ---
-devguard:release:
-  stage: $[[ inputs.release_stage ]]
+devguard:release$[[ inputs.job_suffix ]]:
   tags:
     - $[[ inputs.runner_tags ]]
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs: $[[ inputs.needs ]]
+  stage: $[[ inputs.stage ]]
+  allow_failure: $[[ inputs.allow_failure ]]
   dependencies: $[[ inputs.dependencies ]]
-  rules:
-    - if: $CI_COMMIT_TAG
+  needs: $[[ inputs.needs ]]
+  variables:
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
+  stage: $[[ inputs.release_stage ]]
+
+  rules: $[[ inputs.rules ]]
+
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+
   script:
     - echo "Creating release for tag $CI_COMMIT_TAG"
   release:
-    tag_name: "$CI_COMMIT_TAG"
-    name: "Release $CI_COMMIT_TAG"
+    tag_name: "$[[ inputs.release_tag ]]"
+    name: "$[[ inputs.release_name ]]"
     description: |
       $[[ inputs.release_description ]]
 
