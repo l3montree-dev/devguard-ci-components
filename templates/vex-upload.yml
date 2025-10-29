@@ -61,4 +61,4 @@ devguard:vex-upload:$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
     - echo "Running DevGuard VeX Upload..."
-    - devguard-scanner vex $[[ inputs.vex_file ]] --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ input.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]"
+    - devguard-scanner vex $[[ inputs.vex_file ]] --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]"
