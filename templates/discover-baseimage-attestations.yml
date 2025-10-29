@@ -46,7 +46,7 @@ devguard:discover-base-image-attestations$[[ inputs.job_suffix ]]:
   script:
     - |
       devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-      devguard-scanner discover-baseimage-attestations --path "$[[ inputs.path ]]" --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]"
+      devguard-scanner discover-baseimage-attestations  --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]" "$[[ inputs.path ]]"
   artifacts:
     paths:
       - $[[ inputs.output ]]/attestation-*.json
