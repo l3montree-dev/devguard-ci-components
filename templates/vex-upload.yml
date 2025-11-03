@@ -13,6 +13,9 @@ spec:
     devguard_artifact_name:
       default: "source"
       description: "The name of the artifact you want to upload this vex to"
+    devguard_origin:
+      default: "DEFAULT"
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default "DEFAULT")"
 
     runner_tags:
       default: ""
@@ -69,4 +72,4 @@ devguard:vex_upload$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
     - echo "Running DevGuard VeX Upload..."
-    - devguard-scanner vex $[[ inputs.vex_file ]] --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]"
+    - devguard-scanner vex $[[ inputs.vex_file ]] --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]"

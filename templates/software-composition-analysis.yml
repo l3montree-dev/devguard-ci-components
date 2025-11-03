@@ -14,7 +14,10 @@ spec:
     devguard_web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard Web-UI Instance URL"
-
+    devguard_origin:
+      default: "DEFAULT"
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default "DEFAULT")"
+    
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
@@ -79,4 +82,4 @@ devguard:software_composition_analysis_$[[ inputs.job_suffix ]]:
 
   script:
     - echo "Running DevGuard SCA (based on the Trivy Project)..."
-    - devguard-scanner sca --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --webUI=$[[ inputs.devguard_web_ui ]] --artifactName=$[[ inputs.devguard_artifact_name ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - devguard-scanner sca --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --webUI=$[[ inputs.devguard_web_ui ]] --artifactName=$[[ inputs.devguard_artifact_name ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
