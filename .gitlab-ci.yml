@@ -5,13 +5,15 @@ stages:
 
 include:
   ## Sign OCI Image Test
-  - 'tests/test_sign-oci-image.yml'
+  - "tests/test_sign-oci-image.yml"
   ## Secret Scanning Test
-  - 'tests/test_secret-scanning.yml'
-  - 'tests/test_discover-baseimage-attestations.yml'
+  - "tests/test_secret-scanning.yml"
+  - "tests/test_discover-baseimage-attestations.yml"
+  ## Release Test
+  - "tests/test_release.yml"
 
 trigger_test_pipeline:
   trigger:
     strategy: mirror
-    project: 'l3montree/devguard-ci-components-test-project'
-    branch: 'main'
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "main"
