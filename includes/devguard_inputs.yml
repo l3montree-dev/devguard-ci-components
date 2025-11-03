@@ -1,0 +1,10 @@
+spec:
+  inputs:
+    devguard_api_url:
+      description: "The DevGuard API URL"
+      default: "https://api.devguard.org"
+    devguard_asset_name:
+      description: "The DevGuard asset name"
+    devguard_token:
+      description: "The DevGuard API token (your private key)"
+      default: "$DEVGUARD_TOKEN"
