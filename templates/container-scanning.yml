@@ -102,14 +102,14 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --assetName="$[[ inputs.devguard_asset_name ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --token="$[[ inputs.devguard_token ]]" \
-          --image="${[[ inputs.remote_image ]]}" \
+          --image="$[[ inputs.remote_image ]]" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
           --artifactName="$[[ inputs.devguard_artifact_name ]]" \
-          --webUI="${[[ inputs.devguard_web_ui ]]}" \
-          --failOnRisk="${[[ inputs.fail_on_risk ]]}" \
-          --failOnCVSS="${[[ inputs.fail_on_cvss ]]}"
+          --webUI="$[[ inputs.devguard_web_ui ]]" \
+          --failOnRisk="$[[ inputs.fail_on_risk ]]" \
+          --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
       else
         echo "Scanning local tar file: $[[ inputs.image_tar_path ]]"
         devguard-scanner container-scanning \
@@ -117,12 +117,12 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --assetName="$[[ inputs.devguard_asset_name ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --token="$[[ inputs.devguard_token ]]" \
-          --path="${[[ inputs.image_tar_path ]]}" \
+          --path="$[[ inputs.image_tar_path ]]" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
           --artifactName="$[[ inputs.devguard_artifact_name ]]" \
-          --webUI="${[[ inputs.devguard_web_ui ]]}" \
-          --failOnRisk="${[[ inputs.fail_on_risk ]]}" \
-          --failOnCVSS="${[[ inputs.fail_on_cvss ]]}"
+          --webUI="$[[ inputs.devguard_web_ui ]]" \
+          --failOnRisk="$[[ inputs.fail_on_risk ]]" \
+          --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
       fi
