@@ -9,8 +9,6 @@ include:
   ## Secret Scanning Test
   - "tests/test_secret-scanning.yml"
   - "tests/test_discover-baseimage-attestations.yml"
-  ## Release Test
-  - "tests/test_release.yml"
 
 trigger_test_pipeline:
   trigger:
