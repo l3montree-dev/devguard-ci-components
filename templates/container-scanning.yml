@@ -2,9 +2,12 @@ spec:
   inputs:
     devguard_api_url:
       default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
+      description: "The url of the API to send the scan request to (default "https://api.devguard.org")"
     devguard_asset_name:
-      description: "The DevGuard asset name"
+      description: "The id of the asset which is scanned (your repository in DevGuard)"
+    devguard_origin:
+      default: "DEFAULT"
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default "DEFAULT")"
     devguard_token:
       description: "The DevGuard token"
     devguard_web_ui:
@@ -101,4 +104,4 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   script:
     - echo "Running DevGuard Container Scanning..."
     - echo "Artifact Name - $ARTIFACT_NAME"
-    - devguard-scanner container-scanning --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path=$[[ inputs.image ]] --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - devguard-scanner container-scanning --origin="$[[ inputs.devguard_origin ]]"  --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path=$[[ inputs.image ]] --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
