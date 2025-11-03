@@ -48,6 +48,9 @@ spec:
     commit_ref:
       default: "$CI_COMMIT_REF_NAME"
       description: "The branch or tag reference to scan"
+    is_tag:
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
+      description: "Is the current commit a tag"
 ---
 devguard:static-application-security-testing:
   tags:
@@ -65,6 +68,4 @@ devguard:static-application-security-testing:
 
   script:
     - echo "Running DevGuard SAST..."
-    - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
-    - echo "IS_TAG - $IS_TAG"
-    - devguard-scanner sast --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$IS_TAG" --webUI=$[[ inputs.devguard_web_ui ]]
+    - devguard-scanner sast --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --webUI=$[[ inputs.devguard_web_ui ]]
