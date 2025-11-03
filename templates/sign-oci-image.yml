@@ -1,5 +1,3 @@
-include: "../includes/devguard_inputs.yml"
-
 spec:
   inputs:
     devguard_api_url:
