@@ -77,7 +77,7 @@ devguard:release$[[ inputs.job_suffix ]]:
   needs: $[[ inputs.needs ]]
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
-  stage: $[[ inputs.release_stage ]]
+  stage: $[[ inputs.stage ]]
 
   rules: $[[ inputs.rules ]]
 
