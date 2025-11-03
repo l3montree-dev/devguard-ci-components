@@ -9,6 +9,8 @@ include:
   ## Secret Scanning Test
   - "tests/test_secret-scanning.yml"
   - "tests/test_discover-baseimage-attestations.yml"
+  ## Software Composition Analysis Test
+  - "tests/test_software-composition-analysis.yml"
 
 trigger_test_pipeline:
   trigger:
