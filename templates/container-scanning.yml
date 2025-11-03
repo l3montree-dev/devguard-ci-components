@@ -7,7 +7,7 @@ spec:
       description: "The id of the asset which is scanned (your repository in DevGuard)"
     devguard_origin:
       default: "DEFAULT"
-      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default "DEFAULT")"
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default 'DEFAULT')"
     devguard_token:
       description: "The DevGuard token"
     devguard_web_ui:

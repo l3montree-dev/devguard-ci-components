@@ -18,7 +18,7 @@ spec:
       description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
     devguard_origin:
       default: "DEFAULT"
-      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default "DEFAULT")"
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default 'DEFAULT')""
     
     runner_tags:
       default: ""
