@@ -1,0 +1,8 @@
+## Secret Scanning Test
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/secret-scanning/.gitlab-ci.yml
+
+trigger_release_test_pipeline:
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "release"

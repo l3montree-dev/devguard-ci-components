@@ -7,155 +7,165 @@ spec:
     devguard_api_url:
       default: "https://api.devguard.org"
       description: "The DevGuard API URL"
+    devguard_web_ui:
+      default: "https://app.devguard.org"
+      description: "The DevGuard web UI URL"
+    devguard_artifact_name:
+      default: ""
+      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
+
     scan_stage:
       default: "test"
       description: "The stage where the scan is run"
     build_stage:
-      default: build
+      default: "build"
       description: "The stage where the image is built and tagged"
-    build_args:
-      default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
-      description: "The build arguments to pass to the Docker build command"
     deploy_stage:
-      default: deploy
+      default: "deploy"
       description: "The stage where the image should be pushed into the registry"
-    small_artifact_registry:
-      default: "false"
-      description: "If the artifact size is too big for your gitlab instance, set this to true. This will push the image directly to the registry instead of uploading it as artifact."
-    version:
-      default: "main"
-      description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
-    license_scanning_decision_file:
-      default: "./docs/dependency_decisions.yml"
-      description: "The path to the dependency decisions file"
-    license_scanning_environment:
-      default: "go"
-      description: "The environment to scan [go, npm]"
-    iac_config_file:
-      default: ""
-      description: "The path to the config file (e.g. checkov.yaml)"
+
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
-    pull_policy:
-      default: "always"
-      description: "The pull policy for the Docker image"
-    allow_open_code_risk:
-      default: true
-      type: boolean
-      description: "Whether the scanning jobs are allowed to fail without stopping the pipeline"
-    artifact_name:
+    job_suffix:
       default: ""
-      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
-    image_suffix:
-      default: "default"
-      description: "Suffix for the image name. Useful if you are building multiple images (for example: building a <org>/scanner image and a <org>/web image)."
-    web_ui:
-      default: "https://app.devguard.org"
-      description: "The DevGuard web UI URL"
+      description: "A suffix to append to the job name (useful when using the component several times in one pipeline)"
+    git_strategy:
+      default: "fetch"
+      description: "The Git strategy to use for the job"
+    pull_policy:
+      default: "if-not-present"
+      description: "The pull policy for the container image (can be [always, if-not-present, never])"
+    allow_failure:
+      default: false
+      type: boolean
+      description: "Whether the jobs are allowed to fail without stopping the pipeline"
+
+    build_args:
+      default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
+      description: "The build arguments to pass to the Docker build command"
+
+    version:
+      default: "main"
+      description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
 ---
 variables:
-  GIT_STRATEGY: clone
+  GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
 include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
     inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.scan_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
-      web_ui: $[[ inputs.web_ui ]]
+      allow_failure: $[[ inputs.allow_failure ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sast.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/static-application-security-testing.yml"
     inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.scan_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
-      web_ui: $[[ inputs.web_ui ]]
+      allow_failure: $[[ inputs.allow_failure ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
     inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.scan_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_open_code_risk: $[[ inputs.allow_open_code_risk ]]
-      web_ui: $[[ inputs.web_ui ]]
+      allow_failure: $[[ inputs.allow_failure ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
+      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.scan_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      artifact_name: $[[ inputs.artifact_name ]]
-      web_ui: $[[ inputs.web_ui ]]
+      allow_failure: $[[ inputs.allow_failure ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      build_stage: $[[ inputs.build_stage ]]
-      build_args: $[[ inputs.build_args ]]
-      push_image: $[[ inputs.small_artifact_registry ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      artifact_name: $[[ inputs.artifact_name ]]
-      image_suffix: $[[ inputs.image_suffix ]]
+      stage: $[[ inputs.build_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      build_args: $[[ inputs.build_args ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      #You can change these to the desired stages. Make sure they match one of your defined stages.
-      scan_stage: $[[ inputs.scan_stage ]]
-      fetch_image_from_registry: $[[ inputs.small_artifact_registry ]]
+      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.scan_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      artifact_name: $[[ inputs.artifact_name ]]
-      image_suffix: $[[ inputs.image_suffix ]]
-      web_ui: $[[ inputs.web_ui ]]
+      allow_failure: $[[ inputs.allow_failure ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/deploy.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
-      #You can change this to the desired stage. Make sure it matches one of your defined stages.
-      deploy_stage: $[[ inputs.deploy_stage ]]
-      image_already_in_registry: $[[ inputs.small_artifact_registry ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign.yml"
-    inputs:
-      devguard_token: $[[ inputs.devguard_token ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.deploy_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.deploy_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      deploy_stage: $[[ inputs.deploy_stage ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: $[[ inputs.deploy_stage ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      artifact_name: $[[ inputs.artifact_name ]]
-      image_suffix: $[[ inputs.image_suffix ]]
+      allow_failure: $[[ inputs.allow_failure ]]

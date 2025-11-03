@@ -1,16 +1,12 @@
 spec:
   inputs:
     devguard_api_url:
-      description: "The DevGuard API URL"
       default: "https://api.devguard.org"
+      description: "The DevGuard API URL"
     devguard_asset_name:
       description: "The DevGuard asset name"
     devguard_token:
-      description: "The DevGuard API token (your private key)"
-      default: "$DEVGUARD_TOKEN"
-    devguard_artifact_name:
-      default: "source"
-      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
+      description: "The DevGuard token"
     devguard_web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard Web-UI Instance URL"
@@ -52,18 +48,8 @@ spec:
     commit_ref:
       default: "$CI_COMMIT_REF_NAME"
       description: "The branch or tag reference to scan"
-    is_tag:
-      default: "$(if [ \"$CI_COMMIT_TAG\" != \"\" ]; then echo \"true\"; else echo \"false\"; fi)"
-      description: "Is the current commit a tag"
-    
-    fail_on_risk:
-      default: "critical"
-      description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
-    fail_on_cvss:
-      default: "critical"
-      description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
 ---
-devguard:software_composition_analysis_$[[ inputs.job_suffix ]]:
+devguard:static-application-security-testing:
   tags:
     - $[[ inputs.runner_tags ]]
   stage: $[[ inputs.stage ]]
@@ -74,9 +60,11 @@ devguard:software_composition_analysis_$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
 
   script:
-    - echo "Running DevGuard SCA (based on the Trivy Project)..."
-    - devguard-scanner sca --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --webUI=$[[ inputs.devguard_web_ui ]] --artifactName=$[[ inputs.devguard_artifact_name ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - echo "Running DevGuard SAST..."
+    - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
+    - echo "IS_TAG - $IS_TAG"
+    - devguard-scanner sast --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$IS_TAG" --webUI=$[[ inputs.devguard_web_ui ]]

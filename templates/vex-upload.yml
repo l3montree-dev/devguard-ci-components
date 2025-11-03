@@ -14,12 +14,25 @@ spec:
       default: "source"
       description: "The name of the artifact you want to upload this vex to"
 
-    stage:
-      default: "test"
-      description: "The stage where the scan is run"
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
+    stage:
+      default: "test"
+      description: "The stage where the image is scanned"
+    job_suffix:
+      default: ""
+      description: "Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image."
+    git_strategy:
+      description: "The Git strategy to use for the job"
+      default: "fetch"
+    pull_policy:
+      default: "always"
+      description: "The pull policy for the Docker image"
+    allow_failure:
+      default: false
+      type: boolean
+      description: "Whether the job is allowed to fail without stopping the pipeline"
     needs:
       type: array
       default: []
@@ -27,16 +40,7 @@ spec:
     dependencies:
       type: array
       default: []
-      description: "The jobs that this job depends on"
-    pull_policy:
-      default: "always"
-      description: "The pull policy for the Docker image"
-    job_suffix:
-      default: ""
-      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
-    git_strategy:
-      description: "The Git strategy to use for the job"
-      default: "fetch"
+      description: "The jobs to download artifacts from"
 
     default_ref:
       default: "$CI_DEFAULT_BRANCH"
@@ -44,21 +48,22 @@ spec:
     commit_ref:
       default: "$CI_COMMIT_REF_NAME"
       description: "Current commit reference"
+
     is_tag:
-      default: "$(if [ \"$CI_COMMIT_TAG\" != \"\" ]; then echo \"true\"; else echo \"false\"; fi)"
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
       description: "Is the current commit a tag"
 
-    vex_file:
-      description: "The VEX file to upload"
 ---
-variables:
-  GIT_STRATEGY: $[[ inputs.git_strategy ]]
-devguard:vex-upload$[[ inputs.job_suffix ]]:
-  stage: "$[[ inputs.stage ]]"
+devguard:vex_upload$[[ inputs.job_suffix ]]:
   tags:
     - $[[ inputs.runner_tags ]]
+  stage: $[[ inputs.stage ]]
+  allow_failure: $[[ inputs.allow_failure ]]
   needs: $[[ inputs.needs ]]
   dependencies: $[[ inputs.dependencies ]]
+  variables:
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
+
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
