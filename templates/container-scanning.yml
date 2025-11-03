@@ -2,12 +2,12 @@ spec:
   inputs:
     devguard_api_url:
       default: "https://api.devguard.org"
-      description: "The url of the API to send the scan request to (default "https://api.devguard.org")"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_asset_name:
       description: "The id of the asset which is scanned (your repository in DevGuard)"
     devguard_origin:
       default: "DEFAULT"
-      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default "DEFAULT")"
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default 'DEFAULT')"
     devguard_token:
       description: "The DevGuard token"
     devguard_web_ui:

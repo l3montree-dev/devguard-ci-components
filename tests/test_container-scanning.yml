@@ -1,0 +1,14 @@
+## Container Scanning Test
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/container-scanning/.gitlab-ci.yml
+trigger_container_scanning_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "container-scanning"
+
+trigger_container_scanning_test_pipeline-accepted:
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "container-scanning-accepted"

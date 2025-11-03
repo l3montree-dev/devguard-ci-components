@@ -6,3 +6,10 @@ trigger_software_composition_analysis_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "software-composition-analysis"
+
+trigger_software_composition_analysis_test_pipeline_accepted:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "software-composition-analysis-accepted"
