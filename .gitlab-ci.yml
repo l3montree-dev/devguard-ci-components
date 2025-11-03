@@ -11,6 +11,8 @@ include:
   - "tests/test_discover-baseimage-attestations.yml"
   ## Software Composition Analysis Test
   - "tests/test_software-composition-analysis.yml"
+  ## Container Scanning Test
+  - "tests/test_container-scanning.yml"
 
 trigger_test_pipeline:
   trigger:
