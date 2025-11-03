@@ -13,14 +13,13 @@ spec:
     devguard_artifact_name:
       default: "source"
       description: "The name of the artifact you want to upload this vex to"
+
     stage:
       default: "test"
       description: "The stage where the scan is run"
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
-    vex_file:
-      description: "The VEX file to upload"
     needs:
       type: array
       default: []
@@ -35,6 +34,10 @@ spec:
     job_suffix:
       default: ""
       description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+    git_strategy:
+      description: "The Git strategy to use for the job"
+      default: "fetch"
+
     default_ref:
       default: "$CI_DEFAULT_BRANCH"
       description: "Default branch reference"
@@ -44,9 +47,9 @@ spec:
     is_tag:
       default: "$(if [ \"$CI_COMMIT_TAG\" != \"\" ]; then echo \"true\"; else echo \"false\"; fi)"
       description: "Is the current commit a tag"
-    git_strategy:
-      description: "The Git strategy to use for the job"
-      default: "fetch"
+
+    vex_file:
+      description: "The VEX file to upload"
 ---
 variables:
   GIT_STRATEGY: $[[ inputs.git_strategy ]]

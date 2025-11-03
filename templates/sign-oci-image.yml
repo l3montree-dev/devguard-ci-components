@@ -1,3 +1,5 @@
+include: "../includes/devguard_inputs.yml"
+
 spec:
   inputs:
     devguard_api_url:
@@ -5,9 +7,10 @@ spec:
       default: "https://api.devguard.org"
     devguard_asset_name:
       description: "The DevGuard asset name"
-    images:
-      description: "The image tags to sign (array)"
-      type: array
+    devguard_token:
+      description: "The DevGuard API token (your private key)"
+      default: "$DEVGUARD_TOKEN"
+    
     registry:
       description: "The container registry URL"
       default: "$CI_REGISTRY"
@@ -20,9 +23,6 @@ spec:
     stage:
       default: "sign"
       description: "CI stage to run this job in"
-    devguard_token:
-      description: "The DevGuard API token (your private key)"
-      default: "$DEVGUARD_TOKEN"
     job_suffix:
       description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
       default: ""
@@ -32,6 +32,10 @@ spec:
     pull_policy:
       default: "if-not-present"
       description: "The pull policy for the container image (can be [always, if-not-present, never])"
+
+    images:
+      description: "The image tags to sign (array)"
+      type: array
 ---
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
@@ -46,4 +50,4 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
       - IMAGE: $[[ inputs.images ]]
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE"
+    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]" "$IMAGE"

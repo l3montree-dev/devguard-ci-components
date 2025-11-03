@@ -3,7 +3,7 @@ include:
   ## component: sign-oci-image
   #########
   #### Test case: sign single image in projects own registry
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@chore/generalization
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@$CI_COMMIT_SHA
     inputs:
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
@@ -11,7 +11,7 @@ include:
       images:
         - "$CI_REGISTRY_IMAGE/testing/signing:latest"
   #### Test case: sign single image in third party registry
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@chore/generalization
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@$CI_COMMIT_SHA
     inputs:
       job_suffix: "third_party_registry"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
@@ -23,7 +23,7 @@ include:
       images:
         - "registry.opencode.de/l3montree/devguard-ci-components/testing/signing:latest"
   #### Test case: sign multiple images in projects own registry
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@chore/generalization
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@$CI_COMMIT_SHA
     inputs:
       job_suffix: "multiple_images"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
