@@ -6,3 +6,6 @@ trigger_release_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "release"
+    inputs:
+      release_name: "Release v0.0.$CI_COMMIT_SHORT_SHA"
+      release_tag: "v0.0.$CI_COMMIT_SHORT_SHA"
