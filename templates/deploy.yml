@@ -6,12 +6,12 @@ spec:
     image_already_in_registry:
       default: "false"
       description: "If the image is already in the registry, set this to true. This will skip the initial push step."
-    token:
+    devguard_token:
       description: "The token to authenticate against the DevGuard API"
-    api_url:
+    devguard_api_url:
       default: "https://api.devguard.org"
       description: "The DevGuard API URL"
-    asset_name:
+    devguard_asset_name:
       description: "The name of the asset"
     runner_tags:
       default: ""
@@ -22,7 +22,7 @@ spec:
 ---
 variables:
   GIT_STRATEGY: clone
-  
+
 devguard:deploy:$[[ inputs.image_suffix ]]:
   needs:
     - devguard:build-image:$[[ inputs.image_suffix ]]
@@ -47,5 +47,5 @@ devguard:deploy:$[[ inputs.image_suffix ]]:
     else
       echo "Skipping -latest tag: Running on a Git tag."
     fi
-    
-    /devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}" 
+
+    /devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --supplyChainOutputDigest="${DIGEST}"

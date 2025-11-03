@@ -1,5 +1,10 @@
 spec:
   inputs:
+    devguard_api_url:
+      default: "https://api.devguard.org"
+      description: "The DevGuard API URL"
+    devguard_asset_name:
+      description: "The name of the asset"
     build_stage:
       default: "build"
       description: "The stage where the build is run"
@@ -12,13 +17,8 @@ spec:
     artifact_name:
       default: ""
       description: "The name of the artifact you are building. Leave empty to use the generated PURL from the built image."
-    token:
+    devguard_token:
       description: "The token to authenticate against the DevGuard API"
-    api_url:
-      default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
-    asset_name:
-      description: "The name of the asset"
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
@@ -44,38 +44,38 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
     - apk add jq
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
-        /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --ignore=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
+      /devguard-scanner intoto start --step=build --ignore=image-digest.txt --ignore=image-tag.txt --ignore=artifact-purl.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}"
     - |
-        echo "Image suffix: '$IMAGE_SUFFIX'"
-        echo "Length of IMAGE_SUFFIX: ${#IMAGE_SUFFIX}"
-        
-        if [ -n "$CI_COMMIT_TAG" ]; then
-          # Set IMAGE_TAG if the pipeline was triggered by a tag
-          if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
-            echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG" > image-tag.txt
-            echo "Using tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG"
-          else
-            echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
-            echo "Using tag without suffix: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
-          fi
+      echo "Image suffix: '$IMAGE_SUFFIX'"
+      echo "Length of IMAGE_SUFFIX: ${#IMAGE_SUFFIX}"
+
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        # Set IMAGE_TAG if the pipeline was triggered by a tag
+        if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
+          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG" > image-tag.txt
+          echo "Using tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG"
         else
-          # Set IMAGE_TAG if the pipeline was triggered by a push to main
-          branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-          sha=${CI_COMMIT_SHORT_SHA}
-          ts=$(date +%s)
-          if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
-            echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}" > image-tag.txt
-            echo "Using branch tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}"
-          else
-            echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
-            echo "Using branch tag without suffix: $CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}"
-          fi
+          echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
+          echo "Using tag without suffix: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
         fi
+      else
+        # Set IMAGE_TAG if the pipeline was triggered by a push to main
+        branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
+        sha=${CI_COMMIT_SHORT_SHA}
+        ts=$(date +%s)
+        if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
+          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}" > image-tag.txt
+          echo "Using branch tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}"
+        else
+          echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
+          echo "Using branch tag without suffix: $CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}"
+        fi
+      fi
     - |
       # Generate PURL from OCI image for artifact name
       IMAGE_TAG=$(cat image-tag.txt)
       echo "Image tag: $IMAGE_TAG"
-      
+
       # Parse registry, namespace, name, and version
       # Example: registry.gitlab.com/namespace/project/suffix:version
       REGISTRY_AND_IMAGE=${IMAGE_TAG%:*}
@@ -86,34 +86,34 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
 
       # Extract name (without namespace)
       NAME=${NAMESPACE_AND_NAME##*/}
-      
+
       # URL encode registry for repository_url parameter
       REPOSITORY_URL="$REGISTRY_AND_IMAGE"
-      
+
       # Generate PURL: pkg:oci/name?repository_url=registry
       PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL"
-      
+
       echo "Generated PURL: $PURL"
       echo "$PURL" > artifact-purl.txt
-      
+
       # Create safe filename version for API calls (replace special chars)
       SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @uri)
       echo "$SAFE_PURL" > artifact-name-safe.txt
-      
+
       echo "Safe artifact name: $SAFE_PURL"
     # Setting the image tag as env for crane as cat is not present after kaniko runs
     - export FINAL_IMAGE_TAG=$(cat image-tag.txt)
   script:
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $(cat image-tag.txt) $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath image.tar")
-    
+
     # kaniko might remove all files after building - thus a second login is necessary.
     - /crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo $FINAL_IMAGE_TAG) > image-digest.txt
 
     - |
-        echo "Running DevGuard Intoto Build...stopping..."
-        /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --products=artifact-purl.txt --token="$[[ inputs.token ]]" --apiUrl="$[[ inputs.api_url ]]" --assetName="$[[ inputs.asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
+      echo "Running DevGuard Intoto Build...stopping..."
+      /devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --products=artifact-purl.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="${CI_COMMIT_SHA}" --generateSlsaProvenance
   artifacts:
     paths:
       - image.tar
@@ -123,5 +123,3 @@ devguard:build-image:$[[ inputs.image_suffix ]]:
       - artifact-name-safe.txt
       - build.provenance.json
     when: on_success
-
-

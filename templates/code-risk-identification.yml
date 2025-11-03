@@ -3,12 +3,12 @@
 
 spec:
   inputs:
-    api_url:
+    devguard_api_url:
       default: "https://api.devguard.org"
       description: "The DevGuard API URL"
-    asset_name:
+    devguard_asset_name:
       description: "The DevGuard asset name"
-    token:
+    devguard_token:
       description: "The DevGuard token"
     scan_stage:
       default: "test"
@@ -17,7 +17,7 @@ spec:
       default: ""
       description: "The runner tag to use for the job"
     sarif_file:
-      description: "The SARIF file to use for the scan"  
+      description: "The SARIF file to use for the scan"
     needs:
       type: array
       default: []
@@ -33,21 +33,20 @@ spec:
       default: "https://app.devguard.org"
       description: "The DevGuard web UI URL"
 ---
-
 variables:
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
 devguard:code-risk-identification:
-    stage: "$[[ inputs.scan_stage ]]"
-    tags:
-      - $[[ inputs.runner_tags ]]
-    needs: $[[ inputs.needs ]]
-    dependencies: $[[ inputs.dependencies ]]
-    image:
-        name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
-        pull_policy: "$[[ inputs.pull_policy ]]"
-    script:
-        - echo "Running DevGuard Dependency Risk Identification..."
-        - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
-        - echo "IS_TAG - $IS_TAG"
-        - devguard-scanner sarif $[[ inputs.sarif_file ]] --assetName="$[[ inputs.asset_name ]]" --apiUrl="$[[ inputs.api_url ]]" --token="$[[ inputs.token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --webUI=$[[ inputs.web_ui ]]
+  stage: "$[[ inputs.scan_stage ]]"
+  tags:
+    - $[[ inputs.runner_tags ]]
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    pull_policy: "$[[ inputs.pull_policy ]]"
+  script:
+    - echo "Running DevGuard Dependency Risk Identification..."
+    - export IS_TAG=$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
+    - echo "IS_TAG - $IS_TAG"
+    - devguard-scanner sarif $[[ inputs.sarif_file ]] --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$CI_DEFAULT_BRANCH" --ref="$CI_COMMIT_REF_NAME" --isTag="$IS_TAG" --webUI=$[[ inputs.web_ui ]]

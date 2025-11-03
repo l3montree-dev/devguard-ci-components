@@ -1,0 +1,52 @@
+spec:
+  inputs:
+    stage:
+      default: "build"
+      description: "Pipeline stage for this job"
+    predicate_type:
+      default: ""
+      description: "The predicate type to discover. If empty, all attestations will be discovered."
+    path:
+      description: "Path to the Containerfile/Dockerfile"
+    output:
+      default: "."
+      description: "Output directory for the discovered attestations"
+    registry_user:
+      default: "$CI_REGISTRY_USER"
+      description: "Container registry username"
+    registry_password:
+      default: "$CI_REGISTRY_PASSWORD"
+      description: "Container registry password"
+    registry:
+      default: "$CI_REGISTRY"
+      description: "Container registry URL"
+    needs:
+      default: []
+      type: array
+      description: "List of jobs this depends on"
+    dependencies:
+      default: []
+      type: array
+      description: "List of jobs to download artifacts from"
+    job_suffix:
+      default: ""
+      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+    pull_policy:
+      default: "if-not-present"
+      description: "The pull policy for the container image (can be [always, if-not-present, never])"
+---
+devguard:discover-base-image-attestations$[[ inputs.job_suffix ]]:
+  stage: $[[ inputs.stage ]]
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    pull_policy: "$[[ inputs.pull_policy ]]"
+    entrypoint: [""]
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
+  script:
+    - |
+      devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+      devguard-scanner discover-baseimage-attestations  --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]" "$[[ inputs.path ]]"
+  artifacts:
+    paths:
+      - $[[ inputs.output ]]/attestation-*.json
