@@ -77,7 +77,7 @@ devguard:software_composition_analysis$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
 
   script:
