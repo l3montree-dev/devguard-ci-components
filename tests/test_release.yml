@@ -1,5 +1,5 @@
-## Secret Scanning Test
-# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/secret-scanning/.gitlab-ci.yml
+## Release Test Pipeline
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/release/.gitlab-ci.yml
 
 trigger_release_test_pipeline:
   trigger:
