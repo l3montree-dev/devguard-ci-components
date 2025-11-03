@@ -16,7 +16,7 @@ spec:
       description: "The DevGuard Web-UI Instance URL"
     devguard_origin:
       default: "DEFAULT"
-      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default 'DEFAULT')""
+      description: "Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. Default: 'container-scanning'. (default 'DEFAULT')"
     
     runner_tags:
       default: ""
