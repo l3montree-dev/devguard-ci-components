@@ -62,15 +62,13 @@ spec:
       default: "$CI_REGISTRY_PASSWORD"
       description: "Container registry password"
 
-    image:
+    image_tar_path:
       default: "image.tar"
-      description: "The image file to scan (e.g. image.tar)"
-    image_tag:
-      default: "$CI_REGISTRY_IMAGE"
-      description: "The tag of the image to scan. Leave empty to use the generated tag from the 'generate-tag' component."
-    fetch_image_from_registry:
-      default: "false"
-      description: "Whether the image should be fetched from the registry or from the artifacts"
+      description: "The path to the local image tar file to scan (e.g. image.tar). Used when remote_image is empty."
+    remote_image:
+      default: ""
+      description: "The remote OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path."
+    
     fail_on_risk:
       default: "critical"
       description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
@@ -90,18 +88,41 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   dependencies: $[[ inputs.dependencies ]]
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
-
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
-
-  before_script: |
-    if [ "$[[ inputs.fetch_image_from_registry ]]" == "true" ]; then
-      crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-      crane pull $[[ inputs.image_tag ]] $[[ inputs.image ]]
-    fi
-
   script:
     - echo "Running DevGuard Container Scanning..."
-    - echo "Artifact Name - $ARTIFACT_NAME"
-    - devguard-scanner container-scanning --origin="$[[ inputs.devguard_origin ]]"  --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path=$[[ inputs.image ]] --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - |
+      if [ -n "$[[ inputs.remote_image ]]" ]; then
+        echo "Scanning remote image: $[[ inputs.remote_image ]]"
+        devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+        devguard-scanner container-scanning \
+          --origin="$[[ inputs.devguard_origin ]]" \
+          --assetName="$[[ inputs.devguard_asset_name ]]" \
+          --apiUrl="$[[ inputs.devguard_api_url ]]" \
+          --token="$[[ inputs.devguard_token ]]" \
+          --image="${[[ inputs.remote_image ]]}" \
+          --defaultRef="$[[ inputs.default_ref ]]" \
+          --ref="$[[ inputs.commit_ref ]]" \
+          --isTag="$[[ inputs.is_tag ]]" \
+          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+          --webUI="${[[ inputs.devguard_web_ui ]]}" \
+          --failOnRisk="${[[ inputs.fail_on_risk ]]}" \
+          --failOnCVSS="${[[ inputs.fail_on_cvss ]]}"
+      else
+        echo "Scanning local tar file: $[[ inputs.image_tar_path ]]"
+        devguard-scanner container-scanning \
+          --origin="$[[ inputs.devguard_origin ]]" \
+          --assetName="$[[ inputs.devguard_asset_name ]]" \
+          --apiUrl="$[[ inputs.devguard_api_url ]]" \
+          --token="$[[ inputs.devguard_token ]]" \
+          --path="${[[ inputs.image_tar_path ]]}" \
+          --defaultRef="$[[ inputs.default_ref ]]" \
+          --ref="$[[ inputs.commit_ref ]]" \
+          --isTag="$[[ inputs.is_tag ]]" \
+          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+          --webUI="${[[ inputs.devguard_web_ui ]]}" \
+          --failOnRisk="${[[ inputs.fail_on_risk ]]}" \
+          --failOnCVSS="${[[ inputs.fail_on_cvss ]]}"
+      fi
