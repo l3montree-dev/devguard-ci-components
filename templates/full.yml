@@ -110,7 +110,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
@@ -128,7 +128,7 @@ include:
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
-      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
@@ -144,7 +144,7 @@ include:
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
-      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
