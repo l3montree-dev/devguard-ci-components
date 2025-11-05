@@ -88,7 +88,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
 
       # kaniko might remove all files after building - thus a second login is necessary.
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
+    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
 
       - |
       echo "Running DevGuard Intoto Build...stopping..."
