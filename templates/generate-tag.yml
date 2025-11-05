@@ -60,7 +60,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
   image: bash:latest
 
   before_script:
-    - apt-get update && apt-get install -y jq
+    - apk add --no-cache jq
 
   script:
     - |
