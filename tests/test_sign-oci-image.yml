@@ -1,47 +1,8 @@
-include:
-  #########
-  ## component: sign-oci-image
-  #########
-  #### Test case: sign single image in projects own registry
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@$CI_COMMIT_SHA
-    inputs:
-      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
-      devguard_token: "$DEVGUARD_TOKEN"
-      devguard_api_url: "$DEVGUARD_API_URL"
-      images:
-        - "$CI_REGISTRY_IMAGE/testing/signing:latest"
-  #### Test case: sign single image in third party registry
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@$CI_COMMIT_SHA
-    inputs:
-      job_suffix: "third_party_registry"
-      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
-      devguard_token: "$DEVGUARD_TOKEN"
-      devguard_api_url: "$DEVGUARD_API_URL"
-      registry: "registry.opencode.de"
-      registry_user: "$OPENCODE_REGISTRY_USERNAME"
-      registry_password: "$OPENCODE_REGISTRY_PASSWORD"
-      images:
-        - "registry.opencode.de/l3montree/devguard-ci-components/testing/signing:latest"
-  #### Test case: sign multiple images in projects own registry
-  - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@$CI_COMMIT_SHA
-    inputs:
-      job_suffix: "multiple_images"
-      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
-      devguard_token: "$DEVGUARD_TOKEN"
-      devguard_api_url: "$DEVGUARD_API_URL"
-      images:
-        - "$CI_REGISTRY_IMAGE/testing/signing:latest"
-        - "$CI_REGISTRY_IMAGE/testing/signing-2:latest"
-        - "$CI_REGISTRY_IMAGE/testing/signing-3:latest"
-
-# Test signatures
-verify_image_signature:
-  stage: verify-singature
-  image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v0.18.9@sha256:8b0829c908a39d54bd6f4e0a503d5e74b6fca9ae36d9434d7012974b830785e6
-    entrypoint: [""]
-  script:
-    - cosign verify "$CI_REGISTRY_IMAGE/testing/signing:latest" --key cosign.pub --insecure-ignore-tlog=true
-    - cosign verify "registry.opencode.de/l3montree/devguard-ci-components/testing/signing:latest" --key cosign.pub --insecure-ignore-tlog=true
-    - cosign verify "$CI_REGISTRY_IMAGE/testing/signing-2:latest" --key cosign.pub --insecure-ignore-tlog=true
-    - cosign verify "$CI_REGISTRY_IMAGE/testing/signing-3:latest" --key cosign.pub --insecure-ignore-tlog=true
+## Test signing of OCI image
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/sign-oci-image/.gitlab-ci.yml
+trigger_sign_oci_image_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "sign-oci-image"

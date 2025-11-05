@@ -1,8 +1,11 @@
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
 spec:
   inputs:
     stage:
       default: "build"
-      description: "Pipeline stage for this job"
+      description: "The pipeline stage for the job"
     predicate_type:
       default: ""
       description: "The predicate type to discover. If empty, all attestations will be discovered."
@@ -30,12 +33,12 @@ spec:
       description: "List of jobs to download artifacts from"
     job_suffix:
       default: ""
-      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
     pull_policy:
-      default: "if-not-present"
+      default: "always"
       description: "The pull policy for the container image (can be [always, if-not-present, never])"
 ---
-devguard:discover-base-image-attestations$[[ inputs.job_suffix ]]:
+devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest

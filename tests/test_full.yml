@@ -1,0 +1,8 @@
+## Fill Scanning Test Pipelines
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/full/.gitlab-ci.yml
+trigger_full_scanning_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "full"

@@ -1,40 +1,34 @@
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
 spec:
   inputs:
     devguard_token:
-      description: "The DevGuard token"
+      description: "The DevGuard API token (use CI/CD variable, your private key)"
+      default: "$DEVGUARD_TOKEN"
     devguard_asset_name:
-      description: "The DevGuard asset name"
+      description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
     devguard_api_url:
       default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_web_ui:
       default: "https://app.devguard.org"
-      description: "The DevGuard web UI URL"
+      description: "The DevGuard Web-UI Instance URL"
     devguard_artifact_name:
       default: ""
       description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
-
-    scan_stage:
-      default: "test"
-      description: "The stage where the scan is run"
-    build_stage:
-      default: "build"
-      description: "The stage where the image is built and tagged"
-    deploy_stage:
-      default: "deploy"
-      description: "The stage where the image should be pushed into the registry"
 
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
     job_suffix:
       default: ""
-      description: "A suffix to append to the job name (useful when using the component several times in one pipeline)"
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
     git_strategy:
       default: "fetch"
       description: "The Git strategy to use for the job"
     pull_policy:
-      default: "if-not-present"
+      default: "always"
       description: "The pull policy for the container image (can be [always, if-not-present, never])"
     allow_failure:
       default: false
@@ -60,7 +54,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -73,7 +66,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -86,7 +78,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -97,14 +88,14 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
@@ -112,26 +103,35 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.build_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       build_args: $[[ inputs.build_args ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_artifact_name: "$ARTIFACT_PURL"
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
@@ -139,11 +139,19 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.deploy_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
+      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
@@ -151,21 +159,34 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.deploy_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
+      images:
+        - "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_artifact_name: "$ARTIFACT_PURL"
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.deploy_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+      image: "$IMAGE_TAG"

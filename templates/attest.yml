@@ -1,29 +1,33 @@
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
 spec:
   inputs:
     devguard_api_url:
-      default: "https://api.devguard.opencode.de"
-      description: "DevGuard API URL"
+      default: "https://api.devguard.org"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_asset_name:
       description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
     devguard_token:
-      description: "DevGuard API token (use CI/CD variable)"
+      description: "The DevGuard API token (use CI/CD variable, your private key)"
+      default: "$DEVGUARD_TOKEN"
     devguard_artifact_name:
-      description: "Artifact name in purl format (e.g., pkg:oci/k8s-tools)"
+      description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)"
 
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
     stage:
-      default: "deploy"
-      description: "Pipeline stage for attestation job"
+      default: "attestation"
+      description: "The pipeline stage for the job"
     job_suffix:
-      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
       default: ""
     git_strategy:
       description: "The Git strategy to use for the job"
       default: "none"
     pull_policy:
-      default: "if-not-present"
+      default: "always"
       description: "The pull policy for the container image (can be [always, if-not-present, never])"
     allow_failure:
       default: false
@@ -63,8 +67,8 @@ spec:
       default: []
       type: array
     image:
-      default: "To which container image to attest"
-      description: "Docker image to use for attestation"
+      description: "Container image to use for attestation"
+      default: "$CI_REGISTRY_IMAGE"
 ---
 devguard:attest$[[ inputs.job_suffix ]]:
   tags:
@@ -81,8 +85,8 @@ devguard:attest$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
 
-  before_script: |
-    apk add --no-cache jq gettext
+  before_script:
+    - apk add --no-cache jq gettext
   script:
     - |
       echo "Attesting artifacts for $[[ inputs.image ]]"

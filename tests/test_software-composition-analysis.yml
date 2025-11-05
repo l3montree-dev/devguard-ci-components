@@ -1,0 +1,15 @@
+## Software Composition Analysis Test
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/software-composition-analysis/.gitlab-ci.yml
+trigger_software_composition_analysis_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "software-composition-analysis"
+
+trigger_software_composition_analysis_test_pipeline_accepted:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "software-composition-analysis-accepted"

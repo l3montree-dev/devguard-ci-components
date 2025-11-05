@@ -1,19 +1,16 @@
-stages:
-  - test
-  - sign
-  - verify-singature # just for testing purposes
-
 include:
   ## Sign OCI Image Test
   - "tests/test_sign-oci-image.yml"
   ## Secret Scanning Test
   - "tests/test_secret-scanning.yml"
   - "tests/test_discover-baseimage-attestations.yml"
-  ## Release Test
-  - "tests/test_release.yml"
-
-trigger_test_pipeline:
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "main"
+  ## Software Composition Analysis Test
+  - "tests/test_software-composition-analysis.yml"
+  ## SBOM Upload Test
+  - "tests/test_sbom_upload.yml"
+  ## Container Scanning Test
+  - "tests/test_container-scanning.yml"
+  ## Build OCI Image Test
+  - "tests/test_build-oci-image.yml"
+  ## Full Test
+  - "tests/test_full.yml"
