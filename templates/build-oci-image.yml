@@ -83,14 +83,14 @@ devguard:build_oci_image_$[[ inputs.job_suffix ]]:
     - |
       /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
-    - /crane auth login -u [[ inputs.registry_user ]] -p [[ inputs.registry_password ]] [[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination [[ inputs.image_tag ]] $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--no-push --tarPath $[[ inputs.image ]]" )
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
 
-    # kaniko might remove all files after building - thus a second login is necessary.
-    - /crane auth login -u [[ inputs.registry_user ]] -p [[ inputs.registry_password ]] [[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]] || echo $[[ inputs.image_tag ]]) > image-digest.txt
+      # kaniko might remove all files after building - thus a second login is necessary.
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - /crane digest $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
 
-    - |
+      - |
       echo "Running DevGuard Intoto Build...stopping..."
       /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
   artifacts:
