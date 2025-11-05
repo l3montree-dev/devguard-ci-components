@@ -105,6 +105,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       build_args: $[[ inputs.build_args ]]
+      stage: "test"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
