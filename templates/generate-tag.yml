@@ -58,6 +58,10 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
 
   image: bash:latest
+
+  before_script:
+    - apt-get update && apt-get install -y jq
+
   script:
     - |
       echo "Image suffix: '$IMAGE_SUFFIX'"
