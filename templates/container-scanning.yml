@@ -68,10 +68,10 @@ spec:
 
     image_tar_path:
       default: "image.tar"
-      description: "The path to the local image tar file to scan (e.g. image.tar). Used when remote_image is empty."
-    remote_image:
+      description: "The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty."
+    image_tag:
       default: ""
-      description: "The remote OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path."
+      description: "The (remote) OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path."
     
     fail_on_risk:
       default: "critical"
@@ -98,15 +98,15 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   script:
     - echo "Running DevGuard Container Scanning..."
     - |
-      if [ -n "$[[ inputs.remote_image ]]" ]; then
-        echo "Scanning remote image: $[[ inputs.remote_image ]]"
+      if [ -n "$[[ inputs.image_tag ]]" ]; then
+        echo "Scanning remote image: $[[ inputs.image_tag ]]"
         devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
         devguard-scanner container-scanning \
           --origin="$[[ inputs.devguard_origin ]]" \
           --assetName="$[[ inputs.devguard_asset_name ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --token="$[[ inputs.devguard_token ]]" \
-          --image="$[[ inputs.remote_image ]]" \
+          --image="$[[ inputs.image_tag ]]" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
