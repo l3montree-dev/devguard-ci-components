@@ -15,7 +15,7 @@ spec:
       default: "build"
       description: "The stage where the build is run"
     job_suffix:
-      default: "default"
+      default: ""
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
     git_strategy:
       description: "The Git strategy to use for the job"
