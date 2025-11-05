@@ -73,6 +73,9 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   script: |
     /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
+    echo "Image: $[[ inputs.image ]]"
+    echo "Image Tag: $[[ inputs.image_tag ]]"
+
     /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
 
     if [[ -z "$CI_COMMIT_TAG" ]]; then

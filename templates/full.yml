@@ -161,7 +161,7 @@ include:
       dependencies:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       images:
-        - "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+        - "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
@@ -178,4 +178,4 @@ include:
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
-      image: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+      image: "$IMAGE_TAG"
