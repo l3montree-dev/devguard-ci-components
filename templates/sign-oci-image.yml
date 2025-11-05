@@ -73,4 +73,4 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
       - IMAGE: $[[ inputs.images ]]
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]" "$IMAGE"
+    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE"
