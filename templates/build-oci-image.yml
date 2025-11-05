@@ -90,7 +90,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
 
-      - |
+    - |
       echo "Running DevGuard Intoto Build...stopping..."
       /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
   artifacts:
