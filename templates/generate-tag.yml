@@ -57,6 +57,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
 
+  image: bash:latest
   script:
     - |
       echo "Image suffix: '$IMAGE_SUFFIX'"
