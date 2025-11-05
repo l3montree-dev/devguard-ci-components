@@ -13,6 +13,8 @@ include:
   - "tests/test_software-composition-analysis.yml"
   ## Container Scanning Test
   - "tests/test_container-scanning.yml"
+  ## Build OCI Image Test
+  - "tests/test_build-oci-image.yml"
 
 trigger_test_pipeline:
   trigger:
