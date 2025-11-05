@@ -67,7 +67,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized-busybox-jq@sha256:451d56ef53ebf75808bf5f92dae58275d09d5eb8e99468399c3f4440f0c02167
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.0-devguard-scanner-v0.19.2-customized-busybox-jq@sha256:3a81ba6eb1c5e3ba8904faef26411a177dbbc0de2005bc0f2eb20ab9ee7f71a2
     entrypoint: [""]
 
   script: |
@@ -85,4 +85,4 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
       echo "Skipping -latest tag: Running on a Git tag."
     fi
 
-    /devguard-scanner intoto run --step=deploy --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
+    /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"

@@ -1,5 +1,5 @@
 Notice: The sponsors names and logos (images) are maybe subject to copyright restrictions. The 'l3montree' word mark and the 'l3montree' logo are registered trademarks. Any unpermitted usage is prohibited.
-Copyright: Copyright (c) 2024 l3montree UG (haftungsbeschränkt)
+Copyright: Copyright (c) 2025 l3montree GmbH
 License: AGPL-3.0
 ---
                     GNU AFFERO GENERAL PUBLIC LICENSE

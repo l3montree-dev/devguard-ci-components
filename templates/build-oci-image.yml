@@ -73,7 +73,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: registry.gitlab.com/l3montree/devguard/kaniko-crane:kaniko-v1.26.0-customized-busybox-jq@sha256:451d56ef53ebf75808bf5f92dae58275d09d5eb8e99468399c3f4440f0c02167
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.0-devguard-scanner-v0.19.2-customized-busybox-jq@sha256:3a81ba6eb1c5e3ba8904faef26411a177dbbc0de2005bc0f2eb20ab9ee7f71a2
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint: [""]
 
@@ -88,7 +88,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
 
       # kaniko might remove all files after building - thus a second login is necessary.
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
+    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
 
     - |
       echo "Running DevGuard Intoto Build...stopping..."
