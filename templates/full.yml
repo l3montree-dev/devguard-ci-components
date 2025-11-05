@@ -14,16 +14,6 @@ spec:
       default: ""
       description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
 
-    scan_stage:
-      default: "test"
-      description: "The stage where the scan is run"
-    build_stage:
-      default: "build"
-      description: "The stage where the image is built and tagged"
-    deploy_stage:
-      default: "deploy"
-      description: "The stage where the image should be pushed into the registry"
-
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
@@ -60,7 +50,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -73,7 +62,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -86,7 +74,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -100,11 +87,15 @@ include:
       devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/tagging-strategy.yml"
+    inputs:
+      architecture:
+        - amd64
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
@@ -112,12 +103,16 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.build_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       build_args: $[[ inputs.build_args ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG_AMD64"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
@@ -127,7 +122,6 @@ include:
       devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.scan_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -139,7 +133,6 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.deploy_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
@@ -151,11 +144,12 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.deploy_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      images:
+        - "$CI_REGISTRY/$CI_PROJECT_PATH:latest"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
@@ -164,7 +158,6 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      stage: $[[ inputs.deploy_stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
