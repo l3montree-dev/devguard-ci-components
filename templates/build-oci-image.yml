@@ -62,7 +62,7 @@ spec:
       default: "$CI_COMMIT_SHA"
       description: "The supply chain ID to use for the in-toto attestation"
 ---
-devguard:build_oci_image_$[[ inputs.job_suffix ]]:
+devguard:build_oci_image$[[ inputs.job_suffix ]]:
   tags:
     - $[[ inputs.runner_tags ]]
   stage: "$[[ inputs.stage ]]"
