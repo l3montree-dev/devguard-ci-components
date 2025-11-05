@@ -12,6 +12,8 @@ include:
   - "tests/test_discover-baseimage-attestations.yml"
   ## Software Composition Analysis Test
   - "tests/test_software-composition-analysis.yml"
+  ## SBOM Upload Test
+  - "tests/test_sbom-upload.yml"
   ## Container Scanning Test
   - "tests/test_container-scanning.yml"
   ## Build OCI Image Test

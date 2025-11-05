@@ -1,0 +1,9 @@
+## SBOM Upload Test Pipeline
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/sbom-upload/.gitlab-ci.yml
+
+trigger_sbom_upload_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "sbom-upload"
