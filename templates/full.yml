@@ -93,9 +93,6 @@ include:
       allow_failure: $[[ inputs.allow_failure ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
-    inputs:
-      architecture:
-        - amd64
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
@@ -112,7 +109,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG_AMD64"
+      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:

@@ -42,11 +42,6 @@ spec:
       default: []
       description: "The jobs to download artifacts from"
 
-    tag_name:
-      description: "The name of the tag to create (e.g., v1.0.0)"
-    tag_message:
-      default: ""
-      description: "The message for the tag (optional)"
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
@@ -120,9 +115,11 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
 
       echo "Safe artifact name: $SAFE_PURL"
 
+      # Export IMAGE_TAG for downstream jobs
+      echo "IMAGE_TAG=$(cat image-tag.txt)" >> generate_tag.env
+      echo  "ARTIFACT_PURL=$(cat artifact-purl.txt)" >> generate_tag.env
+      echo  "ARTIFACT_NAME_SAFE=$(cat artifact-name-safe.txt)" >> generate_tag.env
+
   artifacts:
-    paths:
-      - image-tag.txt
-      - artifact-purl.txt
-      - artifact-name-safe.txt
-    when: on_success
+    reports:
+      dotenv: generate_tag.env
