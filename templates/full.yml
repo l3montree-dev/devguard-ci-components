@@ -104,7 +104,6 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       build_args: $[[ inputs.build_args ]]
-      stage: "test"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
@@ -143,10 +142,10 @@ include:
       allow_failure: $[[ inputs.allow_failure ]]
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"

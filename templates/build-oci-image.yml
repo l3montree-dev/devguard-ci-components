@@ -12,7 +12,7 @@ spec:
       default: ""
       description: "The runner tag to use for the job"
     stage:
-      default: "build"
+      default: "oci-image"
       description: "The stage where the build is run"
     job_suffix:
       default: ""

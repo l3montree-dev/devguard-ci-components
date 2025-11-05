@@ -13,7 +13,7 @@ spec:
       default: ""
       description: "The runner tag to use for the job"
     stage:
-      default: "sign"
+      default: "attestation"
       description: "The stage where the scan is executed"
     job_suffix:
       description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
