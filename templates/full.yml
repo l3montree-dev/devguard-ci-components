@@ -123,6 +123,11 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
@@ -134,6 +139,11 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
@@ -145,8 +155,11 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
-      images:
-        - "$CI_REGISTRY/$CI_PROJECT_PATH:latest"
+      needs:
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
+      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
@@ -159,3 +172,8 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
