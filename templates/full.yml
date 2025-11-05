@@ -176,4 +176,5 @@ include:
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
-      image_tag: "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+      images:
+        - "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
