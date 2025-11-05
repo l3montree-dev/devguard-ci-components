@@ -1,5 +1,6 @@
 stages:
   - test
+  - build
   - sign
   - verify-singature # just for testing purposes
 
