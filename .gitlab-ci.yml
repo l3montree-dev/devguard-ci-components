@@ -17,7 +17,7 @@ include:
   ## Build OCI Image Test
   - "tests/test_build-oci-image.yml"
   ## Full Test
-  - "test/test_full.yml"
+  - "tests/test_full.yml"
 
 trigger_test_pipeline:
   trigger:
