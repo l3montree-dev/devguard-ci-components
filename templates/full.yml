@@ -84,7 +84,6 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
       job_suffix: $[[ inputs.job_suffix ]]
@@ -117,7 +116,7 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_artifact_name: "$ARTIFACT_PURL"
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
       job_suffix: $[[ inputs.job_suffix ]]
@@ -125,8 +124,10 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       image_tag: "$IMAGE_TAG"
 
@@ -141,8 +142,10 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       image_tag: "$IMAGE_TAG"
 
@@ -157,8 +160,10 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       images:
         - "$IMAGE_TAG"
@@ -168,14 +173,16 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_artifact_name: "$ARTIFACT_PURL"
       runner_tags: $[[ inputs.runner_tags ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
       dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
