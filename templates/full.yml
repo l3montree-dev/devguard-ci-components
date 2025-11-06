@@ -8,6 +8,7 @@ spec:
       default: "$DEVGUARD_TOKEN"
     devguard_asset_name:
       description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
+      default: "$DEVGUARD_ASSET_NAME"
     devguard_api_url:
       default: "https://api.devguard.org"
       description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
