@@ -54,7 +54,7 @@ spec:
       default: "image.tar"
       description: "The image file to build (e.g. image.tar)"
     image_tag:
-      default: "$CI_REGISTRY_IMAGE"
+      default: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
       description: "The tag to use for the built image"
     build_args:
       default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"

@@ -2,8 +2,6 @@
 
 DevGuard simplifies vulnerability management for developers by integrating key security practices directly into the CI/CD workflow. With DevGuard, you can seamlessly perform tasks such as Software Composition Analysis (SCA), Container Scanning, Secret Scanning, SAST, IaC Scanning, and more, ensuring that vulnerabilities are detected and addressed early in your pipeline.
 
-You can see how DevGuard works in practice [here](https://main.devguard.org/l3montree-cybersecurity/projects/devguard-pipeline/assets/devguard-pipeline), where this repository is scanned using the same components.
-
 Read more about DevGuard and its features [here](https://github.com/l3montree-dev/devguard).
 
 ## DevGuard Components
@@ -17,29 +15,32 @@ The `devguard:full` component combines all security scanning components (Secret 
 #### Usage Example
 
 ```yaml
+stages:
+  - test
+  - oci-image
+  - attestation
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/full@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
 ```
 
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/full.yml"
+    inputs:
+      # ... same inputs as above
+```
+
 #### Inputs
 
-| Name                     | Description                                                                                                                                   | Default Value                                                       |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `devguard_token`         | The DevGuard API token (your private key)                                                                                                     |                                                                     |
-| `devguard_asset_name`    | The DevGuard asset name (your repository in DevGuard)                                                                                         |                                                                     |
-| `devguard_api_url`       | The DevGuard API URL                                                                                                                          | `https://api.devguard.org`                                          |
-| `devguard_web_ui`        | The DevGuard Web-UI Instance URL                                                                                                              | `https://app.devguard.org`                                          |
-| `devguard_artifact_name` | The name of the artifact you are building. Useful when a pipeline builds more than one artifact. If not provided, will use the generated PURL | ``                                                                  |
-| `runner_tags`            | The runner tags used to select appropriate CI runners                                                                                         | ``                                                                  |
-| `job_suffix`             | A suffix to append to the job name (useful when using the component several times in one pipeline)                                            | ``                                                                  |
-| `git_strategy`           | The Git strategy to use for the job                                                                                                           | `fetch`                                                             |
-| `pull_policy`            | The pull policy for the container image (can be [always, if-not-present, never])                                                              | `if-not-present`                                                    |
-| `allow_failure`          | Whether the jobs are allowed to fail without stopping the pipeline                                                                            | `false`                                                             |
-| `build_args`             | The build arguments to pass to the Docker build command                                                                                       | `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile` |
-| `version`                | The version of the components. Since we are using remote templates, we need to specify the version of the components                          | `main`                                                              |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/full.yml#L4-L47).
 
 **Links:**
 
@@ -53,35 +54,31 @@ The `devguard:secret-scanning` component is designed to identify sensitive infor
 #### Usage Example
 
 ```yaml
+stages:
+  - test
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/secret-scanning@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
       stage: "test"
-      runner_tags: "deployment"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/secret-scanning.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name                  | Description                                                                                        | Default Value                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `devguard_api_url`    | The DevGuard API URL                                                                               | `https://api.devguard.org`                                                  |
-| `devguard_asset_name` | The DevGuard asset name (your repository in DevGuard)                                              |                                                                             |
-| `devguard_token`      | The DevGuard API token (your private key)                                                          | `$DEVGUARD_TOKEN`                                                           |
-| `devguard_web_ui`     | The DevGuard Web-UI Instance URL                                                                   | `https://app.devguard.org`                                                  |
-| `runner_tags`         | The runner tags used to select appropriate CI runners                                              | ``                                                                          |
-| `stage`               | The stage where the scan is executed                                                               | `test`                                                                      |
-| `job_suffix`          | A suffix to append to the job name (useful when using the component several times in one pipeline) | ``                                                                          |
-| `git_strategy`        | The Git strategy to use for the job                                                                | `clone`                                                                     |
-| `pull_policy`         | The pull policy for the container image (can be [always, if-not-present, never])                   | `if-not-present`                                                            |
-| `allow_failure`       | Whether the job is allowed to fail without stopping the pipeline                                   | `false`                                                                     |
-| `needs`               | List of jobs this scan depends on                                                                  | `[]`                                                                        |
-| `dependencies`        | List of jobs to download artifacts from                                                            | `[]`                                                                        |
-| `path`                | The path to the git repository to scan                                                             | `$CI_PROJECT_DIR`                                                           |
-| `default_ref`         | The default branch reference                                                                       | `$CI_DEFAULT_BRANCH`                                                        |
-| `commit_ref`          | The branch or tag reference to scan                                                                | `$CI_COMMIT_REF_NAME`                                                       |
-| `is_tag`              | Is the current commit a tag                                                                        | `$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)` |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/secret-scanning.yml#L4-L58).
 
 **Links:**
 
@@ -95,40 +92,35 @@ The `devguard:static-application-security-testing` component focuses on Static A
 #### Usage Example
 
 ```yaml
+stages:
+  - test
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/static-application-security-testing@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
       stage: "test"
-      runner_tags: "deployment"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/static-application-security-testing.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name                  | Description                                                                                        | Default Value                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `devguard_api_url`    | The DevGuard API URL                                                                               | `https://api.devguard.org`                                                  |
-| `devguard_asset_name` | The DevGuard asset name (your repository in DevGuard)                                              |                                                                             |
-| `devguard_token`      | The DevGuard API token (your private key)                                                          |                                                                             |
-| `devguard_web_ui`     | The DevGuard Web-UI Instance URL                                                                   | `https://app.devguard.org`                                                  |
-| `runner_tags`         | The runner tags used to select appropriate CI runners                                              | ``                                                                          |
-| `stage`               | The stage where the image is scanned                                                               | `test`                                                                      |
-| `job_suffix`          | A suffix to append to the job name (useful when using the component several times in one pipeline) | ``                                                                          |
-| `git_strategy`        | The Git strategy to use for the job                                                                | `fetch`                                                                     |
-| `pull_policy`         | The pull policy for the Docker image                                                               | `always`                                                                    |
-| `allow_failure`       | Whether the job is allowed to fail without stopping the pipeline                                   | `false`                                                                     |
-| `needs`               | The jobs that this job depends on                                                                  | `[]`                                                                        |
-| `dependencies`        | The jobs to download artifacts from                                                                | `[]`                                                                        |
-| `path`                | The path to the git repository to scan                                                             | `$CI_PROJECT_DIR`                                                           |
-| `default_ref`         | The default branch reference                                                                       | `$CI_DEFAULT_BRANCH`                                                        |
-| `commit_ref`          | The branch or tag reference to scan                                                                | `$CI_COMMIT_REF_NAME`                                                       |
-| `is_tag`              | Is the current commit a tag                                                                        | `$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)` |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/static-application-security-testing.yml#L4-L57).
 
 **Links:**
 
 - [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/static-application-security-testing.yml)
-- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/static-application-security-testing)
 
 ### devguard:infrastructure-as-code-scanning
 
@@ -137,40 +129,35 @@ The `devguard:infrastructure-as-code-scanning` component scans Infrastructure as
 #### Usage Example
 
 ```yaml
+stages:
+  - test
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/infrastructure-as-code-scanning@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
       stage: "test"
-      runner_tags: "deployment"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/infrastructure-as-code-scanning.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name                  | Description                                                                                        | Default Value                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `devguard_api_url`    | The DevGuard API URL                                                                               | `https://api.devguard.org`                                                  |
-| `devguard_asset_name` | The DevGuard asset name (your repository in DevGuard)                                              |                                                                             |
-| `devguard_token`      | The DevGuard API token (your private key)                                                          |                                                                             |
-| `devguard_web_ui`     | The DevGuard Web-UI Instance URL                                                                   | `https://app.devguard.org`                                                  |
-| `runner_tags`         | The runner tags used to select appropriate CI runners                                              | ``                                                                          |
-| `stage`               | The stage where the image is scanned                                                               | `test`                                                                      |
-| `job_suffix`          | A suffix to append to the job name (useful when using the component several times in one pipeline) | ``                                                                          |
-| `git_strategy`        | The Git strategy to use for the job                                                                | `fetch`                                                                     |
-| `pull_policy`         | The pull policy for the Docker image                                                               | `always`                                                                    |
-| `allow_failure`       | Whether the job is allowed to fail without stopping the pipeline                                   | `false`                                                                     |
-| `needs`               | The jobs that this job depends on                                                                  | `[]`                                                                        |
-| `dependencies`        | The jobs to download artifacts from                                                                | `[]`                                                                        |
-| `path`                | The path to the git repository to scan                                                             | `$CI_PROJECT_DIR`                                                           |
-| `default_ref`         | Default branch reference                                                                           | `$CI_DEFAULT_BRANCH`                                                        |
-| `commit_ref`          | Current commit reference                                                                           | `$CI_COMMIT_REF_NAME`                                                       |
-| `is_tag`              | Is the current commit a tag                                                                        | `$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)` |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/infrastructure-as-code-scanning.yml#L4-L57).
 
 **Links:**
 
 - [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/infrastructure-as-code-scanning.yml)
-- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/infrastructure-as-code-scanning)
 
 ### devguard:software-composition-analysis
 
@@ -179,39 +166,31 @@ The `devguard:software-composition-analysis` component performs Software Composi
 #### Usage Example
 
 ```yaml
+stages:
+  - test
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/software-composition-analysis@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
       stage: "test"
-      runner_tags: "deployment"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/software-composition-analysis.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name                     | Description                                                                                                                                                    | Default Value                                                               |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `devguard_api_url`       | The DevGuard API URL                                                                                                                                           | `https://api.devguard.org`                                                  |
-| `devguard_asset_name`    | The DevGuard asset name (your repository in DevGuard)                                                                                                          |                                                                             |
-| `devguard_token`         | The DevGuard API token (your private key)                                                                                                                      | `$DEVGUARD_TOKEN`                                                           |
-| `devguard_artifact_name` | The name of the artifact you are building. Useful when a pipeline builds more than one artifact. If not provided, will use the generated PURL from built image | `source`                                                                    |
-| `devguard_web_ui`        | The DevGuard Web-UI Instance URL                                                                                                                               | `https://app.devguard.org`                                                  |
-| `devguard_origin`        | Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'                                                     | `DEFAULT`                                                                   |
-| `runner_tags`            | The runner tags used to select appropriate CI runners                                                                                                          | ``                                                                          |
-| `stage`                  | The stage where the image is scanned                                                                                                                           | `test`                                                                      |
-| `job_suffix`             | A suffix to append to the job name (useful when using the component several times in one pipeline)                                                             | ``                                                                          |
-| `git_strategy`           | The Git strategy to use for the job                                                                                                                            | `fetch`                                                                     |
-| `pull_policy`            | The pull policy for the Docker image                                                                                                                           | `always`                                                                    |
-| `allow_failure`          | Whether the job is allowed to fail without stopping the pipeline                                                                                               | `false`                                                                     |
-| `needs`                  | The jobs that this job depends on                                                                                                                              | `[]`                                                                        |
-| `dependencies`           | The jobs to download artifacts from                                                                                                                            | `[]`                                                                        |
-| `path`                   | The path to the git repository to scan                                                                                                                         | `$CI_PROJECT_DIR`                                                           |
-| `default_ref`            | The default branch reference                                                                                                                                   | `$CI_DEFAULT_BRANCH`                                                        |
-| `commit_ref`             | The branch or tag reference to scan                                                                                                                            | `$CI_COMMIT_REF_NAME`                                                       |
-| `fail_on_risk`           | The risk level to fail the job on. Options are: none, low, medium, high, critical                                                                              | `critical`                                                                  |
-| `fail_on_cvss`           | The CVSS score to fail the job on. Options are: none, low, medium, high, critical                                                                              | `critical`                                                                  |
-| `is_tag`                 | Is the current commit a tag                                                                                                                                    | `$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)` |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/software-composition-analysis.yml#L4-L73).
 
 **Links:**
 
@@ -225,44 +204,34 @@ The `devguard:container-scanning` component scans your container images for vuln
 #### Usage Example
 
 ```yaml
+stages:
+  - oci-image
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/container-scanning@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
-      image: "image.tar"
-      runner_tags: "deployment"
+      stage: "oci-image"
+      image_tar_path: "image.tar"
 ```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/container-scanning.yml"
+    inputs:
+      # ... same inputs as above
+```
+
+**Note:** Use `image_tar_path` to scan a local tar file (e.g., from a previous build job), or use `image_tag` to scan a remote image from a registry (e.g., `"$CI_REGISTRY_IMAGE:tag"`). If `image_tag` is provided, it takes precedence over `image_tar_path`.
 
 #### Inputs
 
-| Name                        | Description                                                                                                                                                    | Default Value                                                               |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `devguard_api_url`          | The url of the API to send the scan request to                                                                                                                 | `https://api.devguard.org`                                                  |
-| `devguard_asset_name`       | The id of the asset which is scanned (your repository in DevGuard)                                                                                             |                                                                             |
-| `devguard_origin`           | Origin of the SBOM (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'                                                     | `DEFAULT`                                                                   |
-| `devguard_token`            | The DevGuard API token (your private key)                                                                                                                      |                                                                             |
-| `devguard_web_ui`           | The DevGuard web UI URL                                                                                                                                        | `https://app.devguard.org`                                                  |
-| `devguard_artifact_name`    | The name of the artifact you are building. Useful when a pipeline builds more than one artifact. If not provided, will use the generated PURL from built image | ``                                                                          |
-| `runner_tags`               | The runner tags used to select appropriate CI runners                                                                                                          | ``                                                                          |
-| `stage`                     | The stage where the image is scanned                                                                                                                           | `oci-image`                                                                 |
-| `job_suffix`                | A suffix to append to the job name (useful when using the component several times in one pipeline)                                                             | ``                                                                          |
-| `git_strategy`              | The Git strategy to use for the job                                                                                                                            | `fetch`                                                                     |
-| `pull_policy`               | The pull policy for the Docker image                                                                                                                           | `always`                                                                    |
-| `allow_failure`             | Whether the job is allowed to fail without stopping the pipeline                                                                                               | `false`                                                                     |
-| `needs`                     | The jobs that this job depends on                                                                                                                              | `[]`                                                                        |
-| `dependencies`              | The jobs to download artifacts from                                                                                                                            | `[]`                                                                        |
-| `default_ref`               | Default branch reference                                                                                                                                       | `$CI_DEFAULT_BRANCH`                                                        |
-| `commit_ref`                | Current commit reference                                                                                                                                       | `$CI_COMMIT_REF_NAME`                                                       |
-| `registry`                  | Container registry URL                                                                                                                                         | `$CI_REGISTRY`                                                              |
-| `registry_user`             | Container registry username                                                                                                                                    | `$CI_REGISTRY_USER`                                                         |
-| `registry_password`         | Container registry password                                                                                                                                    | `$CI_REGISTRY_PASSWORD`                                                     |
-| `image`                     | The image file to scan (e.g. image.tar)                                                                                                                        | `image.tar`                                                                 |
-| `image_tag`                 | The tag of the image to scan. Leave empty to use the generated tag from the 'generate-tag' component                                                           | `$CI_REGISTRY_IMAGE`                                                        |
-| `fetch_image_from_registry` | Whether the image should be fetched from the registry or from the artifacts                                                                                    | `false`                                                                     |
-| `fail_on_risk`              | The risk level to fail the job on. Options are: none, low, medium, high, critical                                                                              | `critical`                                                                  |
-| `fail_on_cvss`              | The CVSS score to fail the job on. Options are: none, low, medium, high, critical                                                                              | `critical`                                                                  |
-| `is_tag`                    | Is the current commit a tag                                                                                                                                    | `$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)` |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/container-scanning.yml#L4-L86).
 
 **Links:**
 
@@ -276,31 +245,31 @@ The `devguard:generate-tag` component generates a unique tag for your container 
 #### Usage Example
 
 ```yaml
+stages:
+  - oci-image
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/generate-tag@~latest
     inputs:
       stage: "oci-image"
-      image_suffix: "web"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/generate-tag.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name            | Description                                                                                        | Default Value |
-| --------------- | -------------------------------------------------------------------------------------------------- | ------------- |
-| `runner_tags`   | The runner tags used to select appropriate CI runners                                              | ``            |
-| `stage`         | The stage where the image is scanned                                                               | `oci-image`   |
-| `job_suffix`    | A suffix to append to the job name (useful when using the component several times in one pipeline) | ``            |
-| `git_strategy`  | The Git strategy to use for the job                                                                | `fetch`       |
-| `pull_policy`   | The pull policy for the Docker image                                                               | `always`      |
-| `allow_failure` | Whether the job is allowed to fail without stopping the pipeline                                   | `false`       |
-| `needs`         | The jobs that this job depends on                                                                  | `[]`          |
-| `dependencies`  | The jobs to download artifacts from                                                                | `[]`          |
-| `image_suffix`  | Suffix for the image name (e.g. 'web'). Leave empty for no suffix                                  | `default`     |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/generate-tag.yml#L4-L37).
 
 **Links:**
 
 - [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/generate-tag.yml)
-- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/generate-tag)
 
 ### devguard:build-oci-image
 
@@ -309,38 +278,33 @@ The `devguard:build-oci-image` component builds OCI (Open Container Initiative) 
 #### Usage Example
 
 ```yaml
+stages:
+  - oci-image
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/build-oci-image@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
+      stage: "oci-image"
+      image: "image.tar"
+      image_tag: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
       build_args: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
-      runner_tags: "deployment"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/build-oci-image.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name                  | Description                                                                                                                     | Default Value                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `devguard_api_url`    | The DevGuard API URL                                                                                                            | `https://api.devguard.org`                                          |
-| `devguard_asset_name` | The name of the asset                                                                                                           |                                                                     |
-| `devguard_token`      | The token to authenticate against the DevGuard API                                                                              |                                                                     |
-| `runner_tags`         | The runner tags used to select appropriate CI runners                                                                           | ``                                                                  |
-| `stage`               | The stage where the build is run                                                                                                | `oci-image`                                                         |
-| `job_suffix`          | A suffix to append to the job name (useful when using the component several times in one pipeline)                              | ``                                                                  |
-| `git_strategy`        | The Git strategy to use for the job                                                                                             | `fetch`                                                             |
-| `pull_policy`         | The pull policy for the container image (can be [always, if-not-present, never])                                                | `if-not-present`                                                    |
-| `allow_failure`       | Whether the job is allowed to fail without stopping the pipeline                                                                | `false`                                                             |
-| `needs`               | List of jobs this attestation depends on                                                                                        | `[]`                                                                |
-| `dependencies`        | List of jobs to download artifacts from                                                                                         | `[]`                                                                |
-| `registry`            | Container registry URL                                                                                                          | `$CI_REGISTRY`                                                      |
-| `registry_user`       | Container registry username                                                                                                     | `$CI_REGISTRY_USER`                                                 |
-| `registry_password`   | Container registry password                                                                                                     | `$CI_REGISTRY_PASSWORD`                                             |
-| `image`               | The image file to build (e.g. image.tar)                                                                                        | `image.tar`                                                         |
-| `image_tag`           | The tag to use for the built image                                                                                              | `$CI_REGISTRY_IMAGE`                                                |
-| `build_args`          | The build arguments to pass to the Kaniko build command                                                                         | `--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile` |
-| `push_image`          | If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of artifacts | `false`                                                             |
-| `supplyChainId`       | The supply chain ID to use for the in-toto attestation                                                                          | `$CI_COMMIT_SHA`                                                    |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/build-oci-image.yml#L4-L67).
 
 **Links:**
 
@@ -354,41 +318,36 @@ The `devguard:push-oci-image` component pushes the built OCI image to the GitLab
 #### Usage Example
 
 ```yaml
+stages:
+  - oci-image
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/push-oci-image@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
+      stage: "oci-image"
       image: "image.tar"
-      runner_tags: "deployment"
+      image_tag: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/push-oci-image.yml"
+    inputs:
+      # ... same inputs as above
 ```
 
 #### Inputs
 
-| Name                  | Description                                                                                                | Default Value              |
-| --------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `devguard_api_url`    | The DevGuard API URL                                                                                       | `https://api.devguard.org` |
-| `devguard_asset_name` | The DevGuard asset name                                                                                    |                            |
-| `devguard_token`      | The DevGuard token                                                                                         |                            |
-| `runner_tags`         | The runner tags used to select appropriate CI runners                                                      | ``                         |
-| `stage`               | The stage where the image is scanned                                                                       | `oci-image`                |
-| `job_suffix`          | A suffix to append to the job name (useful when using the component several times in one pipeline)         | ``                         |
-| `git_strategy`        | The Git strategy to use for the job                                                                        | `none`                     |
-| `pull_policy`         | The pull policy for the Docker image                                                                       | `always`                   |
-| `allow_failure`       | Whether the job is allowed to fail without stopping the pipeline                                           | `false`                    |
-| `needs`               | The jobs that this job depends on                                                                          | `[]`                       |
-| `dependencies`        | The jobs to download artifacts from                                                                        | `[]`                       |
-| `registry`            | Container registry URL                                                                                     | `$CI_REGISTRY`             |
-| `registry_user`       | Container registry username                                                                                | `$CI_REGISTRY_USER`        |
-| `registry_password`   | Container registry password                                                                                | `$CI_REGISTRY_PASSWORD`    |
-| `image`               | The image file to build (e.g. image.tar)                                                                   | `image.tar`                |
-| `image_tag`           | The tag to use for the built image. Leave empty to use the generated tag from the 'generate-tag' component | `$CI_REGISTRY_IMAGE`       |
-| `supplyChainId`       | The supply chain ID to use for the in-toto attestation                                                     | `$CI_COMMIT_SHA`           |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/push-oci-image.yml#L4-L63).
 
 **Links:**
 
 - [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/push-oci-image.yml)
-- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/push-oci-image)
 
 ### devguard:sign-oci-image
 
@@ -397,34 +356,32 @@ The `devguard:sign-oci-image` component ensures that your container images are s
 #### Usage Example
 
 ```yaml
+stages:
+  - attestation
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/sign-oci-image@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
+      stage: "attestation"
       images:
         - "$CI_REGISTRY_IMAGE:latest"
 ```
 
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/sign-oci-image.yml"
+    inputs:
+      # ... same inputs as above
+```
+
 #### Inputs
 
-| Name                  | Description                                                                                        | Default Value              |
-| --------------------- | -------------------------------------------------------------------------------------------------- | -------------------------- |
-| `devguard_api_url`    | The DevGuard API URL                                                                               | `https://api.devguard.org` |
-| `devguard_asset_name` | The DevGuard asset name                                                                            |                            |
-| `devguard_token`      | The DevGuard API token (your private key)                                                          | `$DEVGUARD_TOKEN`          |
-| `runner_tags`         | The runner tags used to select appropriate CI runners                                              | ``                         |
-| `stage`               | The stage where the scan is executed                                                               | `attestation`              |
-| `job_suffix`          | A suffix to append to the job name (useful when using the component several times in one pipeline) | ``                         |
-| `git_strategy`        | The Git strategy to use for the job                                                                | `clone`                    |
-| `pull_policy`         | The pull policy for the container image (can be [always, if-not-present, never])                   | `if-not-present`           |
-| `allow_failure`       | Whether the job is allowed to fail without stopping the pipeline                                   | `false`                    |
-| `needs`               | List of jobs this scan depends on                                                                  | `[]`                       |
-| `dependencies`        | List of jobs to download artifacts from                                                            | `[]`                       |
-| `registry`            | Container registry URL                                                                             | `$CI_REGISTRY`             |
-| `registry_user`       | Container registry username                                                                        | `$CI_REGISTRY_USER`        |
-| `registry_password`   | Container registry password                                                                        | `$CI_REGISTRY_PASSWORD`    |
-| `images`              | The image tags to sign (array)                                                                     |                            |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/sign-oci-image.yml#L4-L53).
 
 **Links:**
 
@@ -438,11 +395,16 @@ The `devguard:attest` component creates and attaches attestations to your contai
 #### Usage Example
 
 ```yaml
+stages:
+  - attestation
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/attest@~latest
     inputs:
+      devguard_api_url: "https://api.devguard.org"
       devguard_asset_name: "$DEVGUARD_ASSET_NAME"
       devguard_token: "$DEVGUARD_TOKEN"
+      stage: "attestation"
       devguard_artifact_name: "pkg:oci/my-app"
       image: "$CI_REGISTRY_IMAGE:latest"
       attestations:
@@ -452,34 +414,174 @@ include:
           predicate_type: "https://in-toto.io/attestation/scai/attribute-report/v0.2"
 ```
 
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/attest.yml"
+    inputs:
+      # ... same inputs as above
+```
+
 #### Inputs
 
-| Name                     | Description                                                                                                                                                                                                  | Default Value                        |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
-| `devguard_api_url`       | DevGuard API URL                                                                                                                                                                                             | `https://api.devguard.opencode.de`   |
-| `devguard_asset_name`    | DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)                                                                                                                                          |                                      |
-| `devguard_token`         | DevGuard API token (use CI/CD variable)                                                                                                                                                                      |                                      |
-| `devguard_artifact_name` | Artifact name in purl format (e.g., pkg:oci/k8s-tools)                                                                                                                                                       |                                      |
-| `runner_tags`            | The runner tags used to select appropriate CI runners                                                                                                                                                        | ``                                   |
-| `stage`                  | Pipeline stage for attestation job                                                                                                                                                                           | `attestation`                        |
-| `job_suffix`             | A suffix to append to the job name (useful when using the component several times in one pipeline)                                                                                                           | ``                                   |
-| `git_strategy`           | The Git strategy to use for the job                                                                                                                                                                          | `none`                               |
-| `pull_policy`            | The pull policy for the container image (can be [always, if-not-present, never])                                                                                                                             | `if-not-present`                     |
-| `allow_failure`          | Whether the job is allowed to fail without stopping the pipeline                                                                                                                                             | `false`                              |
-| `needs`                  | List of jobs this attestation depends on                                                                                                                                                                     | `[]`                                 |
-| `dependencies`           | List of jobs to download artifacts from                                                                                                                                                                      | `[]`                                 |
-| `default_ref`            | Default branch reference                                                                                                                                                                                     | `$CI_DEFAULT_BRANCH`                 |
-| `commit_ref`             | Current commit reference                                                                                                                                                                                     | `$CI_COMMIT_REF_NAME`                |
-| `registry`               | Container registry URL                                                                                                                                                                                       | `$CI_REGISTRY`                       |
-| `registry_user`          | Container registry username                                                                                                                                                                                  | `$CI_REGISTRY_USER`                  |
-| `registry_password`      | Container registry password                                                                                                                                                                                  | `$CI_REGISTRY_PASSWORD`              |
-| `attestations`           | List of attestations to create. Each item should have: source (file path OR full URL), predicate_type (the predicate type URL). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name | `[]`                                 |
-| `image`                  | Docker image to use for attestation                                                                                                                                                                          | `To which container image to attest` |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/attest.yml#L4-L71).
 
 **Links:**
 
 - [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/attest.yml)
-- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/attest)
+
+### devguard:sarif-upload
+
+The `devguard:sarif-upload` component uploads SARIF (Static Analysis Results Interchange Format) files to DevGuard. This allows you to integrate results from external security scanners and SAST tools into your DevGuard dashboard for unified vulnerability management.
+
+#### Usage Example
+
+```yaml
+stages:
+  - test
+
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sarif-upload@~latest
+    inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
+      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
+      devguard_token: "$DEVGUARD_TOKEN"
+      stage: "test"
+      sarif_file: "results.sarif"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/sarif-upload.yml"
+    inputs:
+      # ... same inputs as above
+```
+
+#### Inputs
+
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/sarif-upload.yml#L4-L58).
+
+**Links:**
+
+- [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/sarif-upload.yml)
+- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/sarif-upload)
+
+### devguard:sbom-upload
+
+The `devguard:sbom-upload` component uploads Software Bill of Materials (SBOM) files to DevGuard for vulnerability analysis. This is useful when you have pre-generated SBOM files from external tools that you want to analyze for vulnerabilities within DevGuard.
+
+#### Usage Example
+
+```yaml
+stages:
+  - test
+
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/sbom-upload@~latest
+    inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
+      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
+      devguard_token: "$DEVGUARD_TOKEN"
+      stage: "test"
+      sbom_file: "sbom.json"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/sbom-upload.yml"
+    inputs:
+      # ... same inputs as above
+```
+
+#### Inputs
+
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/sbom-upload.yml#L4-L70).
+
+**Links:**
+
+- [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/sbom-upload.yml)
+- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/sbom-upload)
+
+### devguard:vex-upload
+
+The `devguard:vex-upload` component uploads Vulnerability Exploitability eXchange (VEX) documents to DevGuard. VEX files provide additional context about vulnerabilities, such as whether they are exploitable in your specific context, helping to prioritize remediation efforts.
+
+#### Usage Example
+
+```yaml
+stages:
+  - test
+
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/vex-upload@~latest
+    inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
+      devguard_token: "$DEVGUARD_TOKEN"
+      stage: "test"
+      vex_file: "vex.json"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/vex-upload.yml"
+    inputs:
+      # ... same inputs as above
+```
+
+#### Inputs
+
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/vex-upload.yml#L4-L62).
+
+**Links:**
+
+- [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/vex-upload.yml)
+- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/vex-upload)
+
+### devguard:release
+
+The `devguard:release` component creates GitLab releases automatically when tags are pushed. This component helps automate your release process by creating structured release notes and attaching assets to releases.
+
+#### Usage Example
+
+```yaml
+stages:
+  - test
+
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/release@~latest
+    inputs:
+      stage: "test"
+      release_tag: "$CI_COMMIT_TAG"
+      release_name: "Release $CI_COMMIT_TAG"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/release.yml"
+    inputs:
+      # ... same inputs as above
+```
+
+#### Inputs
+
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/release.yml#L4-L52).
+
+**Links:**
+
+- [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/release.yml)
+- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/release)
 
 ### devguard:discover-baseimage-attestations
 
@@ -488,29 +590,30 @@ The `devguard:discover-baseimage-attestations` component discovers and downloads
 #### Usage Example
 
 ```yaml
+stages:
+  - build
+
 include:
   - component: $CI_SERVER_FQDN/l3montree/devguard/discover-baseimage-attestations@~latest
     inputs:
+      stage: "build"
       path: "Dockerfile"
       output: "attestations"
       predicate_type: "https://spdx.dev/Document"
 ```
 
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/discover-baseimage-attestations.yml"
+    inputs:
+      # ... same inputs as above
+```
+
 #### Inputs
 
-| Name                | Description                                                                                        | Default Value           |
-| ------------------- | -------------------------------------------------------------------------------------------------- | ----------------------- |
-| `stage`             | Pipeline stage for this job                                                                        | `build`                 |
-| `predicate_type`    | The predicate type to discover. If empty, all attestations will be discovered                      | ``                      |
-| `path`              | Path to the Containerfile/Dockerfile                                                               |                         |
-| `output`            | Output directory for the discovered attestations                                                   | `.`                     |
-| `registry_user`     | Container registry username                                                                        | `$CI_REGISTRY_USER`     |
-| `registry_password` | Container registry password                                                                        | `$CI_REGISTRY_PASSWORD` |
-| `registry`          | Container registry URL                                                                             | `$CI_REGISTRY`          |
-| `needs`             | List of jobs this depends on                                                                       | `[]`                    |
-| `dependencies`      | List of jobs to download artifacts from                                                            | `[]`                    |
-| `job_suffix`        | A suffix to append to the job name (useful when using the component several times in one pipeline) | ``                      |
-| `pull_policy`       | The pull policy for the container image (can be [always, if-not-present, never])                   | `if-not-present`        |
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/discover-baseimage-attestations.yml#L4-L40).
 
 **Links:**
 
