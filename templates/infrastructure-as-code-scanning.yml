@@ -1,31 +1,35 @@
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
 spec:
   inputs:
     devguard_api_url:
       default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_asset_name:
-      description: "The DevGuard asset name"
+      description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
     devguard_token:
-      description: "The DevGuard token"
+      description: "The DevGuard API token (use CI/CD variable, your private key)"
+      default: "$DEVGUARD_TOKEN"
     devguard_web_ui:
       default: "https://app.devguard.org"
-      description: "The DevGuard web UI URL"
+      description: "The DevGuard Web-UI Instance URL"
 
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
     stage:
       default: "test"
-      description: "The stage where the image is scanned"
+      description: "The pipeline stage for the job"
     job_suffix:
       default: ""
-      description: "Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image."
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
     git_strategy:
       description: "The Git strategy to use for the job"
       default: "fetch"
     pull_policy:
       default: "always"
-      description: "The pull policy for the Docker image"
+      description: "The pull policy for the container image (can be [always, if-not-present, never])"
     allow_failure:
       default: false
       type: boolean

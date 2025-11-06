@@ -1,15 +1,16 @@
-# Copyright 2025 rafaeishikho.
-# SPDX-License-Identifier: Apache-2.0
-
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
 spec:
   inputs:
     devguard_api_url:
       default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_asset_name:
-      description: "The DevGuard asset name"
+      description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
     devguard_token:
-      description: "The DevGuard token"
+      description: "The DevGuard API token (use CI/CD variable, your private key)"
+      default: "$DEVGUARD_TOKEN"
     devguard_web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard Web-UI Instance URL"
@@ -19,15 +20,15 @@ spec:
       description: "The runner tag to use for the job"
     stage:
       default: "test"
-      description: "The stage where the scan is executed"
+      description: "The pipeline stage for the job"
     job_suffix:
-      description: "A suffix to append to the job name (usefull when using the component several times in one pipeline)"
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
       default: ""
     git_strategy:
       description: "The Git strategy to use for the job"
       default: "fetch"
     pull_policy:
-      default: "if-not-present"
+      default: "always"
       description: "The pull policy for the container image (can be [always, if-not-present, never])"
     allow_failure:
       default: false
