@@ -8,6 +8,7 @@ spec:
       description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_asset_name:
       description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
+      default: "$DEVGUARD_ASSET_NAME"
     devguard_origin:
       default: "DEFAULT"
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
@@ -72,7 +73,7 @@ spec:
     image_tag:
       default: ""
       description: "The (remote) OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path."
-    
+
     fail_on_risk:
       default: "critical"
       description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
