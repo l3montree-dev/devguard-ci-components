@@ -23,7 +23,7 @@ spec:
       default: "false"
       description: "If the artifact size is too big for your gitlab instance, set this to true. This will push the image directly to the registry instead of uploading it as artifact."
     version:
-      default: "main"
+      default: "v0.17.3"
       description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
     license_scanning_decision_file:
       default: "./docs/dependency_decisions.yml"
