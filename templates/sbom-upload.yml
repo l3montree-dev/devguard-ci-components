@@ -68,6 +68,9 @@ spec:
     is_tag:
       default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
       description: "Is the current commit a tag"
+    ignore_external_references:
+      default: "false"
+      description: "Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation."
 ---
 devguard:sbom_upload$[[ inputs.job_suffix ]]:
   tags:
@@ -85,4 +88,4 @@ devguard:sbom_upload$[[ inputs.job_suffix ]]:
 
   script:
     - echo "Running DevGuard Dependency Risk Identification..."
-    - devguard-scanner sbom $[[ inputs.sbom_file ]] --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]]
+    - devguard-scanner sbom $[[ inputs.sbom_file ]] --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]] --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
