@@ -121,7 +121,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --webUI="$[[ inputs.devguard_web_ui ]]" \
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
-          --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
+          --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
           --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
       else
         echo "Scanning local tar file: $[[ inputs.image_tar_path ]]"
