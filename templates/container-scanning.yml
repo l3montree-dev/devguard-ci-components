@@ -86,6 +86,9 @@ spec:
     ignore_external_references:
       default: "false"
       description: "Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation."
+    ignore_upstream_attestations:
+      default: "false"
+      description: "Whether to ignore upstream attestations when scanning the image."
 ---
 devguard:container_scanning$[[ inputs.job_suffix ]]:
   tags:
@@ -119,6 +122,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
           --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
+          --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
       else
         echo "Scanning local tar file: $[[ inputs.image_tar_path ]]"
         devguard-scanner container-scanning \
