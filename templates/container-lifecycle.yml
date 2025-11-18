@@ -79,7 +79,10 @@ spec:
       description: "Container registry username"
     registry_password:
       default: "$CI_REGISTRY_PASSWORD"
-      description: "Container registry password"    
+      description: "Container registry password"
+    git_strategy:
+      default: "fetch"
+      description: "The Git strategy to use for the job"
     # Component version
     version:
       default: "main"
