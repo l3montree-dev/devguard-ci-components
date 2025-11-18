@@ -22,7 +22,8 @@ spec:
     devguard_asset_name:
       description: "The name of the asset"
     devguard_artifact_name:
-      description: "The name of the artifact you are building. Leave empty to use the generated PURL from the built image."
+      default: ""
+      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
     devguard_web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard Web UI base URL"
@@ -37,9 +38,9 @@ spec:
     push_image:
       default: "true"
       description: "Whether to push the image to the registry"
-    image:
-      default: "image.tar"
-      description: "Path to tar file created by Kaniko for scanning"
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
     image_tag:
       default: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
       description: "Tag for the built image"
@@ -85,24 +86,31 @@ spec:
       description: "Version/ref of the components to use"
 ---
 include:
-  # 1. Build OCI Image
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/build-oci-image@$[[ inputs.version ]]
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
     inputs:
-      stage: $[[ inputs.build_stage ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       runner_tags: $[[ inputs.runner_tags ]]
-      pull_policy: $[[ inputs.pull_policy ]]
       job_suffix: $[[ inputs.job_suffix ]]
-      registry: $[[ inputs.registry ]]
-      registry_user: $[[ inputs.registry_user ]]
-      registry_password: $[[ inputs.registry_password ]]
-      image: $[[ inputs.image ]]
-      image_tag: $[[ inputs.image_tag ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      image_suffix: $[[ inputs.image_suffix ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
       build_args: $[[ inputs.build_args ]]
-      push_image: $[[ inputs.push_image ]]
-      supplyChainId: $[[ inputs.supplyChainId ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      image_tag: "$IMAGE_TAG"
 
   # 2. Container Scanning
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$[[ inputs.version ]]
