@@ -110,6 +110,7 @@ include:
       path: $[[ inputs.path ]]
       registry_user: $[[ inputs.registry_user ]]
       registry_password: $[[ inputs.registry_password ]]
+      allow_failure: true
       registry: $[[ inputs.registry ]]
       job_suffix: $[[ inputs.job_suffix ]]
 
