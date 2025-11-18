@@ -103,7 +103,7 @@ spec:
       description: "The predicate type to discover. If empty, all attestations will be discovered."
 ---
 include:
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/discover-basimage-attestations.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/discover-baseimage-attestations.yml"
     inputs:
       stage: $[[ inputs.build_stage ]]
       predicate_type: $[[ inputs.predicate_type ]]
