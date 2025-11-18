@@ -18,6 +18,13 @@ spec:
       default: ""
       description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
 
+    fail_on_risk:
+      default: "critical"
+      description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
+    fail_on_cvss:
+      default: "critical"
+      description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
+
     runner_tags:
       default: ""
       description: "The runner tag to use for the job"
@@ -97,6 +104,8 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
+      fail_on_risk: $[[ inputs.fail_on_risk ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
     inputs:
@@ -136,6 +145,8 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
+      fail_on_risk: $[[ inputs.fail_on_risk ]]
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]

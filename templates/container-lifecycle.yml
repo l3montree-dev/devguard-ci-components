@@ -41,10 +41,7 @@ spec:
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
-    image_tag:
-      default: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
-      description: "Tag for the built image"
-    
+
     # Job suffix used to disambiguate job names across multiple instances
     job_suffix:
       default: ""
@@ -58,10 +55,10 @@ spec:
       default: "critical"
       description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
     ignore_external_references:
-      default: "false"
+      default: "true"
       description: "Whether to ignore external references in discovered attestations"
     ignore_upstream_attestations:
-      default: "false"
+      default: "true"
       description: "Whether to ignore attestations from upstream images"
     
     # Job Configuration
@@ -136,6 +133,8 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
+      fail_on_risk: $[[ inputs.fail_on_risk ]]
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
