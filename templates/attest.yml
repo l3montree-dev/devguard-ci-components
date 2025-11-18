@@ -97,6 +97,11 @@ devguard:attest$[[ inputs.job_suffix ]]:
       # URL encode artifact name for API calls
       API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
       echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
+      
+      # URL encode the commit ref for API calls
+      API_COMMIT_REF=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.commit_ref ]]', safe=''))")
+      echo "API Encoded Commit Ref: $API_COMMIT_REF"
+      
       echo 'Attestations: $[[ inputs.attestations ]]'
 
       # Login to registry
@@ -123,8 +128,13 @@ devguard:attest$[[ inputs.job_suffix ]]:
         if [[ "$SOURCE" =~ ^https?:// ]]; then
           # Replace ARTIFACT_NAME placeholder with URL-encoded artifact name
           URL="${SOURCE//ARTIFACT_NAME/$API_ARTIFACT_NAME}"
-          URL=$(echo "$URL" | envsubst)
           
+          # Replace COMMIT_REF placeholder with URL-encoded commit ref
+          URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
+          
+          # Also handle any environment variable substitution
+          URL=$(echo "$URL" | envsubst)
+
           # Extract filename from URL or use a default
           FILENAME=$(basename "$URL" | cut -d'?' -f1)
           if [ -z "$FILENAME" ] || [ "$FILENAME" = "/" ]; then
