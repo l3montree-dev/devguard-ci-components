@@ -42,6 +42,9 @@ spec:
     version:
       default: "main"
       description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
 ---
 variables:
   GIT_STRATEGY: $[[ inputs.git_strategy ]]
@@ -96,6 +99,13 @@ include:
       allow_failure: $[[ inputs.allow_failure ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
+    inputs:
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      image_suffix: $[[ inputs.image_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
