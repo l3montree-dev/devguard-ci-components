@@ -143,8 +143,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
 
-  # 3. Sign Image
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/sign-oci-image@$[[ inputs.version ]]
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
