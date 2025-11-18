@@ -11,7 +11,6 @@ spec:
     devguard_token:
       description: "The DevGuard API token (use CI/CD variable, your private key)"
       default: "$DEVGUARD_TOKEN"
-      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
     devguard_web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard Web-UI Instance URL"
