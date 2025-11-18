@@ -71,6 +71,10 @@ spec:
     pull_policy:
       default: "always"
       description: "The pull policy for the Docker image"
+    allow_failure:
+      default: false
+      type: boolean
+      description: "Whether the jobs are allowed to fail without stopping the pipeline"
     registry:
       default: "$CI_REGISTRY"
       description: "Container registry URL"
@@ -87,6 +91,11 @@ spec:
     version:
       default: "main"
       description: "Version/ref of the components to use"
+    # Image tags to si
+    # Supply chain ID for build provenance
+    supplyChainId:
+      default: "$CI_COMMIT_SHA"
+      description: "Supply chain id forwarded to build provenance / supply-chain artifacts"
 ---
 include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
@@ -115,58 +124,85 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       image_tag: "$IMAGE_TAG"
 
-  # 2. Container Scanning
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/container-scanning@$[[ inputs.version ]]
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
-      stage: $[[ inputs.scan_stage ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_token: $[[ inputs.devguard_token ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
-      devguard_origin: $[[ inputs.devguard_origin ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_artifact_name: "$ARTIFACT_PURL"
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
-      job_suffix: $[[ inputs.job_suffix ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      fail_on_risk: $[[ inputs.fail_on_risk ]]
-      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
-      registry: $[[ inputs.registry ]]
-      registry_user: $[[ inputs.registry_user ]]
-      registry_password: $[[ inputs.registry_password ]]
-      image: $[[ inputs.image ]]
-      image_tag: $[[ inputs.image_tag ]]
-      image_tar_path: $[[ inputs.image ]]
-      ignore_external_references: $[[ inputs.ignore_external_references ]]
-      ignore_upstream_attestations: $[[ inputs.ignore_upstream_attestations ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
 
   # 3. Sign Image
   - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/sign-oci-image@$[[ inputs.version ]]
     inputs:
-      stage: $[[ inputs.deploy_stage ]]
-      devguard_token: $[[ inputs.devguard_token ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      job_suffix: $[[ inputs.job_suffix ]]
-      registry: $[[ inputs.registry ]]
-      registry_user: $[[ inputs.registry_user ]]
-      registry_password: $[[ inputs.registry_password ]]
-      images: $[[ inputs.images ]]
-
-  # 4. Attest
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/attest@$[[ inputs.version ]]
-    inputs:
-      stage: $[[ inputs.deploy_stage ]]
-      devguard_token: $[[ inputs.devguard_token ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      registry: $[[ inputs.registry ]]
-      registry_user: $[[ inputs.registry_user ]]
-      registry_password: $[[ inputs.registry_password ]]
-      image: $[[ inputs.image_tag ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
+      images:
+      - "$IMAGE_TAG"
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
+      image_tag: "$IMAGE_TAG"
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_artifact_name: "$ARTIFACT_PURL"
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      image: "$IMAGE_TAG"
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$CI_COMMIT_REF_NAME/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"
