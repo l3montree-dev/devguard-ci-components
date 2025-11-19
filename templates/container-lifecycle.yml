@@ -105,7 +105,7 @@ spec:
     # Supply chain ID for build provenance
     supplyChainId:
       default: "$CI_COMMIT_SHA"
-      description: "Supply chain id forwarded to build provenance / supply-chain artifacts"
+      description: "Supply chain id forwarded to build provenance supply-chain artifacts"
 ---
 include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
