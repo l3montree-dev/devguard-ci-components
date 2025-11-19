@@ -2,22 +2,22 @@
 # SPDX-License-Identifier: AGPL-3.0
 spec:
   inputs:
-  # DevGuard Configuration
-  devguard_api_url:
-  default: "https://api.devguard.org"
-  description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
-  devguard_asset_name:
-    description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
-    default: "$DEVGUARD_ASSET_NAME"
-  devguard_token:
-    description: "The DevGuard API token (use CI/CD variable, your private key)"
-    default: "$DEVGUARD_TOKEN"
-  devguard_web_ui:
-    default: "https://app.devguard.org"
-    description: "The DevGuard Web-UI Instance URL"
-  devguard_artifact_name:
-    default: ""
-    description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
+    # DevGuard Configuration
+    devguard_api_url:
+      default: "https://api.devguard.org"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
+    devguard_asset_name:
+      description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
+      default: "$DEVGUARD_ASSET_NAME"
+    devguard_token:
+      description: "The DevGuard API token (use CI/CD variable, your private key)"
+      default: "$DEVGUARD_TOKEN"
+    devguard_web_ui:
+      default: "https://app.devguard.org"
+      description: "The DevGuard Web-UI Instance URL"
+    devguard_artifact_name:
+      default: ""
+      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
     devguard_origin:
       default: "DEFAULT"
       description: "Origin string for DevGuard requests (e.g., 'container-scanning')."
