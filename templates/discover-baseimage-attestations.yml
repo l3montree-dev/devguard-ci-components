@@ -23,6 +23,10 @@ spec:
     registry:
       default: "$CI_REGISTRY"
       description: "Container registry URL"
+    allow_failure:
+      default: true
+      type: boolean
+      description: "Whether the job is allowed to fail without stopping the pipeline"
     needs:
       default: []
       type: array
@@ -45,6 +49,7 @@ devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
   needs: $[[ inputs.needs ]]
+  allow_failure: $[[ inputs.allow_failure ]]
   dependencies: $[[ inputs.dependencies ]]
   script:
     - |
