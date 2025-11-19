@@ -202,11 +202,11 @@ include:
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
       attestations:
-        - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$CI_COMMIT_REF_NAME/artifacts/ARTIFACT_NAME/sbom.json/"
+        - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"
-        - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$CI_COMMIT_REF_NAME/artifacts/ARTIFACT_NAME/vex.json/"
+        - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/"
           predicate_type: "https://cyclonedx.org/vex"
-        - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$CI_COMMIT_REF_NAME/sarif.json/"
+        - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/"
           predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
         - source: "build.provenance.json"
           predicate_type: "https://slsa.dev/provenance/v1"
