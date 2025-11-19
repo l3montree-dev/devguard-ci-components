@@ -48,6 +48,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
+    DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
   image: registry.gitlab.com/l3montree/devguard/alpine-jq:3.22.2@sha256:572316b9dadba38f59a5d6091193fb8025e4c03a83021c7bae8985df92b38a8f
   script:
     - |
@@ -77,30 +78,37 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
         fi
       fi
     - |
-      # Generate PURL from OCI image for artifact name
-      IMAGE_TAG=$(cat image-tag.txt)
-      echo "Image tag: $IMAGE_TAG"
+      if [ -n "$DEVGUARD_ARTIFACT_NAME" ]; then
+        # Generate artifact name from input
+        echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
+        echo "$DEVGUARD_ARTIFACT_NAME" > artifact-purl.txt
+      else
+        # Generate PURL from OCI image for artifact name
+        IMAGE_TAG=$(cat image-tag.txt)
+        echo "Image tag: $IMAGE_TAG"
 
-      # Parse registry, namespace, name, and version
-      # Example: registry.gitlab.com/namespace/project/suffix:version
-      REGISTRY_AND_IMAGE=${IMAGE_TAG%:*}
-      VERSION=${IMAGE_TAG##*:}
-            
-      # Extract namespace/name (everything after registry)
-      NAMESPACE_AND_NAME=${REGISTRY_AND_IMAGE#*/}
+        # Parse registry, namespace, name, and version
+        # Example: registry.gitlab.com/namespace/project/suffix:version
+        REGISTRY_AND_IMAGE=${IMAGE_TAG%:*}
+        VERSION=${IMAGE_TAG##*:}
+              
+        # Extract namespace/name (everything after registry)
+        NAMESPACE_AND_NAME=${REGISTRY_AND_IMAGE#*/}
 
-      # Extract name (without namespace)
-      NAME=${NAMESPACE_AND_NAME##*/}
+        # Extract name (without namespace)
+        NAME=${NAMESPACE_AND_NAME##*/}
 
-      # URL encode registry for repository_url parameter
-      REPOSITORY_URL="$REGISTRY_AND_IMAGE"
+        # URL encode registry for repository_url parameter
+        REPOSITORY_URL="$REGISTRY_AND_IMAGE"
 
-      # Generate PURL: pkg:oci/name?repository_url=registry
-      PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL"
+        # Generate PURL: pkg:oci/name?repository_url=registry
+        PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL"
 
-      echo "Generated PURL: $PURL"
-      echo "$PURL" > artifact-purl.txt
+        echo "Generated PURL: $PURL"
+        echo "$PURL" > artifact-purl.txt
+      fi
 
+    - |
       # Create safe filename version for API calls (replace special chars)
       SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @uri)
       echo "$SAFE_PURL" > artifact-name-safe.txt
