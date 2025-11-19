@@ -2,65 +2,26 @@
 # SPDX-License-Identifier: AGPL-3.0
 spec:
   inputs:
-    # Stage Configuration
-    build_stage:
-      default: "build"
-      description: "The stage where the build runs"
-    scan_stage:
-      default: "test"
-      description: "The stage where scanning runs"
-    deploy_stage:
-      default: "deploy"
-      description: "The stage where signing and attestation runs"
-    
-    # DevGuard Configuration
-    devguard_token:
-      description: "The token to authenticate against the DevGuard API"
-    devguard_api_url:
-      default: "https://api.devguard.org"
-      description: "The DevGuard API URL"
-    devguard_asset_name:
-      description: "The name of the asset"
-    devguard_artifact_name:
-      default: ""
-      description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image."
-    devguard_web_ui:
-      default: "https://app.devguard.org"
-      description: "The DevGuard Web UI base URL"
+  # DevGuard Configuration
+  devguard_api_url:
+  default: "https://api.devguard.org"
+  description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
+  devguard_asset_name:
+    description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
+    default: "$DEVGUARD_ASSET_NAME"
+  devguard_token:
+    description: "The DevGuard API token (use CI/CD variable, your private key)"
+    default: "$DEVGUARD_TOKEN"
+  devguard_web_ui:
+    default: "https://app.devguard.org"
+    description: "The DevGuard Web-UI Instance URL"
+  devguard_artifact_name:
+    default: ""
+    description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
     devguard_origin:
       default: "DEFAULT"
       description: "Origin string for DevGuard requests (e.g., 'container-scanning')."
-    
-    # Build Configuration
-    build_args:
-      default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
-      description: "The build arguments to pass to the Kaniko build command"
-    push_image:
-      default: "true"
-      description: "Whether to push the image to the registry"
-    image_suffix:
-      default: "default"
-      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
 
-    # Job suffix used to disambiguate job names across multiple instances
-    job_suffix:
-      default: ""
-      description: "Suffix for the job name. Provide when using the component multiple times in a pipeline."
-    
-    # Scanning Configuration
-    fail_on_risk:
-      default: "critical"
-      description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
-    fail_on_cvss:
-      default: "critical"
-      description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
-    ignore_external_references:
-      default: "true"
-      description: "Whether to ignore external references in discovered attestations"
-    ignore_upstream_attestations:
-      default: "true"
-      description: "Whether to ignore attestations from upstream images"
-    
     # Job Configuration
     runner_tags:
       default: ""
@@ -72,6 +33,43 @@ spec:
       default: false
       type: boolean
       description: "Whether the jobs are allowed to fail without stopping the pipeline"
+    # Job suffix used to disambiguate job names across multiple instances
+    job_suffix:
+      default: ""
+      description: "Suffix for the job name. Provide when using the component multiple times in a pipeline."
+    git_strategy:
+      default: "fetch"
+      description: "The Git strategy to use for the job"
+
+    # Stage Configuration
+    build_stage:
+      default: "oci-image"
+      description: "The pipeline stage for the job"
+    attest_stage:
+      default: "attestation"
+      description: "The pipeline stage for the signing and attestation jobs"
+
+    # Build Configuration
+    build_args:
+      default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
+      description: "The build arguments to pass to the Kaniko build command"
+    push_image:
+      default: "true"
+      description: "Whether to push the image to the registry"
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
+    image:
+      default: "image.tar"
+      description: "The image file to build (e.g. image.tar)"
+
+    default_ref:
+      default: "$CI_DEFAULT_BRANCH"
+      description: "Default branch reference"
+    commit_ref:
+      default: "$CI_COMMIT_REF_NAME"
+      description: "Current commit reference"
+
     registry:
       default: "$CI_REGISTRY"
       description: "Container registry URL"
@@ -81,9 +79,24 @@ spec:
     registry_password:
       default: "$CI_REGISTRY_PASSWORD"
       description: "Container registry password"
-    git_strategy:
-      default: "fetch"
-      description: "The Git strategy to use for the job"
+
+    # Scanning Configuration
+    fail_on_risk:
+      default: "critical"
+      description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
+    fail_on_cvss:
+      default: "critical"
+      description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
+    is_tag:
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
+      description: "Is the current commit a tag"
+    ignore_external_references:
+      default: "true"
+      description: "Whether to ignore external references in discovered attestations"
+    ignore_upstream_attestations:
+      default: "true"
+      description: "Whether to ignore attestations from upstream images"
+
     # Component version
     version:
       default: "main"
@@ -98,11 +111,13 @@ include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
     inputs:
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.build_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       image_suffix: $[[ inputs.image_suffix ]]
+      devguard_artifact_name: "$[[ inputs.devguard_artifact_name ]]"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
@@ -110,16 +125,17 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.build_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_failure ]]
+      image: "$[[ inputs.image ]]"
+      image_tag: "$IMAGE_TAG"
       build_args: $[[ inputs.build_args ]]
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
@@ -129,12 +145,18 @@ include:
       devguard_artifact_name: "$ARTIFACT_PURL"
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.build_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       fail_on_cvss: $[[ inputs.fail_on_cvss ]]
       fail_on_risk: $[[ inputs.fail_on_risk ]]
+      is_tag: "$[[ inputs.is_tag ]]"
+      default_ref: "$[[ inputs.default_ref ]]"
+      commit_ref: "$[[ inputs.commit_ref ]]"
+      ignore_external_references: "$[[ inputs.ignore_external_references ]]"
+      ignore_upstream_attestations: "$[[ inputs.ignore_upstream_attestations ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
@@ -148,10 +170,14 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.attest_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      registry: "$[[ inputs.registry ]]"
+      registry_user: "$[[ inputs.registry_user ]]"
+      registry_password: "$[[ inputs.registry_password ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
@@ -159,7 +185,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       images:
-      - "$IMAGE_TAG"
+        - "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
@@ -167,10 +193,16 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.build_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      image: "$[[ inputs.image ]]"
+      image_tag: "$IMAGE_TAG"
+      registry: "$[[ inputs.registry ]]"
+      registry_user: "$[[ inputs.registry_user ]]"
+      registry_password: "$[[ inputs.registry_password ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
@@ -179,7 +211,6 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
-      image_tag: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
@@ -188,19 +219,27 @@ include:
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_artifact_name: "$ARTIFACT_PURL"
       runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.attest_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
+      default_ref: "$[[ inputs.default_ref ]]"
+      commit_ref: "$[[ inputs.commit_ref ]]"      
+      registry: "$[[ inputs.registry ]]"
+      registry_user: "$[[ inputs.registry_user ]]"
+      registry_password: "$[[ inputs.registry_password ]]"
+      image: "$IMAGE_TAG"      
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]        
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
-      image: "$IMAGE_TAG"
+      - devguard:container_scanning$[[ inputs.job_suffix ]]
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"

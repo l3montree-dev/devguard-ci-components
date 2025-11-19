@@ -619,3 +619,46 @@ For a complete list of inputs and their descriptions, see the [input spec in the
 
 - [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/discover-baseimage-attestations.yml)
 - [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/discover-baseimage-attestations)
+
+### devguard:container-lifecycle
+
+The `devguard:container-lifecycle` component provides a complete, end-to-end workflow for building, scanning, and deploying OCI (Open Container Initiative) images with full supply chain security. This comprehensive component combines multiple individual components (generate-tag, build-oci-image, container-scanning, push-oci-image, sign-oci-image, and attest) into a streamlined pipeline that handles everything from tag generation to signing and attestation. It's ideal for teams who want a production-ready container image workflow with built-in security scanning and attestation without having to configure each step individually.
+
+#### Usage Example
+
+```yaml
+stages:
+  - oci-image
+  - attestation
+
+include:
+  - component: $CI_SERVER_FQDN/l3montree/devguard/container-lifecycle@~latest
+    inputs:
+      devguard_api_url: "https://api.devguard.org"
+      devguard_web_ui: "https://app.devguard.org"
+      devguard_asset_name: "$DEVGUARD_ASSET_NAME"
+      devguard_token: "$DEVGUARD_TOKEN"
+      build_stage: "oci-image"
+      attest_stage: "attestation"
+      build_args: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
+```
+
+**Note:** This component syntax works only on the official GitLab instance (gitlab.com). For self-hosted GitLab instances, use the remote include syntax instead:
+
+```yaml
+include:
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/container-lifecycle.yml"
+    inputs:
+      # ... same inputs as above
+```
+
+**Note:** This component automatically generates a unique image tag based on your branch and commit, builds the image using Kaniko, scans it for vulnerabilities, pushes it to the registry, signs it with Cosign, and attaches SBOM attestations. The generated `$IMAGE_TAG` variable is automatically passed between all jobs in the workflow.
+
+#### Inputs
+
+For a complete list of inputs and their descriptions, see the [input spec in the template file](https://gitlab.com/l3montree/devguard/-/blob/main/templates/container-lifecycle.yml#L4-L88).
+
+**Links:**
+
+- [Template Source](https://gitlab.com/l3montree/devguard/-/blob/main/templates/container-lifecycle.yml)
+- [Usage Example Project](https://gitlab.com/l3montree/devguard-ci-components-test-project/-/tree/container-lifecycle)
