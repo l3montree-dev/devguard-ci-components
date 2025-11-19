@@ -123,6 +123,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
         echo ""
         echo "========================================"
         echo "Processing attestation with predicate: $PREDICATE_TYPE"
+        SOURCE=$(echo "$SOURCE" | envsubst)
         
         # Check if source is a URL (starts with http:// or https://)
         if [[ "$SOURCE" =~ ^https?:// ]]; then
