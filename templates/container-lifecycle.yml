@@ -153,6 +153,7 @@ include:
       is_tag: "$[[ inputs.is_tag ]]"
       default_ref: "$[[ inputs.default_ref ]]"
       commit_ref: "$[[ inputs.commit_ref ]]"
+      image_tar_path: "$[[ inputs.image ]]"
       ignore_external_references: "$[[ inputs.ignore_external_references ]]"
       ignore_upstream_attestations: "$[[ inputs.ignore_upstream_attestations ]]"
       needs:
