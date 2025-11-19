@@ -110,6 +110,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
 
     - |
       # Create safe filename version for API calls (replace special chars)
+      PURL=$(cat artifact-purl.txt)
       SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @uri)
       echo "$SAFE_PURL" > artifact-name-safe.txt
 
