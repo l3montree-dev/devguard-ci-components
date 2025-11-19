@@ -224,21 +224,21 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       default_ref: "$[[ inputs.default_ref ]]"
-      commit_ref: "$[[ inputs.commit_ref ]]"      
+      commit_ref: "$[[ inputs.commit_ref ]]"
       registry: "$[[ inputs.registry ]]"
       registry_user: "$[[ inputs.registry_user ]]"
       registry_password: "$[[ inputs.registry_password ]]"
-      image: "$IMAGE_TAG"      
+      image: "$IMAGE_TAG"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
-        - devguard:container_scanning$[[ inputs.job_suffix ]]        
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
-      - devguard:container_scanning$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"
