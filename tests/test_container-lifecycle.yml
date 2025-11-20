@@ -1,0 +1,8 @@
+## Build OCI Image Test
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/container-lifecycle/.gitlab-ci.yml
+trigger_build_oci_image_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "container-lifecycle"
