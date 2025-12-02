@@ -12,7 +12,7 @@ spec:
     deploy_stage:
       default: "deploy"
       description: "The stage where signing and attestation runs"
-    
+
     # DevGuard Configuration
     devguard_token:
       description: "The token to authenticate against the DevGuard API"
@@ -30,7 +30,7 @@ spec:
     devguard_origin:
       default: "DEFAULT"
       description: "Origin string for DevGuard requests (e.g., 'container-scanning')."
-    
+
     # Build Configuration
     build_args:
       default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
@@ -44,12 +44,12 @@ spec:
     image_tag:
       default: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
       description: "Tag for the built image"
-    
+
     # Job suffix used to disambiguate job names across multiple instances
     job_suffix:
       default: ""
       description: "Suffix for the job name. Provide when using the component multiple times in a pipeline."
-    
+
     # Scanning Configuration
     fail_on_risk:
       default: "critical"
@@ -63,7 +63,7 @@ spec:
     ignore_upstream_attestations:
       default: "true"
       description: "Whether to ignore attestations from upstream images"
-    
+
     # Job Configuration
     runner_tags:
       default: ""
@@ -178,4 +178,3 @@ include:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
-    
