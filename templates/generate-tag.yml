@@ -61,7 +61,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
     DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-3e560d93-1764694463
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-0995329b-1764696426
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
     - echo "Running generate-tag job..."
