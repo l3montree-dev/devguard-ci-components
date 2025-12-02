@@ -67,12 +67,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
     - echo "Running generate-tag job..."
-    - devguard-scanner generate-tag \
-      --image-suffix "$IMAGE_SUFFIX" \
-      --architecture $[[ inputs.architecture ]]
-      --imagePath "$[[ inputs.image_path ]]"
-      --ref "$CI_COMMIT_REF_NAME"
-      --upstreamVersions "$[[ inputs.upstream_versions ]]" >> generate_tag.env
+    - devguard-scanner generate-tag --image-suffix "$IMAGE_SUFFIX" --architecture $[[ inputs.architecture ]] --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersions "$[[ inputs.upstream_versions ]]" >> generate_tag.env
 
   artifacts:
     reports:
