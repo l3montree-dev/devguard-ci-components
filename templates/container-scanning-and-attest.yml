@@ -22,6 +22,12 @@ spec:
       default: "DEFAULT"
       description: "Origin string for DevGuard requests (e.g., 'container-scanning')."
 
+    build_job_name:
+      description: "The name of the build job to depend on. This job needs to create an - image tar path - file as artifact."
+    image_tar_path:
+      default: "image.tar"
+      description: "The path to the image tarball created by the build job."
+
     # Job Configuration
     runner_tags:
       default: ""
@@ -56,9 +62,6 @@ spec:
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
-    image:
-      default: "image.tar"
-      description: "The image file to build (e.g. image.tar)"
     upstream_version:
       default: "0"
       description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
@@ -130,25 +133,6 @@ include:
       upstream_version: "$[[ inputs.upstream_version ]]"
       image_path: "$[[ inputs.image_path ]]"
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
-    inputs:
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-      stage: "$[[ inputs.build_stage ]]"
-      job_suffix: $[[ inputs.job_suffix ]]
-      git_strategy: $[[ inputs.git_strategy ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      image: "$[[ inputs.image ]]"
-      image_tag: "$IMAGE_TAG"
-      build_args: $[[ inputs.build_args ]]
-      supplyChainId: "$[[ inputs.supplyChainId ]]"
-      needs:
-        - devguard:generate_tag$[[ inputs.job_suffix ]]
-      dependencies:
-        - devguard:generate_tag$[[ inputs.job_suffix ]]
-
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
@@ -167,15 +151,15 @@ include:
       is_tag: "$[[ inputs.is_tag ]]"
       default_ref: "$[[ inputs.default_ref ]]"
       commit_ref: "$[[ inputs.commit_ref ]]"
-      image_tar_path: "$[[ inputs.image ]]"
+      image_tar_path: "$[[ inputs.image_tar_path ]]"
       ignore_external_references: "$[[ inputs.ignore_external_references ]]"
       ignore_upstream_attestations: "$[[ inputs.ignore_upstream_attestations ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_job_name ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_job_name ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
@@ -211,7 +195,7 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
-      image: "$[[ inputs.image ]]"
+      image: "$[[ inputs.image_tar_path ]]"
       image_tag: "$IMAGE_TAG"
       registry: "$[[ inputs.registry ]]"
       registry_user: "$[[ inputs.registry_user ]]"
@@ -219,11 +203,11 @@ include:
       supplyChainId: "$[[ inputs.supplyChainId ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_job_name ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_job_name ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
@@ -247,12 +231,12 @@ include:
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_job_name ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
-        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_job_name ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
