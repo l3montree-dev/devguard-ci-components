@@ -37,6 +37,19 @@ spec:
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
+    architecture:
+      default:
+        - "amd64"
+      type: array
+      description: "Target architectures (e.g., amd64, arm64)"
+    image_path:
+      default: "$CI_REGISTRY_IMAGE"
+      description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
+    upstream_versions:
+      default:
+        - "0"
+      type: array
+      description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
 ---
 devguard:generate_tag$[[ inputs.job_suffix ]]:
   tags:
@@ -49,77 +62,17 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
     DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
-  image: registry.gitlab.com/l3montree/devguard/alpine-jq:3.22.2@sha256:572316b9dadba38f59a5d6091193fb8025e4c03a83021c7bae8985df92b38a8f
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-db291467-1764691483
+    pull_policy: "$[[ inputs.pull_policy ]]"
   script:
-    - |
-      echo "Image suffix: '$IMAGE_SUFFIX'"
-      echo "Length of IMAGE_SUFFIX: ${#IMAGE_SUFFIX}"
-
-      if [ -n "$CI_COMMIT_TAG" ]; then
-        # Set IMAGE_TAG if the pipeline was triggered by a tag
-        if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG" > image-tag.txt
-          echo "Using tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:$CI_COMMIT_TAG"
-        else
-          echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > image-tag.txt
-          echo "Using tag without suffix: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
-        fi
-      else
-        # Set IMAGE_TAG if the pipeline was triggered by a push to main
-        branch=$(echo $CI_COMMIT_REF_NAME | sed 's/\//-/g')
-        sha=${CI_COMMIT_SHORT_SHA}
-        ts=$(date +%s)
-        if [ -n "$IMAGE_SUFFIX" ] && [ "$IMAGE_SUFFIX" != "default" ]; then
-          echo "$CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}" > image-tag.txt
-          echo "Using branch tag with suffix: $CI_REGISTRY_IMAGE/$IMAGE_SUFFIX:${branch}-${sha}-${ts}"
-        else
-          echo "$CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}" > image-tag.txt
-          echo "Using branch tag without suffix: $CI_REGISTRY_IMAGE:${branch}-${sha}-${ts}"
-        fi
-      fi
-    - |
-      if [ -n "$DEVGUARD_ARTIFACT_NAME" ]; then
-        # Generate artifact name from input
-        echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
-        echo "$DEVGUARD_ARTIFACT_NAME" > artifact-purl.txt
-      else
-        # Generate PURL from OCI image for artifact name
-        IMAGE_TAG=$(cat image-tag.txt)
-        echo "Image tag: $IMAGE_TAG"
-
-        # Parse registry, namespace, name, and version
-        # Example: registry.gitlab.com/namespace/project/suffix:version
-        REGISTRY_AND_IMAGE=${IMAGE_TAG%:*}
-        VERSION=${IMAGE_TAG##*:}
-              
-        # Extract namespace/name (everything after registry)
-        NAMESPACE_AND_NAME=${REGISTRY_AND_IMAGE#*/}
-
-        # Extract name (without namespace)
-        NAME=${NAMESPACE_AND_NAME##*/}
-
-        # URL encode registry for repository_url parameter
-        REPOSITORY_URL="$REGISTRY_AND_IMAGE"
-
-        # Generate PURL: pkg:oci/name?repository_url=registry
-        PURL="pkg:oci/$NAME?repository_url=$REPOSITORY_URL"
-
-        echo "Generated PURL: $PURL"
-        echo "$PURL" > artifact-purl.txt
-      fi
-
-    - |
-      # Create safe filename version for API calls (replace special chars)
-      PURL=$(cat artifact-purl.txt)
-      SAFE_PURL=$(echo -n "$PURL" | jq -s -R -r @uri)
-      echo "$SAFE_PURL" > artifact-name-safe.txt
-
-      echo "Safe artifact name: $SAFE_PURL"
-
-      # Export IMAGE_TAG for downstream jobs
-      echo "IMAGE_TAG=$(cat image-tag.txt)" >> generate_tag.env
-      echo  "ARTIFACT_PURL=$(cat artifact-purl.txt)" >> generate_tag.env
-      echo  "ARTIFACT_NAME_SAFE=$(cat artifact-name-safe.txt)" >> generate_tag.env
+    - echo "Running generate-tag job..."
+    - devguard-scanner generate-tag \
+      --image-suffix "$IMAGE_SUFFIX" \
+      --architecture $[[ inputs.architecture ]]
+      --imagePath "$[[ inputs.image_path ]]"
+      --ref "$CI_COMMIT_REF_NAME"
+      --upstreamVersions "$[[ inputs.upstream_versions ]]" >> generate_tag.env
 
   artifacts:
     reports:

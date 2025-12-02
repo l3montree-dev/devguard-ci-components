@@ -16,3 +16,5 @@ include:
   - "tests/test_full.yml"
   ## Container Lifecycle Test
   - "tests/test_container-lifecycle.yml"
+  ## Generate Tag Test
+  - "tests/test_generate-tag.yml"

@@ -59,6 +59,13 @@ spec:
     image:
       default: "image.tar"
       description: "The image file to build (e.g. image.tar)"
+    upstream_versions:
+      default:
+        - "0"
+      description: "Upstream versions to use for tag generation. If not provided, the job will ignore this parameter."
+    image_path:
+      default: "$CI_REGISTRY_IMAGE"
+      description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
 
     default_ref:
       default: "$CI_DEFAULT_BRANCH"
@@ -115,6 +122,10 @@ include:
       allow_failure: $[[ inputs.allow_failure ]]
       image_suffix: $[[ inputs.image_suffix ]]
       devguard_artifact_name: "$[[ inputs.devguard_artifact_name ]]"
+      architecture:
+        - "amd64"
+      upstream_versions: "$[[ inputs.upstream_versions ]]"
+      image_path: "$[[ inputs.image_path ]]"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
@@ -127,7 +138,8 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       image: "$[[ inputs.image ]]"
-      image_tag: "$IMAGE_TAG"
+      # only amd64 is supported for build-oci-image
+      image_tag: "$IMAGE_TAG_AMD64"
       build_args: $[[ inputs.build_args ]]
       supplyChainId: "$[[ inputs.supplyChainId ]]"
       needs:
@@ -140,7 +152,7 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: "$ARTIFACT_PURL"
+      devguard_artifact_name: "$ARTIFACT_NAME_AMD64"
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
       stage: "$[[ inputs.build_stage ]]"
@@ -184,7 +196,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       images:
-        - "$IMAGE_TAG"
+        - "$IMAGE_TAG_AMD64"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
@@ -198,7 +210,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       image: "$[[ inputs.image ]]"
-      image_tag: "$IMAGE_TAG"
+      image_tag: "$IMAGE_TAG_AMD64"
       registry: "$[[ inputs.registry ]]"
       registry_user: "$[[ inputs.registry_user ]]"
       registry_password: "$[[ inputs.registry_password ]]"
@@ -217,7 +229,7 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: "$ARTIFACT_PURL"
+      devguard_artifact_name: "$ARTIFACT_NAME_AMD64"
       runner_tags: $[[ inputs.runner_tags ]]
       stage: "$[[ inputs.attest_stage ]]"
       job_suffix: $[[ inputs.job_suffix ]]
@@ -229,7 +241,7 @@ include:
       registry: "$[[ inputs.registry ]]"
       registry_user: "$[[ inputs.registry_user ]]"
       registry_password: "$[[ inputs.registry_password ]]"
-      image: "$IMAGE_TAG"
+      image: "$IMAGE_TAG_AMD64"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]

@@ -1,0 +1,8 @@
+## Generated Test Pipeline
+# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/generate-tag/.gitlab-ci.yml
+trigger_generate_tag_test_pipeline:
+  allow_failure: true
+  trigger:
+    strategy: mirror
+    project: "l3montree/devguard-ci-components-test-project"
+    branch: "generate-tag"
