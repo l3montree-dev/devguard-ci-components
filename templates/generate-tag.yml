@@ -45,10 +45,8 @@ spec:
     image_path:
       default: "$CI_REGISTRY_IMAGE"
       description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
-    upstream_versions:
-      default:
-        - "0"
-      type: array
+    upstream_version:
+      default: "0"
       description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
 ---
 devguard:generate_tag$[[ inputs.job_suffix ]]:
@@ -63,11 +61,11 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
     DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-db291467-1764691483
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-3e560d93-1764694463
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
     - echo "Running generate-tag job..."
-    - devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture $[[ inputs.architecture ]] --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersions "$[[ inputs.upstream_versions ]]" >> generate_tag.env
+    - devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture $[[ inputs.architecture ]] --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag.env
 
   artifacts:
     reports:

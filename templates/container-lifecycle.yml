@@ -59,10 +59,9 @@ spec:
     image:
       default: "image.tar"
       description: "The image file to build (e.g. image.tar)"
-    upstream_versions:
-      default:
-        - "0"
-      description: "Upstream versions to use for tag generation. If not provided, the job will ignore this parameter."
+    upstream_version:
+      default: "0"
+      description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
     image_path:
       default: "$CI_REGISTRY_IMAGE"
       description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
@@ -124,7 +123,7 @@ include:
       devguard_artifact_name: "$[[ inputs.devguard_artifact_name ]]"
       architecture:
         - "amd64"
-      upstream_versions: "$[[ inputs.upstream_versions ]]"
+      upstream_version: "$[[ inputs.upstream_version ]]"
       image_path: "$[[ inputs.image_path ]]"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
