@@ -63,6 +63,8 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-0995329b-1764696426
     pull_policy: "$[[ inputs.pull_policy ]]"
+  before_script:
+    - apk add --no-cache jq gettext
   script:
     - echo "Running generate-tag job..."
     - ARCHS=$(echo '$[[ inputs.architecture ]]' | jq -r '.[]' | paste -sd ',' -)
