@@ -61,16 +61,11 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-25416571-1764704282
     pull_policy: "$[[ inputs.pull_policy ]]"
-  before_script:
-    - apk add --no-cache jq gettext
   script:
     - echo "Running generate-tag job..."
-    - ARCHS=$(echo '$[[ inputs.architecture ]]' | jq -r '.[]' | paste -sd ',' -)
-    - devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture "$ARCHS" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag.env
-
+    - devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag.env
     - echo "Tag generation completed. Generated tags:"
     - cat generate_tag.env
-
   artifacts:
     reports:
       dotenv: generate_tag.env
