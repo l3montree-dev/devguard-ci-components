@@ -38,10 +38,8 @@ spec:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
     architecture:
-      default:
-        - "amd64"
-      type: array
-      description: "Target architectures (e.g., amd64, arm64)"
+      default: "amd64"
+      description: "Target architecture (e.g., amd64 or arm64)"
     image_path:
       default: "$CI_REGISTRY_IMAGE"
       description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
@@ -61,7 +59,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
     DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-0995329b-1764696426
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-25416571-1764704282
     pull_policy: "$[[ inputs.pull_policy ]]"
   before_script:
     - apk add --no-cache jq gettext
