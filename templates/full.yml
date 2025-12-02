@@ -7,7 +7,7 @@ spec:
       default: "https://api.devguard.org"
     devguard_asset_name:
       description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
-      default: "$DEVGUARD_ASSET_NAME"   
+      default: "$DEVGUARD_ASSET_NAME"
     devguard_token:
       description: "The DevGuard API token (use CI/CD variable, your private key)"
       default: "$DEVGUARD_TOKEN"
@@ -190,8 +190,7 @@ include:
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
-      images:
-        - "$IMAGE_TAG"
+      image: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:

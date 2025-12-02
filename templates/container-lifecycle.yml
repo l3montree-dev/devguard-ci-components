@@ -197,8 +197,7 @@ include:
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
-      images:
-        - "$IMAGE_TAG"
+      image: "$IMAGE_TAG"
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:

@@ -50,9 +50,9 @@ spec:
       default: "$CI_REGISTRY_PASSWORD"
       description: "Container registry password"
 
-    images:
-      description: "The image tags to sign (array)"
-      type: array
+    image:
+      description: "The container image to sign (e.g., registry.example.com/project/image:tag)"
+      default: "$CI_REGISTRY_IMAGE:latest"
 ---
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags:
@@ -69,9 +69,6 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
 
-  parallel:
-    matrix:
-      - IMAGE: $[[ inputs.images ]]
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE"
+    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$[[ inputs.image ]]"
