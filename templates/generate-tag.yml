@@ -61,12 +61,12 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-be90d054-1764706716
     pull_policy: "$[[ inputs.pull_policy ]]"
-  script:
-    - echo "Running generate-tag job..."
-    - devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
-    - echo "Tag generation completed. Generated tags:"
-    - cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
-    - echo 'Filename: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env'
+  script: |
+    echo "Running generate-tag job..."
+    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    echo "Tag generation completed. Generated tags:"
+    cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    echo 'Filename: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env'
   artifacts:
     reports:
       dotenv: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
