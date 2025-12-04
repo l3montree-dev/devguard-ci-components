@@ -37,6 +37,9 @@ spec:
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
+    image_variant:
+      default: ""
+      description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant."
     architecture:
       default: "amd64"
       description: "Target architecture (e.g., amd64 or arm64)"
@@ -63,7 +66,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
   script: |
     echo "Running generate-tag job..."
-    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
     echo "Tag generation completed. Generated tags:"
     cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
     echo 'Filename: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env'
