@@ -62,6 +62,9 @@ spec:
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
+    image_variant:
+      default: ""
+      description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant."
     upstream_version:
       default: "0"
       description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
@@ -128,6 +131,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       image_suffix: $[[ inputs.image_suffix ]]
+      image_variant: $[[ inputs.image_variant ]]
       devguard_artifact_name: "$[[ inputs.devguard_artifact_name ]]"
       architecture: $[[ inputs.architecture ]]
       upstream_version: "$[[ inputs.upstream_version ]]"
