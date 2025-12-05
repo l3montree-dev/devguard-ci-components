@@ -100,7 +100,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.0.0-rc.4
     pull_policy: "$[[ inputs.pull_policy ]]"
   script:
     - echo "Running DevGuard Container Scanning..."
