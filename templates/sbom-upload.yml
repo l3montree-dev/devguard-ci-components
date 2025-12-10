@@ -83,7 +83,7 @@ devguard:sbom_upload$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.0.0-rc.5
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
 
   script:
