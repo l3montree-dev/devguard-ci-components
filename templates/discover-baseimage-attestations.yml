@@ -45,7 +45,7 @@ spec:
 devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
   needs: $[[ inputs.needs ]]
