@@ -138,7 +138,7 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: "$ARTIFACT_PURL"
+      devguard_artifact_name: "$ARTIFACT_NAME"
       devguard_web_ui: $[[ inputs.devguard_web_ui ]]
       runner_tags: $[[ inputs.runner_tags ]]
       job_suffix: $[[ inputs.job_suffix ]]
@@ -197,7 +197,7 @@ include:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
-      devguard_artifact_name: "$ARTIFACT_PURL"
+      devguard_artifact_name: "$ARTIFACT_NAME"
       runner_tags: $[[ inputs.runner_tags ]]
       job_suffix: $[[ inputs.job_suffix ]]
       git_strategy: $[[ inputs.git_strategy ]]
