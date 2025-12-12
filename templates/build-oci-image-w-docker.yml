@@ -1,0 +1,123 @@
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
+spec:
+  inputs:
+    devguard_api_url:
+      default: "https://api.devguard.org"
+      description: "The url of the API to send the scan request to (default 'https://api.devguard.org')"
+    devguard_asset_name:
+      description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)"
+      default: "$DEVGUARD_ASSET_NAME"
+    devguard_token:
+      description: "The DevGuard API token (use CI/CD variable, your private key)"
+      default: "$DEVGUARD_TOKEN"
+    docker_buildkit:
+      default: ""
+      description: "Enable docker buildkit with the value 1"
+    runner_tags:
+      default: ""
+      description: "The runner tag to use for the job"
+    stage:
+      default: "oci-image"
+      description: "The pipeline stage for the job"
+    job_suffix:
+      default: ""
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
+    git_strategy:
+      description: "The Git strategy to use for the job"
+      default: "fetch"
+    pull_policy:
+      default: "always"
+      description: "The pull policy for the container image (can be [always, if-not-present, never])"
+    allow_failure:
+      default: false
+      type: boolean
+      description: "Whether the job is allowed to fail without stopping the pipeline"
+    needs:
+      default: []
+      type: array
+      description: "List of jobs this attestation depends on"
+    dependencies:
+      default: []
+      type: array
+      description: "List of jobs to download artifacts from"
+
+    registry:
+      default: "$CI_REGISTRY"
+      description: "Container registry URL"
+    registry_user:
+      default: "$CI_REGISTRY_USER"
+      description: "Container registry username"
+    registry_password:
+      default: "$CI_REGISTRY_PASSWORD"
+      description: "Container registry password"
+
+    image:
+      default: "image.tar"
+      description: "The image file to build (e.g. image.tar)"
+    image_tag:
+      default: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+      description: "The tag to use for the built image"
+    build_args:
+      default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
+      description: "The build arguments to pass to the docker build command"
+    push_image:
+      default: "false"
+      description: "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts."
+    supplyChainId:
+      default: "$CI_COMMIT_SHA"
+      description: "The supply chain ID to use for the in-toto attestation"
+---
+devguard:build_oci_image$[[ inputs.job_suffix ]]:
+  tags:
+    - $[[ inputs.runner_tags ]]
+  stage: "$[[ inputs.stage ]]"
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
+  variables:
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
+    DOCKER_BUILDKIT: $[[ inputs.docker_buildkit ]]
+    DOCKER_HOST: tcp://127.0.0.1:2375
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - name: registry.opencode.de/plain/oci/valkey/dockerkrane:latest@sha256:4fbbf08bcfa3f9911b093842f730c12902eb009e0716888174cc2cc7ecaaeee6
+      entrypoint: ["/bin/sh", "-c"]
+      command:
+        - |
+          if [[ $(df -PT /var/lib/docker | awk 'NR==2 {print $2}') == virtiofs ]]; then
+            apk add e2fsprogs && \
+            truncate -s 20G /tmp/disk.img && \
+            mkfs.ext4 /tmp/disk.img && \
+            mount /tmp/disk.img /var/lib/docker; fi && \
+            dockerd-entrypoint.sh;
+      variables:
+        HEALTHCHECK_TCP_PORT: "2375"
+  image:
+    name: registry.opencode.de/plain/oci/valkey/dockerkrane:latest@sha256:4fbbf08bcfa3f9911b093842f730c12902eb009e0716888174cc2cc7ecaaeee6
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint: [""]
+
+  before_script:
+    - echo "Uses Docker DIND to build Docker images inside a secured kata container.\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
+    - |
+      /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
+  script:
+    - echo "$CI_JOB_TOKEN" | docker login $CI_REGISTRY -u gitlab-ci-token --password-stdin
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - docker buildx build --output type=docker,dest=./$[[ inputs.image ]] -t $[[ inputs.image_tag ]] $[[ inputs.build_args ]]
+    - if [[ "$[[ inputs.push_image ]]" == "true" ]]; then docker load -i ./$[[ inputs.image ]] && docker push $[[ inputs.image_tag ]]; fi
+    # kaniko might remove all files after building - thus a second login is necessary.
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
+
+    - |
+      echo "Running DevGuard Intoto Build...stopping..."
+      /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
+  artifacts:
+    paths:
+      - $[[ inputs.image ]]
+      - image-digest.txt
+      - build.provenance.json
+    when: on_success
