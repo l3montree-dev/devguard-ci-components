@@ -13,7 +13,7 @@ spec:
       description: "The DevGuard API token (use CI/CD variable, your private key)"
       default: "$DEVGUARD_TOKEN"
     runner_tags:
-      default: []
+      default: ""
       type: array
       description: "The runner tags to use for the job"
     stage:
@@ -68,7 +68,8 @@ spec:
       description: "The supply chain ID to use for the in-toto attestation"
 ---
 devguard:build_oci_image$[[ inputs.job_suffix ]]:
-  tags: $[[ inputs.runner_tags ]]
+  tags:
+    - $[[ inputs.runner_tags ]]
   stage: "$[[ inputs.stage ]]"
   allow_failure: $[[ inputs.allow_failure ]]
   needs: $[[ inputs.needs ]]
