@@ -3,9 +3,6 @@
 #
 spec:
   inputs:
-    stage:
-      default: "attestation"
-      description: "The pipeline stage for the job"
     job_suffix:
       description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
       default: ""
@@ -13,5 +10,4 @@ spec:
 include: 
   - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
     inputs:
-      stage: $[[ inputs.stage ]]
       job_suffix: $[[ inputs.job_suffix ]]
