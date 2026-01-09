@@ -192,6 +192,11 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
+  - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
+    inputs:
+      stage: "test"
+      job_name: devguard:artifacts$[[ inputs.job_suffix ]]
+
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
@@ -221,3 +226,6 @@ include:
           predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
         - source: "build.provenance.json"
           predicate_type: "https://slsa.dev/provenance/v1"
+        - source: "./artifacts/attestation-report.sarif"
+          predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
+
