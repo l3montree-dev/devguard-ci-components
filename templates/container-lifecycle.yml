@@ -101,11 +101,6 @@ spec:
       default: "true"
       description: "Whether to ignore attestations from upstream images"
 
-    # Attestation
-    extra_attestations:
-      type: array
-      default: []
-
     architecture:
       default: "amd64"
       type: string

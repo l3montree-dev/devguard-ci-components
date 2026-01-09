@@ -68,14 +68,6 @@ spec:
         - predicate_type: the predicate type URL
       default: []
       type: array
-    extra_attestations:
-      description: |
-        List of additional attestations to create. Each item should have:
-        - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
-        - predicate_type: the predicate type URL
-      type: array
-      default: []
-
     image:
       description: "Container image to use for attestation"
       default: "$CI_REGISTRY_IMAGE"
@@ -110,36 +102,19 @@ devguard:attest$[[ inputs.job_suffix ]]:
       # Slugify the commit ref (replace special characters with hyphens)
       API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
       echo "Slugified Commit Ref: $API_COMMIT_REF"
-
-
-
-      # Write both inputs as YAML documents so that we can merge them together correctly
-      cat > attestations.yml <<'YAML'
-      attestations: $[[ inputs.attestations ]]
-      YAML
-      cat > extra_attestations.yml <<'YAML'
-      attestations: $[[ inputs.extra_attestations ]]
-      YAML
-
-      # Merge (concat) into JSON (or keep YAML if you prefer)
-      MERGED_ATTESTATIONS_JSON="$(
-        yq -o=json -I=0 -n '
-          (load("attestations.yml").attestations // []) +
-          (load("extra_attestations.yml").attestations // [])
-        '
-      )"
-
-      echo "----------"
-      echo 'Attestations: $MERGED_ATTESTATIONS_JSON'
-      echo "----------"
+      
+      echo 'Attestations: $[[ inputs.attestations ]]'
 
       # Login to registry
       devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-      echo "----------"
-      ATTESTATIONS_JSON=$(echo "$MERGED_ATTESTATIONS_JSON" | jq . )
-      echo "$ATTESTATIONS_JSON"
-      echo "----------"
+      ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
+      | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
+      | sed 's/=>/:/g' \
+      | sed "s/'/\"/g")
+      # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
+
+      ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
 
       # Process each attestation
       echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
