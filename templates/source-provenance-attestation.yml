@@ -9,7 +9,7 @@ spec:
     job_suffix:
       description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
       default: ""
-
+---
 include: 
   - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
     inputs:
