@@ -24,7 +24,8 @@ spec:
 
     # Job Configuration
     runner_tags:
-      default: ""
+      default: []
+      type: array
       description: "The runner tag to use for the job"
     pull_policy:
       default: "always"
