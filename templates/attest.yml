@@ -16,7 +16,8 @@ spec:
       description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)"
 
     runner_tags:
-      default: ""
+      default: []
+      type: array
       description: "The runner tag to use for the job"
     stage:
       default: "attestation"

@@ -23,7 +23,8 @@ spec:
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
 
     runner_tags:
-      default: ""
+      default: []
+      type: array
       description: "The runner tag to use for the job"
     stage:
       default: "test"
