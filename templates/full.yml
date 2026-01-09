@@ -195,7 +195,7 @@ include:
   - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
     inputs:
       stage: "test"
-      job_name: devguard:artifacts$[[ inputs.job_suffix ]]
+      # job_name: devguard:artifacts$[[ inputs.job_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
@@ -212,10 +212,12 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - attestation_artifacts
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - attestation_artifacts
       image: "$IMAGE_TAG"
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
