@@ -213,6 +213,11 @@ include:
         - $[[ inputs.build_job_name ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
 
+  - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
+    inputs:
+      stage: "test"
+      job_name: devguard:artifacts$[[ inputs.job_suffix ]]
+
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
@@ -236,11 +241,13 @@ include:
         - $[[ inputs.build_job_name ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
+        - devguard:artifacts$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - $[[ inputs.build_job_name ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
+        - devguard:artifacts$[[ inputs.job_suffix ]]
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"
@@ -250,3 +257,5 @@ include:
           predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
         - source: "build.provenance.json"
           predicate_type: "https://slsa.dev/provenance/v1"
+        - source: "./artifacts/attestation-report.sarif"
+          predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
