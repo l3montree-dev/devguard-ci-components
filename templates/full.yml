@@ -193,9 +193,8 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
-  - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
+  - local: "/templates/source-provenance-attestation.yml"
     inputs:
-      stage: "test"
       job_suffix: $[[ inputs.job_suffix ]]
 
   - local: "/templates/attest.yml"
