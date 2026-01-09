@@ -263,4 +263,3 @@ include:
           predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
         - source: "build.provenance.json"
           predicate_type: "https://slsa.dev/provenance/v1"
-      extra_attestation: $[[ inputs.extra_attestation ]]
