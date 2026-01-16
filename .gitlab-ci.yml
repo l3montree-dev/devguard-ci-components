@@ -1,4 +1,5 @@
 fqdn-output:
+  image: alpine:3.23.2
   script:
     - echo "$CI_SERVER_FQDN"
 
