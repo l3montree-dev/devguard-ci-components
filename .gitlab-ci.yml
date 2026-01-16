@@ -4,21 +4,41 @@ test:
 
 include:
   ## Sign OCI Image Test
-  - "tests/test_sign-oci-image.yml"
+  - local: "tests/test_sign-oci-image.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Secret Scanning Test
-  - "tests/test_secret-scanning.yml"
-  - "tests/test_discover-baseimage-attestations.yml"
+  - local: "tests/test_secret-scanning.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
+  - local: "tests/test_discover-baseimage-attestations.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Software Composition Analysis Test
-  - "tests/test_software-composition-analysis.yml"
+  - local: "tests/test_software-composition-analysis.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## SBOM Upload Test
-  - "tests/test_sbom_upload.yml"
+  - local: "tests/test_sbom_upload.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Container Scanning Test
-  - "tests/test_container-scanning.yml"
+  - local: "tests/test_container-scanning.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Build OCI Image Test
-  - "tests/test_build-oci-image.yml"
+  - local: "tests/test_build-oci-image.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Full Test
-  - "tests/test_full.yml"
+  - local: "tests/test_full.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Container Lifecycle Test
-  - "tests/test_container-lifecycle.yml"
+  - local: "tests/test_container-lifecycle.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
   ## Generate Tag Test
-  - "tests/test_generate-tag.yml"
+  - local: "tests/test_generate-tag.yml"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.com"'
