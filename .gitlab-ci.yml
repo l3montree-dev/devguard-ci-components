@@ -1,7 +1,3 @@
-test:
-  script:
-    - echo "$CI_SERVER_FQDN"
-
 include:
   ## Sign OCI Image Test
   - local: "tests/test_sign-oci-image.yml"
