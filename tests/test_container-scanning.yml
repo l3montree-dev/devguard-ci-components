@@ -6,6 +6,7 @@ trigger_container_scanning_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "container-scanning"
+    file: '/ci.yml'
     inputs:
       branch: "$CI_COMMIT_BRANCH"
   rules:
