@@ -6,8 +6,6 @@ trigger_container_scanning_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "container-scanning"
-  variables:
-    CI_COMPONENT_BRANCH: "$CI_COMMIT_BRANCH"
   rules:
     - if: '$CI_SERVER_FQDN == "gitlab.com"'
 
@@ -16,7 +14,5 @@ trigger_container_scanning_test_pipeline-accepted:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "container-scanning-accepted"
-    inputs:
-      branch: "$CI_COMMIT_BRANCH"
   rules:
     - if: '$CI_SERVER_FQDN == "gitlab.com"'
