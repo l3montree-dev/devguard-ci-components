@@ -1,3 +1,8 @@
+fqdn-output:
+  image: alpine:3.23.2
+  script:
+    - echo "$CI_SERVER_FQDN"
+
 include:
   ## Sign OCI Image Test
   - "tests/test_sign-oci-image.yml"
