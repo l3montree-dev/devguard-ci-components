@@ -6,6 +6,8 @@ trigger_software_composition_analysis_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "software-composition-analysis"
+  rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.com"'
 
 trigger_software_composition_analysis_test_pipeline_accepted:
   allow_failure: true
@@ -13,3 +15,5 @@ trigger_software_composition_analysis_test_pipeline_accepted:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "software-composition-analysis-accepted"
+  rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.com"'

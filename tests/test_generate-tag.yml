@@ -6,3 +6,5 @@ trigger_generate_tag_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "generate-tag"
+  rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.com"'

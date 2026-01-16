@@ -6,3 +6,5 @@ trigger_sign_oci_image_test_pipeline:
     strategy: mirror
     project: "l3montree/devguard-ci-components-test-project"
     branch: "sign-oci-image"
+  rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.com"'
