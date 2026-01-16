@@ -1,3 +1,7 @@
+test:
+  script:
+    - echo "$CI_SERVER_FQDN"
+
 include:
   ## Sign OCI Image Test
   - "tests/test_sign-oci-image.yml"
