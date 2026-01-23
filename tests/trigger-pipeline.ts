@@ -79,11 +79,7 @@ async function triggerPipeline(): Promise<TriggerResponse> {
 
 async function getPipeline(pipelineId: number): Promise<PipelineResponse> {
   const url = `${apiBase}/projects/${encodeURIComponent(PROJECT_ID)}/pipelines/${pipelineId}`;
-  return await gitlabJson<PipelineResponse>(url, {
-    headers: {
-      "PRIVATE-TOKEN": TOKEN,
-    },
-  });
+  return await gitlabJson<PipelineResponse>(url);
 }
 
 async function main() {
