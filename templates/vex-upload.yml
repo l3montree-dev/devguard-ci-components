@@ -24,7 +24,8 @@ spec:
       default: "$CI_PROJECT_DIR/vex.json"
 
     runner_tags:
-      default: ""
+      default: []
+      type: array
       description: "The runner tag to use for the job"
     stage:
       default: "test"
