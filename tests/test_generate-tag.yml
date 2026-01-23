@@ -1,8 +1,9 @@
 ## Generated Test Pipeline
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/generate-tag/.gitlab-ci.yml
+
 trigger_generate_tag_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'generate-tag'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "generate-tag"

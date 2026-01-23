@@ -1,0 +1,22 @@
+FROM ghcr.io/l3montree-dev/devguard/scanner:v0.19.2@sha256:44d6017fefe82849397b63b3827ac3793476f295b1dc9968f70db6f9ac052301 AS devguard-scanner
+# https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
+# See the Scanner Dockerfile for the used versions of crane and devguard-scanner
+
+# checkov:skip=CKV_DOCKER_2
+# checkov:skip=CKV_DOCKER_3
+
+# We can use the docker image directly as it is based upon alpine
+FROM docker:29.1.2-dind@sha256:40916fb078cdd27640d069bba401324a15a06d3ecbd8895048122c8d321f43f8 
+
+COPY --from=devguard-scanner /usr/local/bin/crane .
+COPY --from=devguard-scanner /usr/local/bin/devguard-scanner .
+
+RUN apk update && apk add --no-cache git dbus dbus-x11 gnome-keyring busybox jq
+
+EXPOSE 2375 2376
+
+# Explicitly NOT publish the volume to avoid problems with kata
+# VOLUME /var/lib/docker
+
+ENTRYPOINT ["dockerd-entrypoint.sh"]
+CMD []

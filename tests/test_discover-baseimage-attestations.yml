@@ -1,9 +1,9 @@
 ## Secret Scanning Test
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/secret-scanning/.gitlab-ci.yml
-trigger_base_image_attestations_test_pipeline:
-  allow_failure: false
-  trigger:
-    strategy: mirror
-    project: 'l3montree/devguard-ci-components-test-project'
-    branch: 'discover-baseimage-attestations'
 
+trigger_base_image_attestations_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'discover-baseimage-attestations'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
+  allow_failure: false
