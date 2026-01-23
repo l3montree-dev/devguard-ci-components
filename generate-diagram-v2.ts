@@ -175,7 +175,8 @@ async function parseYamlFile(absPath: string, root: string): Promise<ParsedFile[
     }
   }
 
-  return docs.map((doc) => {
+  // filter out specs
+  const res = docs.filter((d) => d.spec === undefined).map((doc) => {
     const relDir = path.dirname(relPath);
     const includesRaw = doc?.include;
     const includeItems = asArray<IncludeItem>(includesRaw);
@@ -195,6 +196,8 @@ async function parseYamlFile(absPath: string, root: string): Promise<ParsedFile[
 
     return { filePath: absPath, relPath, includes, jobs };
   });
+
+  return res;
 }
 
 function mermaidEscapeId(id: string) {
@@ -213,7 +216,9 @@ async function main() {
 
   // Index by relPath for include resolution.
   const byRel = new Map<string, ParsedFile>();
-  for (const p of parsed) byRel.set(p.relPath, p);
+  for (const p of parsed) {
+    byRel.set(p.relPath, p);
+  }
 
   // Map job name -> possible full ids (file/job). Job names can collide; we'll keep all.
   const jobIndex = new Map<string, string[]>();
@@ -227,12 +232,34 @@ async function main() {
   }
 
   const lines: string[] = [];
+  lines.push(`---`);
+  lines.push(`config:`);
+  lines.push(`  look: neo`);
+  lines.push(`  layout: elk`);
+  lines.push(`---`);
   lines.push(`graph LR`);
 
+  const endNodes = parsed.filter((p) => p.includes.length === 0);
+  const middleNodes = parsed.filter((p) => p.includes.length > 0);
+
+  // Create subgraph for single files
+  lines.push("");
+  lines.push('  subgraph JobsLv1[Single Jobs]');
+  for (const p of endNodes) {
+    const fileId = mermaidEscapeId(`file:${p.relPath}`);
+    lines.push(`    ${fileId}["${mermaidLabel(p.relPath)}"]`);
+  }  
+  lines.push(`  end`)
+
   // Node declarations
-  for (const p of parsed) {
+  for (const p of middleNodes) {
     const fileId = mermaidEscapeId(`file:${p.relPath}`);
     lines.push(`  ${fileId}["${mermaidLabel(p.relPath)}"]`);
+  }
+  
+  /*
+  for (const p of parsed) {
+    const fileId = mermaidEscapeId(`file:${p.relPath}`);
     for (const jobName of Object.keys(p.jobs)) {
       const jobFull = `${p.relPath}::${jobName}`;
       const jobId = mermaidEscapeId(`job:${jobFull}`);
@@ -240,6 +267,7 @@ async function main() {
       lines.push(`  ${fileId} -->|defines| ${jobId}`);
     }
   }
+  */
 
   // File include edges
   for (const p of parsed) {
@@ -254,10 +282,12 @@ async function main() {
       if (!resolved) {
         lines.push(`  ${toId}["${mermaidLabel(toKey)}"]`);
       }
-      lines.push(`  ${fromId} -->|includes| ${toId}`);
+      // lines.push(`  ${fromId} -->|includes| ${toId}`);
+      lines.push(`  ${fromId} --> ${toId}`);
     }
   }
 
+  /*
   // Job dependency edges (needs/dependencies/extends)
   for (const p of parsed) {
     for (const job of Object.values(p.jobs)) {
@@ -289,6 +319,7 @@ async function main() {
       for (const e of job.extends) linkTo(e, "extends");
     }
   }
+  */
 
   // Slight styling
   lines.push("");
