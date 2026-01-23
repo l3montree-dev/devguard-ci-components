@@ -1,15 +1,16 @@
 ## Software Composition Analysis Test
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/software-composition-analysis/.gitlab-ci.yml
+
 trigger_software_composition_analysis_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'software-composition-analysis'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "software-composition-analysis"
 
 trigger_software_composition_analysis_test_pipeline_accepted:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'software-composition-analysis-accepted'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "software-composition-analysis-accepted"

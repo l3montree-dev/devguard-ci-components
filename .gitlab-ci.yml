@@ -1,3 +1,25 @@
+fqdn-output:
+  image: alpine:3.23.2
+  script:
+    - echo "$CI_SERVER_FQDN"
+
+# job template to run tests against test project on gitlab.com
+# unfortunately we can't use trigger pipelines because
+# the test prjects uses include to reference the templates of this project
+# and we can't use input variables in include statements unless they are project 
+# variables that are passed in via the trigger pipeline API
+.trigger_and_wait:
+  image: oven/bun:1.3.6
+  script:
+    - bun run tests/trigger-pipeline.ts
+  variables:
+    PROJECT_ID: "75629660"
+    GITLAB_URL: "https://gitlab.com"
+    TOKEN: "$DEVGUARD_TEST_PROJECT_PAT"
+  rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.com"'
+  resource_group: devguard-test-project
+
 include:
   ## Sign OCI Image Test
   - "tests/test_sign-oci-image.yml"

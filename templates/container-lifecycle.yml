@@ -251,7 +251,7 @@ include:
         - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:push_oci_image$[[ inputs.job_suffix
+        - devguard:push_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
         - devguard:container_scanning$[[ inputs.job_suffix ]]
       attestations:

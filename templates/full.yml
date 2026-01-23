@@ -48,7 +48,7 @@ spec:
       description: "The build arguments to pass to the Docker build command"
 
     version:
-      default: "v1.0.0-rc.4"
+      default: "main"
       description: "The version of the components. Since we are using remote templates, we need to specify the version of the components."
     image_suffix:
       default: "default"
