@@ -1,18 +1,16 @@
 ## Container Scanning Test
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/container-scanning/.gitlab-ci.yml
+
 trigger_container_scanning_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'container-scanning'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "container-scanning"
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
 
 trigger_container_scanning_test_pipeline-accepted:
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "container-scanning-accepted"
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'container-scanning-accepted'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
+  allow_failure: false

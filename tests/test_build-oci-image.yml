@@ -1,10 +1,9 @@
 ## Build OCI Image Test
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/build-oci-image/.gitlab-ci.yml
+
 trigger_build_oci_image_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'build-oci-image'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "build-oci-image"
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'

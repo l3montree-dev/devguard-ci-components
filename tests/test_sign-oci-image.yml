@@ -1,10 +1,9 @@
 ## Test signing of OCI image
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/sign-oci-image/.gitlab-ci.yml
+
 trigger_sign_oci_image_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'sign-oci-image'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "sign-oci-image"
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
