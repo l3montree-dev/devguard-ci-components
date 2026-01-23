@@ -18,6 +18,7 @@ fqdn-output:
     TOKEN: "$DEVGUARD_TEST_PROJECT_PAT"
   rules:
     - if: '$CI_SERVER_FQDN == "gitlab.com"'
+  resource_group: devguard-test-project
 
 include:
   ## Sign OCI Image Test
