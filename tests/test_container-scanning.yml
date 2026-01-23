@@ -7,7 +7,7 @@ trigger_container_scanning_test_pipeline:
     project: "l3montree/devguard-ci-components-test-project"
     branch: "container-scanning"
   variables:
-    CI_COMPONENT_BRANCH: "container-scanning"
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   rules:
     - if: '$CI_SERVER_FQDN == "gitlab.com"'
 
