@@ -1,40 +1,16 @@
 ## Container Scanning Test
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/container-scanning/.gitlab-ci.yml
 
-.trigger_and_wait:
-  image: oven/bun:1.3.6
-  script:
-    - bun run tests/trigger-pipeline.ts
-  variables:
-    PROJECT_ID: "75629660"
-    GITLAB_URL: "https://gitlab.com"
-    TOKEN: "$DEVGUARD_TEST_PROJECT_PAT"
-  allow_failure: true
-
-trigger_container_scanning_test_pipeline_v2:
+trigger_container_scanning_test_pipeline:
   extends: .trigger_and_wait
   variables:
     REF_NAME: 'container-scanning'
     CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
-
-
-trigger_container_scanning_test_pipeline:
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "container-scanning"
-  variables:
-    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
 
 trigger_container_scanning_test_pipeline-accepted:
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "container-scanning-accepted"
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'container-scanning-accepted'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
+  allow_failure: false

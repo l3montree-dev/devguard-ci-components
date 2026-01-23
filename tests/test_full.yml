@@ -1,10 +1,9 @@
 ## Fill Scanning Test Pipelines
 # See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/full/.gitlab-ci.yml
+
 trigger_full_scanning_test_pipeline:
+  extends: .trigger_and_wait
+  variables:
+    REF_NAME: 'full'
+    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
   allow_failure: true
-  trigger:
-    strategy: mirror
-    project: "l3montree/devguard-ci-components-test-project"
-    branch: "full"
-  rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.com"'
