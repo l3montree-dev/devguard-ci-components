@@ -4,7 +4,7 @@
 .trigger_and_wait:
   image: oven/bun:1.3.6
   script:
-    - bun run trigger-and-wait.ts
+    - bun run tests/trigger-pipeline.ts
   variables:
     PROJECT_ID: "75629660"
     GITLAB_URL: "https://gitlab.com"
