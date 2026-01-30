@@ -13,7 +13,8 @@ spec:
       description: "The DevGuard API token (use CI/CD variable, your private key)"
       default: "$DEVGUARD_TOKEN"
     runner_tags:
-      default: ""
+      default: []
+      type: array
       description: "The runner tags to use for the job"
     stage:
       default: "oci-image"
