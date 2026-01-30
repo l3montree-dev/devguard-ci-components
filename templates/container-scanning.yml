@@ -25,7 +25,7 @@ spec:
     runner_tags:
       default: []
       type: array
-      description: "The runner tag to use for the job"
+      description: "The runner tags to use for the job"
     stage:
       default: "oci-image"
       description: "The pipeline stage for the job"
@@ -92,8 +92,7 @@ spec:
       description: "Whether to ignore upstream attestations when scanning the image."
 ---
 devguard:container_scanning$[[ inputs.job_suffix ]]:
-  tags:
-    - "$[[ inputs.runner_tags ]]"
+  tags: $[[ inputs.runner_tags ]]
   stage: "$[[ inputs.stage ]]"
   allow_failure: $[[ inputs.allow_failure ]]
   needs: $[[ inputs.needs ]]
