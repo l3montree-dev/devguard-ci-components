@@ -213,7 +213,7 @@ include:
         - devguard:sign_oci_image$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
         # trigger_attestation job (source-provenance-attestation.yml) is defined here: https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/blob/main/templates/attestation.yml
-        - trigger_attestation$[[ inputs.job_suffix ]]
+        - job: trigger_attestation$[[ inputs.job_suffix ]]
           optional: true
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
