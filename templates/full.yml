@@ -58,7 +58,7 @@ variables:
   GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
 include:
-  - local: "/templates/secret-scanning.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -70,7 +70,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
 
-  - local: "/templates/static-application-security-testing.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/static-application-security-testing.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -82,7 +82,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
 
-  - local: "/templates/infrastructure-as-code-scanning.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -94,7 +94,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
 
-  - local: "/templates/software-composition-analysis.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -108,7 +108,7 @@ include:
       fail_on_cvss: $[[ inputs.fail_on_cvss ]]
       fail_on_risk: $[[ inputs.fail_on_risk ]]
 
-  - local: "/templates/generate-tag.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
     inputs:
       runner_tags: $[[ inputs.runner_tags ]]
       job_suffix: $[[ inputs.job_suffix ]]
@@ -117,7 +117,7 @@ include:
       allow_failure: $[[ inputs.allow_failure ]]
       image_suffix: $[[ inputs.image_suffix ]]
 
-  - local: "/templates/build-oci-image.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-oci-image.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -134,7 +134,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       image_tag: "$IMAGE_TAG"
 
-  - local: "/templates/container-scanning.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -155,7 +155,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
 
-  - local: "/templates/push-oci-image.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -175,7 +175,7 @@ include:
         - devguard:container_scanning$[[ inputs.job_suffix ]]
       image_tag: "$IMAGE_TAG"
 
-  - local: "/templates/sign-oci-image.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
@@ -193,11 +193,11 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
-  - local: "/templates/source-provenance-attestation.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/source-provenance-attestation.yml"
     inputs:
       job_suffix: $[[ inputs.job_suffix ]]
 
-  - local: "/templates/attest.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
