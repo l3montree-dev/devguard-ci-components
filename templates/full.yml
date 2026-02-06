@@ -230,5 +230,5 @@ include:
         - source: "build.provenance.json"
           predicate_type: "https://slsa.dev/provenance/v1"
         - source: "./artifacts/attestation-report.sarif"
-          predicate_type: "https://opencode.de/source-provenance/v1"
+          predicate_type: "https://opencode.de/source-provenance/v1.0.0"
 
