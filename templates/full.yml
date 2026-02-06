@@ -193,9 +193,9 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
-  #- local: "/templates/source-provenance-attestation.yml"
-  #  inputs:
-  #    job_suffix: $[[ inputs.job_suffix ]]
+  - local: "/templates/source-provenance-attestation.yml"
+    inputs:
+      job_suffix: $[[ inputs.job_suffix ]]
 
   - local: "/templates/attest.yml"
     inputs:
