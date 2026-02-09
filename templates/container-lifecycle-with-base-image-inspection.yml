@@ -4,14 +4,11 @@ spec:
   inputs:
     # Stage Configuration
     build_stage:
-      default: "build"
+      default: "oci-image"
       description: "The stage where the build runs"
-    scan_stage:
-      default: "test"
+    attest_stage:
+      default: "attestation"
       description: "The stage where scanning runs"
-    deploy_stage:
-      default: "deploy"
-      description: "The stage where signing and attestation runs"
 
     # DevGuard Configuration
     devguard_token:
@@ -118,8 +115,7 @@ include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-lifecycle.yml"
     inputs:
       build_stage: $[[ inputs.build_stage ]]
-      scan_stage: $[[ inputs.scan_stage ]]
-      deploy_stage: $[[ inputs.deploy_stage ]]
+      attest_stage: $[[ inputs.attest_stage ]]
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
@@ -129,7 +125,6 @@ include:
       fail_on_cvss: $[[ inputs.fail_on_cvss ]]
       fail_on_risk: $[[ inputs.fail_on_risk ]]
       build_args: $[[ inputs.build_args ]]
-      push_image: $[[ inputs.push_image ]]
       image_suffix: $[[ inputs.image_suffix ]]
       ignore_upstream_attestations: $[[ inputs.ignore_upstream_attestations ]]
       ignore_external_references: $[[ inputs.ignore_external_references ]]
@@ -142,7 +137,7 @@ include:
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/vex-upload.yml"
     inputs:
-      stage: $[[ inputs.deploy_stage ]]
+      stage: $[[ inputs.attest_stage ]]
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
@@ -162,7 +157,7 @@ include:
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sbom-upload.yml"
     inputs:
-      stage: $[[ inputs.deploy_stage ]]
+      stage: $[[ inputs.attest_stage ]]
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
