@@ -174,7 +174,7 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       job_suffix: $[[ inputs.job_suffix ]]
       # hopefully we were able to download something - if not, we allow_failure
-      sbom_file: $[[ inputs.output ]]/attestation-bom.json
+      sbom_file: $[[ inputs.output ]]/attestation-1-bom.json
       needs:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
       dependencies:
