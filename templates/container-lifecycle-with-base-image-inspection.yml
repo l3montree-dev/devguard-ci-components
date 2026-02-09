@@ -140,6 +140,26 @@ include:
       version: $[[ inputs.version ]]
       job_suffix: $[[ inputs.job_suffix ]]
 
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sbom-upload.yml"
+    inputs:
+      stage: $[[ inputs.attest_stage ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
+      devguard_origin: BASE_IMAGE_SBOM
+      runner_tags: $[[ inputs.runner_tags ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: true
+      git_strategy: $[[ inputs.git_strategy ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      # hopefully we were able to download something - if not, we allow_failure
+      sbom_file: $[[ inputs.output ]]/attestation-bom.json
+      needs:
+        - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/vex-upload.yml"
     inputs:
       stage: $[[ inputs.attest_stage ]]
@@ -157,25 +177,7 @@ include:
       vex_file: $[[ inputs.output ]]/attestation-vex.json
       needs:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+        - devguard:upload_sbom$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
-
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sbom-upload.yml"
-    inputs:
-      stage: $[[ inputs.attest_stage ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_artifact_name: $[[ inputs.devguard_artifact_name ]]
-      devguard_origin: BASE_IMAGE_SBOM
-      runner_tags: $[[ inputs.runner_tags ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: true
-      git_strategy: $[[ inputs.git_strategy ]]
-      job_suffix: $[[ inputs.job_suffix ]]
-      # hopefully we were able to download something - if not, we allow_failure
-      sbom_file: $[[ inputs.output ]]/attestation-1-bom.json
-      needs:
-        - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
-      dependencies:
-        - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+        - devguard:upload_sbom$[[ inputs.job_suffix ]]
