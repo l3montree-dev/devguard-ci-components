@@ -116,7 +116,6 @@ include:
     inputs:
       build_stage: $[[ inputs.build_stage ]]
       attest_stage: $[[ inputs.attest_stage ]]
-      deploy_stage: $[[ inputs.deploy_stage ]]
       devguard_token: $[[ inputs.devguard_token ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
