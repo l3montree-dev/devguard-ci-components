@@ -177,7 +177,7 @@ include:
       vex_file: $[[ inputs.output ]]/attestation-vex.json
       needs:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
-        - devguard:upload_sbom$[[ inputs.job_suffix ]]
+        - devguard:sbom_upload$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
-        - devguard:upload_sbom$[[ inputs.job_suffix ]]
+        - devguard:sbom_upload$[[ inputs.job_suffix ]]
