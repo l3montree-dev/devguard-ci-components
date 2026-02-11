@@ -71,7 +71,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.0-devguard-scanner-v0.19.2-customized-busybox-jq@sha256:3a81ba6eb1c5e3ba8904faef26411a177dbbc0de2005bc0f2eb20ab9ee7f71a2
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.3-devguard-scanner-v1.0.0-rc.4-customized-busybox-jq
     entrypoint: [""]
 
   script: |
