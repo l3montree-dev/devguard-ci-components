@@ -193,11 +193,11 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
-  #- remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/source-provenance-attestation.yml"
-  #  inputs:
-  #    job_suffix: $[[ inputs.job_suffix ]]
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/source-provenance-attestation.yml"
+    inputs:
+      job_suffix: $[[ inputs.job_suffix ]]
 
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$CI_COMMIT_REF_NAME/templates/attest.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
