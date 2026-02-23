@@ -159,6 +159,7 @@ include:
       image_tar_path: "$[[ inputs.image_tar_path ]]"
       ignore_external_references: "$[[ inputs.ignore_external_references ]]"
       ignore_upstream_attestations: "$[[ inputs.ignore_upstream_attestations ]]"
+      devguard_origin: "$[[ inputs.devguard_origin ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - $[[ inputs.build_job_name ]]
