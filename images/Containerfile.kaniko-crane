@@ -1,4 +1,4 @@
-FROM ghcr.io/l3montree-dev/devguard/scanner:v0.19.2@sha256:44d6017fefe82849397b63b3827ac3793476f295b1dc9968f70db6f9ac052301 AS devguard-scanner
+FROM ghcr.io/l3montree-dev/devguard/scanner:v1.0.0 AS devguard-scanner
 # https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
 # See the Scanner Dockerfile for the used versions of crane and devguard-scanner
 
@@ -6,9 +6,9 @@ FROM ghcr.io/l3montree-dev/devguard/scanner:v0.19.2@sha256:44d6017fefe82849397b6
 # checkov:skip=CKV_DOCKER_3
 
 # https://github.com/osscontainertools/kaniko
-FROM ghcr.io/osscontainertools/kaniko:v1.26.0-debug@sha256:79e919821131a5d7846992de4c2fdb64bb1aa298a6cfd772a8740cda8648e545 AS kaniko-executor
+FROM ghcr.io/osscontainertools/kaniko:v1.26.6-debug@sha256:d2170bed1affc9d886853691c5ae7aa36163f2643de42693eb890bad8d1763ad AS kaniko-executor
 
-FROM alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
+FROM alpine:3.23.3@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
 WORKDIR /
 
