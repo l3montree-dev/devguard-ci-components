@@ -1,0 +1,15 @@
+# Copyright 2025 l3montree GmbH.
+# SPDX-License-Identifier: AGPL-3.0
+#
+spec:
+  inputs:
+    job_suffix:
+      description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline."
+      default: ""
+---
+include: 
+  - component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
+    inputs:
+      job_suffix: $[[ inputs.job_suffix ]]
+    rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
