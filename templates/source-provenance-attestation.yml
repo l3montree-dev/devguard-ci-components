@@ -13,3 +13,15 @@ include:
       job_suffix: $[[ inputs.job_suffix ]]
     rules:
       - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
+
+test-without-rule:
+  stage: test
+  script:
+    - echo "$CI_SERVER_FQDN"
+
+test-with-rule:
+  stage: test
+  script:
+    - echo "$CI_SERVER_FQDN"
+  rules:
+    - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
