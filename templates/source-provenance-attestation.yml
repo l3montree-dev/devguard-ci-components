@@ -12,4 +12,4 @@ include:
     inputs:
       job_suffix: $[[ inputs.job_suffix ]]
     rules:
-    - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
+      - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
