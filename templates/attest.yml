@@ -104,8 +104,8 @@ devguard:attest$[[inputs.job_suffix]]:
     - "# Login to registry"
     - devguard-scanner login -u $[[inputs.registry_user]] -p $[[inputs.registry_password]] $[[inputs.registry]]
     - "# Convert inputs.attestations to a valid JSON array if it's an array of JSON strings"
-    - ATT_JSON_CLEAN = $(echo '$[[ inputs.attestations ]]' | sed 's/:([a-z_]+)=>/"1":/g' | sed 's/=>/:/g' | sed "s/'/"/g")
-    - ATTESTATIONS_JSON = $(echo "$ATT_JSON_CLEAN" | jq. )
+    - ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' | sed 's/:([a-z_]+)=>/"1":/g' | sed 's/=>/:/g' | sed "s/'/"/g")
+    - ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq .)
     - "# Process each attestation"
     - |
       echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
