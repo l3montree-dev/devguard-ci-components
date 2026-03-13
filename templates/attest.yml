@@ -95,10 +95,10 @@ devguard:attest$[[inputs.job_suffix]]:
     - 'echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"'
     - 'echo "Asset Name: $[[ inputs.devguard_asset_name ]]"'
     - "# URL encode artifact name for API calls"
-    - API_ARTIFACT_NAME = $(python3 - c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
+    - API_ARTIFACT_NAME=$(python3 - c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
     - 'echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"'
     - "# Slugify the commit ref(replace special characters with hyphens)"
-    - API_COMMIT_REF = $(devguard - scanner slug "$[[ inputs.commit_ref ]]")
+    - API_COMMIT_REF=$(devguard - scanner slug "$[[ inputs.commit_ref ]]")
     - 'echo "Slugified Commit Ref: $API_COMMIT_REF"'
     - "echo 'Attestations: $[[ inputs.attestations ]]'"
     - "# Login to registry"
