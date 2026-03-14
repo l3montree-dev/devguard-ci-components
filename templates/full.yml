@@ -188,9 +188,6 @@ include:
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
-      dependencies:
-        - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
   - remote: https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/templates/attestation.yml
