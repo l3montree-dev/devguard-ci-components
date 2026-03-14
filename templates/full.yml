@@ -193,7 +193,7 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
-  - remote: https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/attestation@main'
+  - remote: https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/templates/attestation.yml
     inputs:
       job_suffix: $[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
