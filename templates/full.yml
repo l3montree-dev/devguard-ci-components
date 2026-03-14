@@ -198,6 +198,10 @@ include:
       job_suffix: $[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
       stage: attestation
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
     rules:
       - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
 
