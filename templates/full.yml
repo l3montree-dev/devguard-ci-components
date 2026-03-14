@@ -197,6 +197,7 @@ include:
     inputs:
       job_suffix: $[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
+      stage: attestation
       needs: 
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
