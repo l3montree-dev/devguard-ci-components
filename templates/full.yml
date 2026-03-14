@@ -193,9 +193,12 @@ include:
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
       image: "$IMAGE_TAG"
 
-  - remote: "https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/source-provenance-attestation.yml"
+  - remote: https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/attestation@trust-boundary'
     inputs:
       job_suffix: $[[ inputs.job_suffix ]]
+      image: "$IMAGE_TAG"
+    rules:
+      - if: '$CI_SERVER_FQDN == "gitlab.opencode.de"'
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/attest.yml"
     inputs:
