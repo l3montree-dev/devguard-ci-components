@@ -69,7 +69,7 @@ devguard:sarif_upload$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.1.0
     pull_policy: "$[[ inputs.pull_policy ]]"
 
   script:
