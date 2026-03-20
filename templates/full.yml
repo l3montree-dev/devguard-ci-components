@@ -29,7 +29,7 @@ spec:
       description: The pipeline stage for the job
     git_strategy:
       description: The Git strategy to use for the job
-      default: none
+      default: fetch
     pull_policy:
       description: The pull policy for the container image (can be [always, if-not-present, never])
       default: always
@@ -74,7 +74,7 @@ spec:
       type: array
     image:
       description: Container image to use for attestation
-      default: image.tar
+      default: $CI_REGISTRY_IMAGE:latest
     devguard_web_ui:
       description: The DevGuard Web-UI Instance URL
       default: https://app.devguard.org
@@ -377,3 +377,19 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
     - /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
     - /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
+devguard:sign_oci_image$[[ inputs.job_suffix ]]:
+  tags: $[[inputs.runner_tags]]
+  stage: $[[inputs.stage]]
+  allow_failure: $[[inputs.allow_failure]]
+  needs: $[[inputs.needs]]
+  dependencies: $[[inputs.dependencies]]
+  variables:
+    GIT_STRATEGY: $[[inputs.git_strategy]]
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint:
+      - ""
+  script:
+    - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$[[ inputs.image ]]"
