@@ -74,7 +74,7 @@ spec:
       type: array
     image:
       description: Container image to use for attestation
-      default: $CI_REGISTRY_IMAGE
+      default: image.tar
     devguard_web_ui:
       description: The DevGuard Web-UI Instance URL
       default: https://app.devguard.org
@@ -111,6 +111,18 @@ spec:
     upstream_version:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
+    image_tag:
+      default: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      description: The tag to use for the built image
+    build_args:
+      default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
+      description: The build arguments to pass to the Kaniko build command
+    push_image:
+      default: "false"
+      description: If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts.
+    supplyChainId:
+      default: $CI_COMMIT_SHA
+      description: The supply chain ID to use for the in-toto attestation
 ---
 include:
   - component: $CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main
@@ -287,3 +299,35 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
       dotenv: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
     paths:
       - generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+devguard:build_oci_image$[[ inputs.job_suffix ]]:
+  tags: $[[inputs.runner_tags]]
+  stage: $[[inputs.stage]]
+  allow_failure: $[[inputs.allow_failure]]
+  needs: $[[inputs.needs]]
+  dependencies: $[[inputs.dependencies]]
+  variables:
+    GIT_STRATEGY: $[[inputs.git_strategy]]
+  image:
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.6-devguard-scanner-v1.0.0-customized-busybox-jq@sha256:c7a3da8f93ee14a586bcbf3c213914b29ddbd512688139f2f5c84e753647698f
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint:
+      - ""
+  before_script:
+    - apk add jq
+    - |-
+      echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).
+       The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
+    - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
+  script:
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
+    - echo "Running DevGuard Intoto Build...stopping..."
+    - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
+  artifacts:
+    paths:
+      - $[[ inputs.image ]]
+      - image-digest.txt
+      - build.provenance.json
+    when: on_success
