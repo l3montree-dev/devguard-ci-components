@@ -116,6 +116,7 @@ include:
   - component: $CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main
     inputs:
       job_suffix: $[[ inputs.job_suffix ]]
+      image: $IMAGE_TAG
     rules:
       - if: $CI_SERVER_FQDN == "gitlab.opencode.de"
 devguard:attest$[[inputs.job_suffix]]:
