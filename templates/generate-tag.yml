@@ -6,6 +6,7 @@ spec:
   inputs:
     devguard_artifact_name:
       description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      default: ""
     runner_tags:
       default: []
       type: array
