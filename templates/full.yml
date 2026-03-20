@@ -29,7 +29,7 @@ spec:
       description: The pipeline stage for the job
     git_strategy:
       description: The Git strategy to use for the job
-      default: fetch
+      default: none
     pull_policy:
       description: The pull policy for the container image (can be [always, if-not-present, never])
       default: always
@@ -359,3 +359,21 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
               echo "Scanning local tar file: $[[ inputs.image_tar_path ]]"
               devguard-scanner container-scanning           --origin="$[[ inputs.devguard_origin ]]"           --assetName="$[[ inputs.devguard_asset_name ]]"           --apiUrl="$[[ inputs.devguard_api_url ]]"           --token="$[[ inputs.devguard_token ]]"           --path="$[[ inputs.image_tar_path ]]"           --defaultRef="$[[ inputs.default_ref ]]"           --ref="$[[ inputs.commit_ref ]]"           --isTag="$[[ inputs.is_tag ]]"           --artifactName="$[[ inputs.devguard_artifact_name ]]"           --webUI="$[[ inputs.devguard_web_ui ]]"           --failOnRisk="$[[ inputs.fail_on_risk ]]"           --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
             fi
+devguard:push_oci_image$[[ inputs.job_suffix ]]:
+  tags: $[[inputs.runner_tags]]
+  stage: $[[inputs.stage]]
+  allow_failure: $[[inputs.allow_failure]]
+  needs: $[[inputs.needs]]
+  dependencies: $[[inputs.dependencies]]
+  variables:
+    GIT_STRATEGY: $[[inputs.git_strategy]]
+  image:
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.3-devguard-scanner-v1.0.0-rc.4-customized-busybox-jq
+    entrypoint:
+      - ""
+  script:
+    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    - 'echo "Image: $[[ inputs.image ]]"'
+    - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
+    - /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
+    - /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
