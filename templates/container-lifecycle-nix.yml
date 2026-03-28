@@ -122,6 +122,23 @@ spec:
       default: "$CI_COMMIT_SHA"
       description: "Supply chain ID forwarded to build provenance supply-chain artifacts"
 
+    # Nix binary cache
+    nix_cache_substituter:
+      default: ""
+      description: "Nix binary cache substituter URL. Set to empty string to disable."
+    nix_cache_public_key:
+      default: ""
+      description: "Trusted public key for the Nix binary cache."
+    nix_cache_s3_endpoint:
+      default: ""
+      description: "S3 API endpoint for pushing to the cache. Leave empty to skip pushing."
+    nix_cache_s3_bucket:
+      default: ""
+      description: "S3 bucket name for the cache."
+    nix_cache_region:
+      default: ""
+      description: "S3 region for the cache bucket."
+
     # Component version
     version:
       default: "main"
@@ -154,6 +171,11 @@ include:
       job_suffix: $[[ inputs.job_suffix ]]
       allow_failure: $[[ inputs.allow_failure ]]
       supplyChainId: "$[[ inputs.supplyChainId ]]"
+      nix_cache_substituter: "$[[ inputs.nix_cache_substituter ]]"
+      nix_cache_public_key: "$[[ inputs.nix_cache_public_key ]]"
+      nix_cache_s3_endpoint: "$[[ inputs.nix_cache_s3_endpoint ]]"
+      nix_cache_s3_bucket: "$[[ inputs.nix_cache_s3_bucket ]]"
+      nix_cache_region: "$[[ inputs.nix_cache_region ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:

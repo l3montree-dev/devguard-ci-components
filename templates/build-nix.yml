@@ -60,6 +60,22 @@ spec:
     supplyChainId:
       default: "$CI_COMMIT_SHA"
       description: "Supply chain ID forwarded to intoto provenance."
+
+    nix_cache_substituter:
+      default: ""
+      description: "Nix binary cache substituter URL. Set to empty string to disable."
+    nix_cache_public_key:
+      default: ""
+      description: "Trusted public key for the Nix binary cache."
+    nix_cache_s3_endpoint:
+      default: ""
+      description: "S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud). Leave empty to skip pushing."
+    nix_cache_s3_bucket:
+      default: ""
+      description: "S3 bucket name for the cache."
+    nix_cache_region:
+      default: ""
+      description: "S3 region for the cache bucket."
 ---
 
 # Extract the devguard-scanner binary once and share it as a job artifact.
@@ -92,11 +108,21 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - chmod +x ./devguard-scanner
     - mkdir -p /etc/nix
     - |
-      cat > /etc/nix/nix.conf << 'EOF'
+      cat > /etc/nix/nix.conf << EOF
       sandbox = false
       filter-syscalls = false
       experimental-features = nix-command flakes
+      $([[ -n "$[[ inputs.nix_cache_substituter ]]" ]] && echo "substituters = https://cache.nixos.org $[[ inputs.nix_cache_substituter ]]" || true)
+      $([[ -n "$[[ inputs.nix_cache_public_key ]]" ]] && echo "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= $[[ inputs.nix_cache_public_key ]]" || true)
       EOF
+    - |
+      if [[ -n "$NIX_CACHE_SECRET_KEY" ]]; then
+        echo "$NIX_CACHE_SECRET_KEY" > /tmp/nix-cache-priv-key.pem
+      fi
+    - |
+      mkdir -p ~/.aws
+      echo "[profile nix-cache]" >> ~/.aws/config
+      echo "s3.addressing_style = path" >> ~/.aws/config
   script:
     - ./devguard-scanner intoto start
         --ignore=devguard-scanner
@@ -107,6 +133,13 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         --supplyChainId="$[[ inputs.supplyChainId ]]"
     - nix build -L ".#$[[ inputs.nix_target ]]" --no-update-lock-file
     - cp -L result "$[[ inputs.image ]]"
+    - |
+      if [[ -n "$[[ inputs.nix_cache_s3_endpoint ]]" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then
+        export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"
+        export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"
+        nix copy $(nix-store -qR $(readlink result)) \
+          --to 's3://$[[ inputs.nix_cache_s3_bucket ]]?endpoint=$[[ inputs.nix_cache_s3_endpoint ]]&region=$[[ inputs.nix_cache_region ]]&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
+      fi
     # Compute image digest using crane from nixpkgs (no extra install needed).
     - nix run nixpkgs#crane -- digest --tarball="$[[ inputs.image ]]" > image-digest.txt
     - ./devguard-scanner intoto stop
