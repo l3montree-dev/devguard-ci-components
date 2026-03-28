@@ -66,9 +66,6 @@ spec:
     # Build Configuration — Nix-specific (replaces build_args from container-lifecycle.yml)
     nix_target:
       description: "Flake output to build (e.g. devguardOCI, devguardScannerOCI). Must be a dockerTools.buildLayeredImage derivation."
-    nix_image:
-      default: "nixos/nix"
-      description: "Docker image providing the nix CLI."
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
@@ -151,7 +148,6 @@ include:
       devguard_api_url: $[[ inputs.devguard_api_url ]]
       devguard_token: $[[ inputs.devguard_token ]]
       nix_target: $[[ inputs.nix_target ]]
-      nix_image: $[[ inputs.nix_image ]]
       image: "$[[ inputs.image ]]"
       runner_tags: $[[ inputs.runner_tags ]]
       stage: "$[[ inputs.build_stage ]]"
