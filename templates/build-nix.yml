@@ -76,6 +76,10 @@ spec:
     nix_cache_region:
       default: ""
       description: "S3 region for the cache bucket."
+    architecture:
+      default: "amd64"
+      type: string
+      description: "Target architecture (amd64 or arm64). Must match the runner architecture."
 ---
 
 # Extract the devguard-scanner binary once and share it as a job artifact.
