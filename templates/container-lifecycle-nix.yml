@@ -113,11 +113,6 @@ spec:
       default: "true"
       description: "Whether to ignore attestations from upstream images"
 
-    architecture:
-      default: "amd64"
-      type: string
-      description: "Target architecture (amd64 or arm64)"
-
     supplyChainId:
       default: "$CI_COMMIT_SHA"
       description: "Supply chain ID forwarded to build provenance supply-chain artifacts"
