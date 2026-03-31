@@ -65,9 +65,6 @@ spec:
   devguard_api_url: "$[[ inputs.devguard_api_url ]]"
 
 include:
-  # Generates Badge Programm Report for the image to later attest it
-  - component: $CI_SERVER_FQDN/open-code/badgebackend/badge-api/badges@main
-
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
