@@ -132,7 +132,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         --assetName="$[[ inputs.devguard_asset_name ]]"
         --supplyChainId="$[[ inputs.supplyChainId ]]"
     - nix build -L ".#$[[ inputs.nix_target ]]" --no-update-lock-file
-    - cp -L result "$[[ inputs.image ]]"
+    - nix run nixpkgs#gzip -- -cd result > "$[[ inputs.image ]]"
     - |
       if [[ -n "$[[ inputs.nix_cache_s3_endpoint ]]" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then
         export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"
