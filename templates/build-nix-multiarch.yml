@@ -64,57 +64,6 @@ spec:
   devguard_token: "$[[ inputs.devguard_token ]]"
   devguard_api_url: "$[[ inputs.devguard_api_url ]]"
 
-include:
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
-    inputs:
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-      job_suffix: $[[ inputs.job_suffix ]]
-      git_strategy: $[[ inputs.git_strategy ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_failure ]]
-
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/static-application-security-testing.yml"
-    inputs:
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-      job_suffix: $[[ inputs.job_suffix ]]
-      git_strategy: $[[ inputs.git_strategy ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_failure ]]
-
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
-    inputs:
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-      job_suffix: $[[ inputs.job_suffix ]]
-      git_strategy: $[[ inputs.git_strategy ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_failure ]]
-
-  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
-    inputs:
-      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
-      devguard_api_url: $[[ inputs.devguard_api_url ]]
-      devguard_token: $[[ inputs.devguard_token ]]
-      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
-      runner_tags: $[[ inputs.runner_tags ]]
-      job_suffix: $[[ inputs.job_suffix ]]
-      git_strategy: $[[ inputs.git_strategy ]]
-      pull_policy: $[[ inputs.pull_policy ]]
-      allow_failure: $[[ inputs.allow_failure ]]
-      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
-      fail_on_risk: $[[ inputs.fail_on_risk ]]
-
 
 build_image$[[ inputs.job_suffix ]]:
   stage: build
@@ -122,8 +71,10 @@ build_image$[[ inputs.job_suffix ]]:
     matrix:
       - RUNNER_TAG: "$[[ inputs.amd64_runner_tag ]]"
         NIX_TARGET: "$[[ inputs.nix_target_amd64 ]]"
+        ARCHITECTURE: "amd64"
       - RUNNER_TAG: "$[[ inputs.arm64_runner_tag ]]"
         NIX_TARGET: "$[[ inputs.nix_target_arm64 ]]"
+        ARCHITECTURE: "arm64"
   trigger:
     strategy: depend
     include:
