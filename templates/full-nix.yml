@@ -137,7 +137,7 @@ build_image$[[ inputs.job_suffix ]]:
           runner_tags:
             - "${RUNNER_TAG}"
 
-      - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/push-and-attest@main
+      - remote: https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/push-and-attest.yml
         inputs:
           <<: *common
           build_job_name: "devguard:build_oci_image$[[ inputs.job_suffix ]]"
@@ -158,7 +158,7 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
       pipeline_variables: true
     include:
       ##############################################
-      - component: $CI_SERVER_FQDN/open-code/oci/container-hardening-work-bench/collect-child-pipeline-artifacts@main
+      - remote: https://gitlab.opencode.de/oci-community/tools/container-hardening-work-bench/-/raw/main/templates/collect-child-pipeline-artifacts.yml
         inputs:
           stage: "build"
           job_suffix: "$[[ inputs.job_suffix ]]"
@@ -175,7 +175,7 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
           dependencies:
             - collect_child_pipeline_artifacts$[[ inputs.job_suffix ]]
 
-      - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/sign-oci-image@main
+      - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
         inputs:
           <<: *common
           image: $MANIFEST_IMAGE_TAG
@@ -187,17 +187,3 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
             - create_manifest_multi_arch$[[ inputs.job_suffix ]]
 
 
-# trigger:include config is too long
-# https://gitlab.com/gitlab-org/gitlab/-/issues/393338
-#
-#      - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/sign-oci-image@main
-#        if: '$[[ inputs.create_root_manifest ]] == "true"'
-#        inputs:
-#          <<: *common
-#          image: $MANIFEST_WITHOUT_REF_TAG
-#          stage: "deploy"
-#          job_suffix: "$[[ inputs.job_suffix ]]:root"
-#          needs:
-#            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
-#          dependencies:
-#            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
