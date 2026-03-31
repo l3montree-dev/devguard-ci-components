@@ -127,14 +127,14 @@ build_image$[[ inputs.job_suffix ]]:
   trigger:
     strategy: depend
     include:
-      - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/build-nix.yml"
+      - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-nix.yml"
         inputs:
           <<: *common
           nix_target: "${NIX_TARGET}"
           runner_tags:
             - "${RUNNER_TAG}"
 
-      - remote: https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/push-and-attest.yml
+      - remote: https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-and-attest.yml
         inputs:
           <<: *common
           build_job_name: "devguard:build_oci_image$[[ inputs.job_suffix ]]"
@@ -162,7 +162,7 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
           downstream_pipeline_trigger_job_name_prefix: "build_image$[[ inputs.job_suffix ]]:"
           parent_pipeline_id: $PARENT_PIPELINE_ID
 
-      - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/create-manifest-multi-arch.yml"
+      - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/create-manifest-multi-arch.yml"
         inputs:
           stage: "build"
           job_suffix: "$[[ inputs.job_suffix ]]"
@@ -172,7 +172,7 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
           dependencies:
             - collect_child_pipeline_artifacts$[[ inputs.job_suffix ]]
 
-      - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
+      - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
         inputs:
           <<: *common
           image: $MANIFEST_IMAGE_TAG
