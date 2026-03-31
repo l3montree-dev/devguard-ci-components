@@ -11,9 +11,6 @@ spec:
     devguard_web_ui:
       default: "https://app.devguard.org"
       description: "The DevGuard Web-UI Instance URL"
-
-    package_name:
-      type: string
     image_suffix:
       type: string
       default: ""
@@ -122,7 +119,7 @@ include:
       fail_on_risk: $[[ inputs.fail_on_risk ]]
 
 
-build_image:$[[ inputs.package_name ]]:
+build_image$[[ inputs.job_suffix ]]:
   stage: build
   parallel:
     matrix:
@@ -151,7 +148,7 @@ build_image:$[[ inputs.package_name ]]:
           architecture: ${ARCHITECTURE}
 
 
-create_and_sign_manifest:$[[ inputs.package_name ]]:
+create_and_sign_manifest$[[ inputs.job_suffix ]]:
   stage: attestation
   variables:
     PARENT_PIPELINE_ID: $CI_PIPELINE_ID
@@ -164,30 +161,30 @@ create_and_sign_manifest:$[[ inputs.package_name ]]:
       - component: $CI_SERVER_FQDN/open-code/oci/container-hardening-work-bench/collect-child-pipeline-artifacts@main
         inputs:
           stage: "build"
-          job_suffix: ":$[[ inputs.package_name ]]"
-          downstream_pipeline_trigger_job_name_prefix: "build_image:$[[ inputs.package_name ]]:"
+          job_suffix: "$[[ inputs.job_suffix ]]"
+          downstream_pipeline_trigger_job_name_prefix: "build_image$[[ inputs.job_suffix ]]:"
           parent_pipeline_id: $PARENT_PIPELINE_ID
 
       - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/create-manifest-multi-arch.yml"
         inputs:
           stage: "build"
-          job_suffix: ":$[[ inputs.package_name ]]"
+          job_suffix: "$[[ inputs.job_suffix ]]"
           create_root_manifest: "$[[ inputs.create_root_manifest ]]"
           needs:
-            - collect_child_pipeline_artifacts:$[[ inputs.package_name ]]
+            - collect_child_pipeline_artifacts$[[ inputs.job_suffix ]]
           dependencies:
-            - collect_child_pipeline_artifacts:$[[ inputs.package_name ]]
+            - collect_child_pipeline_artifacts$[[ inputs.job_suffix ]]
 
       - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/sign-oci-image@main
         inputs:
           <<: *common
           image: $MANIFEST_IMAGE_TAG
           stage: "deploy"
-          job_suffix: ":$[[ inputs.package_name ]]"
+          job_suffix: "$[[ inputs.job_suffix ]]"
           needs:
-            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
           dependencies:
-            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
 
 
 # trigger:include config is too long
@@ -199,8 +196,8 @@ create_and_sign_manifest:$[[ inputs.package_name ]]:
 #          <<: *common
 #          image: $MANIFEST_WITHOUT_REF_TAG
 #          stage: "deploy"
-#          job_suffix: ":$[[ inputs.package_name ]]:root"
+#          job_suffix: "$[[ inputs.job_suffix ]]:root"
 #          needs:
-#            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+#            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
 #          dependencies:
-#            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+#            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
