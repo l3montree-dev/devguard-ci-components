@@ -83,6 +83,7 @@ build_image$[[ inputs.job_suffix ]]:
           <<: *common
           nix_target: "${NIX_TARGET}"
           stage: "build"
+          job_suffix: "$[[ inputs.job_suffix ]]"
           runner_tags:
             - "${RUNNER_TAG}"
 
