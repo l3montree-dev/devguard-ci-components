@@ -140,7 +140,7 @@ build_image$[[ inputs.job_suffix ]]:
       - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/push-and-attest@main
         inputs:
           <<: *common
-          build_job_name: "devguard:build_oci_image"
+          build_job_name: "devguard:build_oci_image$[[ inputs.job_suffix ]]"
           version: $[[ inputs.version ]]
           build_stage: build
           attest_stage: test
