@@ -1,0 +1,206 @@
+spec:
+  inputs:
+    devguard_asset_name:
+      type: string
+    devguard_api_url:
+      type: string
+      default: "https://api.devguard.opencode.de"
+    devguard_token:
+      type: string
+      default: "$DEVGUARD_TOKEN"
+    devguard_web_ui:
+      default: "https://app.devguard.org"
+      description: "The DevGuard Web-UI Instance URL"
+
+    package_name:
+      type: string
+    image_suffix:
+      type: string
+      default: ""
+    create_root_manifest:
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
+      description: "Whether to create a root multi-architecture manifest for the built images (without ref name)."
+    nix_target_amd64:
+      description: "Nix flake build target for amd64 (e.g. coreutils-amd64)"
+      type: string
+    nix_target_arm64:
+      description: "Nix flake build target for arm64 (e.g. coreutils-arm64)"
+      type: string
+    amd64_runner_tag:
+      description: "Runner tag for amd64 builds"
+      type: string
+      default: "nix-target-amd64"
+    arm64_runner_tag:
+      description: "Runner tag for arm64 builds"
+      type: string
+      default: "nix-target-arm64"
+
+    version:
+      default: "main"
+      description: "Version/ref of the devguard-ci-component templates to use"
+    runner_tags:
+      default: []
+      type: array
+      description: "The runner tags to use for scanning jobs"
+    job_suffix:
+      default: ""
+      description: "Suffix for scanning job names"
+    git_strategy:
+      default: "fetch"
+      description: "The Git strategy to use for scanning jobs"
+    pull_policy:
+      default: "always"
+      description: "The pull policy for scanner container images"
+    allow_failure:
+      default: false
+      type: boolean
+      description: "Whether scanning jobs are allowed to fail without stopping the pipeline"
+    fail_on_risk:
+      default: "critical"
+      description: "The risk level to fail SCA/container scanning on. Options: none, low, medium, high, critical"
+    fail_on_cvss:
+      default: "critical"
+      description: "The CVSS score to fail SCA/container scanning on. Options: none, low, medium, high, critical"
+---
+.common: &common
+  devguard_asset_name: "$[[ inputs.devguard_asset_name ]]"
+  devguard_token: "$[[ inputs.devguard_token ]]"
+  devguard_api_url: "$[[ inputs.devguard_api_url ]]"
+
+include:
+  # Generates Badge Programm Report for the image to later attest it
+  - component: $CI_SERVER_FQDN/open-code/badgebackend/badge-api/badges@main
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/secret-scanning.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/static-application-security-testing.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/infrastructure-as-code-scanning.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/software-composition-analysis.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
+      fail_on_risk: $[[ inputs.fail_on_risk ]]
+
+
+build_image:$[[ inputs.package_name ]]:
+  stage: build
+  parallel:
+    matrix:
+      - RUNNER_TAG: "$[[ inputs.amd64_runner_tag ]]"
+        NIX_TARGET: "$[[ inputs.nix_target_amd64 ]]"
+      - RUNNER_TAG: "$[[ inputs.arm64_runner_tag ]]"
+        NIX_TARGET: "$[[ inputs.nix_target_arm64 ]]"
+  trigger:
+    strategy: depend
+    include:
+      - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/build-nix.yml"
+        inputs:
+          <<: *common
+          nix_target: "${NIX_TARGET}"
+          runner_tags:
+            - "${RUNNER_TAG}"
+
+      - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/push-and-attest@main
+        inputs:
+          <<: *common
+          build_job_name: "devguard:build_oci_image"
+          version: $[[ inputs.version ]]
+          build_stage: build
+          attest_stage: test
+          image_suffix: $[[ inputs.image_suffix ]]
+          architecture: ${ARCHITECTURE}
+
+
+create_and_sign_manifest:$[[ inputs.package_name ]]:
+  stage: attestation
+  variables:
+    PARENT_PIPELINE_ID: $CI_PIPELINE_ID
+  trigger:
+    strategy: depend
+    forward:
+      pipeline_variables: true
+    include:
+      ##############################################
+      - component: $CI_SERVER_FQDN/open-code/oci/container-hardening-work-bench/collect-child-pipeline-artifacts@main
+        inputs:
+          stage: "build"
+          job_suffix: ":$[[ inputs.package_name ]]"
+          downstream_pipeline_trigger_job_name_prefix: "build_image:$[[ inputs.package_name ]]:"
+          parent_pipeline_id: $PARENT_PIPELINE_ID
+
+      - remote: "https://gitlab.com/l3montree/devguard-ci-components/-/raw/$[[ inputs.version ]]/templates/create-manifest-multi-arch.yml"
+        inputs:
+          stage: "build"
+          job_suffix: ":$[[ inputs.package_name ]]"
+          create_root_manifest: "$[[ inputs.create_root_manifest ]]"
+          needs:
+            - collect_child_pipeline_artifacts:$[[ inputs.package_name ]]
+          dependencies:
+            - collect_child_pipeline_artifacts:$[[ inputs.package_name ]]
+
+      - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/sign-oci-image@main
+        inputs:
+          <<: *common
+          image: $MANIFEST_IMAGE_TAG
+          stage: "deploy"
+          job_suffix: ":$[[ inputs.package_name ]]"
+          needs:
+            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+          dependencies:
+            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+
+
+# trigger:include config is too long
+# https://gitlab.com/gitlab-org/gitlab/-/issues/393338
+#
+#      - component: $CI_SERVER_FQDN/l3montree/devguard-ci-components/sign-oci-image@main
+#        if: '$[[ inputs.create_root_manifest ]] == "true"'
+#        inputs:
+#          <<: *common
+#          image: $MANIFEST_WITHOUT_REF_TAG
+#          stage: "deploy"
+#          job_suffix: ":$[[ inputs.package_name ]]:root"
+#          needs:
+#            - create_manifest_multi_arch:$[[ inputs.package_name ]]
+#          dependencies:
+#            - create_manifest_multi_arch:$[[ inputs.package_name ]]
