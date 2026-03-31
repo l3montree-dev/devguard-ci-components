@@ -26,11 +26,28 @@ spec:
     amd64_runner_tag:
       description: "Runner tag for amd64 builds"
       type: string
-      default: "nix-target-amd64"
+      default: ""
     arm64_runner_tag:
       description: "Runner tag for arm64 builds"
       type: string
-      default: "nix-target-arm64"
+      default: ""
+
+    # Nix binary cache
+    nix_cache_substituter:
+      default: ""
+      description: "Nix binary cache substituter URL. Set to empty string to disable."
+    nix_cache_public_key:
+      default: ""
+      description: "Trusted public key for the Nix binary cache."
+    nix_cache_s3_endpoint:
+      default: ""
+      description: "S3 API endpoint for pushing to the cache. Leave empty to skip pushing."
+    nix_cache_s3_bucket:
+      default: ""
+      description: "S3 bucket name for the cache."
+    nix_cache_region:
+      default: ""
+      description: "S3 region for the cache bucket."
 
     version:
       default: "main"
@@ -86,6 +103,11 @@ build_image$[[ inputs.job_suffix ]]:
           job_suffix: "$[[ inputs.job_suffix ]]"
           runner_tags:
             - "${RUNNER_TAG}"
+          nix_cache_substituter: "$[[ inputs.nix_cache_substituter ]]"
+          nix_cache_public_key: "$[[ inputs.nix_cache_public_key ]]"
+          nix_cache_s3_endpoint: "$[[ inputs.nix_cache_s3_endpoint ]]"
+          nix_cache_s3_bucket: "$[[ inputs.nix_cache_s3_bucket ]]"
+          nix_cache_region: "$[[ inputs.nix_cache_region ]]"
 
       - remote: https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-and-attest.yml
         inputs:
