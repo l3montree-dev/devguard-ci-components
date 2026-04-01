@@ -80,7 +80,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.6-devguard-scanner-v1.0.0-customized-busybox-jq@sha256:c7a3da8f93ee14a586bcbf3c213914b29ddbd512688139f2f5c84e753647698f
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint: [""]
 
