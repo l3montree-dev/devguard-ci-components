@@ -85,13 +85,12 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     entrypoint: [""]
 
   before_script:
-    - apk add jq
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - |
       /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
 
       # kaniko might remove all files after building - thus a second login is necessary.
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
