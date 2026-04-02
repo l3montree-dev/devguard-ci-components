@@ -122,6 +122,7 @@ build_image$[[ inputs.job_suffix ]]:
           allow_failure: $[[ inputs.allow_failure ]]
           fail_on_risk: "$[[ inputs.fail_on_risk ]]"
           fail_on_cvss: "$[[ inputs.fail_on_cvss ]]"
+          devguard_artifact_name: "$ARTIFACT_NAME"
           image_tar_path: "image.tar"
           needs:
             - devguard:generate_tag$[[ inputs.job_suffix ]]
@@ -139,6 +140,14 @@ build_image$[[ inputs.job_suffix ]]:
           attest_stage: test
           image_suffix: $[[ inputs.image_suffix ]]
           architecture: ${ARCHITECTURE}
+          needs:
+            - devguard:generate_tag$[[ inputs.job_suffix ]]
+            - devguard:build_oci_image$[[ inputs.job_suffix ]]
+            - devguard:container_scanning$[[ inputs.job_suffix ]]
+          dependencies:
+            - devguard:generate_tag$[[ inputs.job_suffix ]]
+            - devguard:build_oci_image$[[ inputs.job_suffix ]]
+            - devguard:container_scanning$[[ inputs.job_suffix ]]
 
 
 create_and_sign_manifest$[[ inputs.job_suffix ]]:
