@@ -108,7 +108,7 @@ spec:
 devguard:extract_scanner$[[ inputs.job_suffix ]]:
   stage: .pre
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     entrypoint: [""]
   script:
     - cp /usr/local/bin/devguard-scanner ./devguard-scanner
@@ -127,7 +127,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
     DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: "$[[ inputs.pull_policy ]]"
   script: |
     devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
