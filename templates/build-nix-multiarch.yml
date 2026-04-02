@@ -101,6 +101,7 @@ build_image$[[ inputs.job_suffix ]]:
           nix_target: "${NIX_TARGET}"
           stage: "build"
           job_suffix: "$[[ inputs.job_suffix ]]"
+          image_suffix: $[[ inputs.image_suffix ]]
           runner_tags:
             - "${RUNNER_TAG}"
           nix_cache_substituter: "$[[ inputs.nix_cache_substituter ]]"
@@ -138,6 +139,7 @@ build_image$[[ inputs.job_suffix ]]:
           version: $[[ inputs.version ]]
           build_stage: build
           attest_stage: test
+          job_suffix: "$[[ inputs.job_suffix ]]"
           image_suffix: $[[ inputs.image_suffix ]]
           architecture: ${ARCHITECTURE}
           needs:
