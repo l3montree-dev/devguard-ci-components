@@ -76,6 +76,31 @@ spec:
     nix_cache_region:
       default: ""
       description: "S3 region for the cache bucket."
+
+    devguard_artifact_name:
+      default: ""
+      description: "The name of the artifact you are building. If not provided, will use the generated PURL from the built image."
+    image_suffix:
+      default: "default"
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
+    image_variant:
+      default: ""
+      description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant."
+    architecture:
+      default: "amd64"
+      description: "Target architecture (e.g., amd64 or arm64)"
+    image_path:
+      default: "$CI_REGISTRY_IMAGE"
+      description: "Path to the built image (e.g., registry.example.com/project/image)."
+    upstream_version:
+      default: "0"
+      description: "Upstream version to use for tag generation."
+    pull_policy:
+      default: "always"
+      description: "The pull policy for container images (can be [always, if-not-present, never])."
+    git_strategy:
+      default: "fetch"
+      description: "The Git strategy to use for the generate-tag job."
 ---
 
 # Extract the devguard-scanner binary once and share it as a job artifact.
@@ -90,6 +115,28 @@ devguard:extract_scanner$[[ inputs.job_suffix ]]:
   artifacts:
     paths:
       - devguard-scanner
+
+devguard:generate_tag$[[ inputs.job_suffix ]]:
+  tags: $[[ inputs.runner_tags ]]
+  stage: "$[[ inputs.stage ]]"
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
+  variables:
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
+    IMAGE_SUFFIX: "$[[ inputs.image_suffix ]]"
+    DEVGUARD_ARTIFACT_NAME: "$[[ inputs.devguard_artifact_name ]]"
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    pull_policy: "$[[ inputs.pull_policy ]]"
+  script: |
+    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+  artifacts:
+    reports:
+      dotenv: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    paths:
+      - generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
 
 devguard:build_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
