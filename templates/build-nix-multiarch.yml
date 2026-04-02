@@ -182,8 +182,8 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
           stage: "deploy"
           job_suffix: "$[[ inputs.job_suffix ]]"
           needs:
-            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
+            - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
           dependencies:
-            - create_manifest_multi_arch$[[ inputs.job_suffix ]]
+            - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
 
 
