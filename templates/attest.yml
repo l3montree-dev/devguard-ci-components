@@ -86,8 +86,6 @@ devguard:attest$[[ inputs.job_suffix ]]:
     pull_policy: "$[[ inputs.pull_policy ]]"
     entrypoint: [""]
 
-  before_script:
-    - apk add --no-cache jq gettext
   script:
     - |
       echo "Attesting artifacts for $[[ inputs.image ]]"
