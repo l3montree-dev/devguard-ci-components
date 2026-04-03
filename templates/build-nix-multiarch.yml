@@ -170,6 +170,7 @@ create_and_sign_manifest$[[ inputs.job_suffix ]]:
           stage: "build"
           job_suffix: "$[[ inputs.job_suffix ]]"
           create_root_manifest: "$[[ inputs.create_root_manifest ]]"
+          artifacts_subdirectory: "artifacts" # collect-child-pipeline-artifacts.yml will place the generate_tag env files in artifacts/
           needs:
             - collect_child_pipeline_artifacts$[[ inputs.job_suffix ]]
           dependencies:
