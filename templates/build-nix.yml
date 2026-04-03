@@ -111,7 +111,7 @@ devguard:extract_scanner$[[ inputs.job_suffix ]]:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     entrypoint: [""]
   script:
-    - cp /usr/local/bin/devguard-scanner ./devguard-scanner
+    - cp /sbin/devguard-scanner ./devguard-scanner
   artifacts:
     paths:
       - devguard-scanner
