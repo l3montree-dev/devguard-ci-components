@@ -143,8 +143,8 @@ devguard:attest$[[ inputs.job_suffix ]]:
           echo "Downloading from URL: $URL"
           echo "Saving as: $FILENAME"
           
-          devguard-scanner curl "$URL" --token="$[[ inputs.devguard_token ]]" > "$FILENAME"
-          FILE_PATH="$FILENAME"
+          devguard-scanner curl "$URL" --token="$[[ inputs.devguard_token ]]" > "/tmp/$FILENAME"
+          FILE_PATH="/tmp/$FILENAME"
         else
           # It's a file path
           FILE_PATH="$SOURCE"
