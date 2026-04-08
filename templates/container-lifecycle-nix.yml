@@ -1,5 +1,19 @@
 # Copyright 2025 l3montree GmbH.
 # SPDX-License-Identifier: AGPL-3.0
+#
+# Nix variant of container-lifecycle.yml.
+# Replaces the Kaniko build step with build-nix.yml so that projects using
+# Nix flakes (dockerTools.buildLayeredImage) get the full
+# generate-tag → build → scan → push → sign → attest pipeline without a
+# Dockerfile.
+#
+# Usage:
+#   include:
+#     - remote: "https://gitlab.com/l3montree/devguard/-/raw/main/templates/container-lifecycle-nix.yml"
+#       inputs:
+#         nix_target: devguardOCI
+#         devguard_asset_name: "my-org/projects/my-project/assets/my-asset"
+#         devguard_token: "$DEVGUARD_TOKEN"
 spec:
   inputs:
     # DevGuard Configuration
@@ -12,15 +26,15 @@ spec:
     devguard_token:
       description: "The DevGuard API token (use CI/CD variable, your private key)"
       default: "$DEVGUARD_TOKEN"
+    devguard_web_ui:
+      default: "https://app.devguard.org"
+      description: "The DevGuard Web-UI Instance URL"
     devguard_artifact_name:
       default: ""
-      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image."
-
-    build_job_name:
-      description: "The name of the build job to depend on. This job needs to create an - image tar path - file as artifact."
-    image_tar_path:
-      default: "image.tar"
-      description: "The path to the image tarball created by the build job."
+      description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact. If not provided, will use the generated PURL from the built image."
+    devguard_origin:
+      default: "DEFAULT"
+      description: "Origin string for DevGuard requests (e.g., 'container-scanning')."
 
     # Job Configuration
     runner_tags:
@@ -34,7 +48,6 @@ spec:
       default: false
       type: boolean
       description: "Whether the jobs are allowed to fail without stopping the pipeline"
-    # Job suffix used to disambiguate job names across multiple instances
     job_suffix:
       default: ""
       description: "Suffix for the job name. Provide when using the component multiple times in a pipeline."
@@ -45,24 +58,26 @@ spec:
     # Stage Configuration
     build_stage:
       default: "oci-image"
-      description: "The pipeline stage for the job"
+      description: "The pipeline stage for the build jobs"
     attest_stage:
       default: "attestation"
       description: "The pipeline stage for the signing and attestation jobs"
 
-    # Build Configuration
+    # Build Configuration — Nix-specific (replaces build_args from container-lifecycle.yml)
+    nix_target:
+      description: "Flake output to build (e.g. devguardOCI, devguardScannerOCI). Must be a dockerTools.buildLayeredImage derivation."
     image_suffix:
       default: "default"
-      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
-    image_variant:
-      default: ""
-      description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant."
+      description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
+    image:
+      default: "image.tar"
+      description: "Filename for the OCI image tarball passed between jobs."
     upstream_version:
       default: "0"
-      description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
+      description: "Upstream version to use for tag generation."
     image_path:
       default: "$CI_REGISTRY_IMAGE"
-      description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
+      description: "Path to the built image (e.g., registry.example.com/project/image)."
 
     default_ref:
       default: "$CI_DEFAULT_BRANCH"
@@ -81,27 +96,48 @@ spec:
       default: "$CI_REGISTRY_PASSWORD"
       description: "Container registry password"
 
-    architecture:
-      default: "amd64"
-      type: string
-      description: "Target architectures (amd64 or arm64)"
+    # Scanning Configuration
+    fail_on_risk:
+      default: "critical"
+      description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
+    fail_on_cvss:
+      default: "critical"
+      description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
+    is_tag:
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
+      description: "Is the current commit a tag"
+    ignore_external_references:
+      default: "true"
+      description: "Whether to ignore external references in discovered attestations"
+    ignore_upstream_attestations:
+      default: "true"
+      description: "Whether to ignore attestations from upstream images"
+
+    supplyChainId:
+      default: "$CI_COMMIT_SHA"
+      description: "Supply chain ID forwarded to build provenance supply-chain artifacts"
+
+    # Nix binary cache
+    nix_cache_substituter:
+      default: ""
+      description: "Nix binary cache substituter URL. Set to empty string to disable."
+    nix_cache_public_key:
+      default: ""
+      description: "Trusted public key for the Nix binary cache."
+    nix_cache_s3_endpoint:
+      default: ""
+      description: "S3 API endpoint for pushing to the cache. Leave empty to skip pushing."
+    nix_cache_s3_bucket:
+      default: ""
+      description: "S3 bucket name for the cache."
+    nix_cache_region:
+      default: ""
+      description: "S3 region for the cache bucket."
 
     # Component version
     version:
       default: "main"
-      description: "Version/ref of the components to use"
-    # Supply chain ID for build provenance
-    supplyChainId:
-      default: "$CI_COMMIT_SHA"
-      description: "Supply chain id forwarded to build provenance supply-chain artifacts"
-
-    needs:
-      default: []
-      type: array
-      description: "List of jobs this attestation depends on"
-    dependencies:
-      default: []
-      type: array
+      description: "Version/ref of the devguard-ci-component templates to use"
 ---
 include:
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/generate-tag.yml"
@@ -113,11 +149,60 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       image_suffix: $[[ inputs.image_suffix ]]
-      image_variant: $[[ inputs.image_variant ]]
       devguard_artifact_name: "$[[ inputs.devguard_artifact_name ]]"
       architecture: $[[ inputs.architecture ]]
       upstream_version: "$[[ inputs.upstream_version ]]"
       image_path: "$[[ inputs.image_path ]]"
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/build-nix.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      nix_target: $[[ inputs.nix_target ]]
+      image: "$[[ inputs.image ]]"
+      runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.build_stage ]]"
+      job_suffix: $[[ inputs.job_suffix ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      supplyChainId: "$[[ inputs.supplyChainId ]]"
+      nix_cache_substituter: "$[[ inputs.nix_cache_substituter ]]"
+      nix_cache_public_key: "$[[ inputs.nix_cache_public_key ]]"
+      nix_cache_s3_endpoint: "$[[ inputs.nix_cache_s3_endpoint ]]"
+      nix_cache_s3_bucket: "$[[ inputs.nix_cache_s3_bucket ]]"
+      nix_cache_region: "$[[ inputs.nix_cache_region ]]"
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+
+  - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
+    inputs:
+      devguard_asset_name: $[[ inputs.devguard_asset_name ]]
+      devguard_api_url: $[[ inputs.devguard_api_url ]]
+      devguard_token: $[[ inputs.devguard_token ]]
+      devguard_artifact_name: "$ARTIFACT_NAME"
+      devguard_web_ui: $[[ inputs.devguard_web_ui ]]
+      runner_tags: $[[ inputs.runner_tags ]]
+      stage: "$[[ inputs.build_stage ]]"
+      job_suffix: $[[ inputs.job_suffix ]]
+      git_strategy: $[[ inputs.git_strategy ]]
+      pull_policy: $[[ inputs.pull_policy ]]
+      allow_failure: $[[ inputs.allow_failure ]]
+      fail_on_cvss: $[[ inputs.fail_on_cvss ]]
+      fail_on_risk: $[[ inputs.fail_on_risk ]]
+      is_tag: "$[[ inputs.is_tag ]]"
+      default_ref: "$[[ inputs.default_ref ]]"
+      commit_ref: "$[[ inputs.commit_ref ]]"
+      image_tar_path: "$[[ inputs.image ]]"
+      ignore_external_references: "$[[ inputs.ignore_external_references ]]"
+      ignore_upstream_attestations: "$[[ inputs.ignore_upstream_attestations ]]"
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
     inputs:
@@ -130,7 +215,7 @@ include:
       git_strategy: $[[ inputs.git_strategy ]]
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
-      image: "$[[ inputs.image_tar_path ]]"
+      image: "$[[ inputs.image ]]"
       image_tag: "$IMAGE_TAG"
       registry: "$[[ inputs.registry ]]"
       registry_user: "$[[ inputs.registry_user ]]"
@@ -138,10 +223,12 @@ include:
       supplyChainId: "$[[ inputs.supplyChainId ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - $[[ inputs.build_job_name ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - $[[ inputs.build_job_name ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/sign-oci-image.yml"
     inputs:
@@ -185,14 +272,14 @@ include:
       image: "$IMAGE_TAG"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - $[[ inputs.build_job_name ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
-        - $[[ inputs.needs ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - $[[ inputs.build_job_name ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
-        - $[[ inputs.dependencies ]]
+        - devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - devguard:container_scanning$[[ inputs.job_suffix ]]
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"
