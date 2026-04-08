@@ -54,6 +54,13 @@ spec:
     build_args:
       default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile"
       description: "The build arguments to pass to the Kaniko build command"
+    build_dependencies:
+      default: []
+      type: array
+      description: "List of jobs to download artifacts from"
+    build_push_image:
+      default: "false"
+      description: "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts."
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
@@ -147,8 +154,11 @@ include:
       supplyChainId: "$[[ inputs.supplyChainId ]]"
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_dependencies ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - $[[ inputs.build_dependencies ]]
+      push_image: $[[ inputs.build_push_image ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/container-scanning.yml"
     inputs:
