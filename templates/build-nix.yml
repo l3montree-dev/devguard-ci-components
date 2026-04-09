@@ -57,6 +57,13 @@ spec:
       type: array
       description: "Jobs to download artifacts from."
 
+    default_ref:
+      default: "$CI_DEFAULT_BRANCH"
+      description: "Default branch reference"
+    commit_ref:
+      default: "$CI_COMMIT_REF_NAME"
+      description: "Current commit reference"      
+
     supplyChainId:
       default: "$CI_COMMIT_SHA"
       description: "Supply chain ID forwarded to intoto provenance."
@@ -198,6 +205,8 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         --assetName="$[[ inputs.devguard_asset_name ]]"
         --supplyChainId="$[[ inputs.supplyChainId ]]"
         --generateSlsaProvenance
+        --defaultRef="$[[ inputs.default_ref ]]"
+        --ref="$[[ inputs.commit_ref ]]" 
   artifacts:
     paths:
       - $[[ inputs.image ]]
