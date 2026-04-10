@@ -71,12 +71,15 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.3-devguard-scanner-v1.0.0-rc.4-customized-busybox-jq
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
     entrypoint:
       - ""
-  script:
-    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - 'echo "Image: $[[ inputs.image ]]"'
-    - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
-    - /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
-    - /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
+  script: |
+    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+
+    echo "Image: $[[ inputs.image ]]"
+    echo "Image Tag: $[[ inputs.image_tag ]]"
+
+    /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
+
+    /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"

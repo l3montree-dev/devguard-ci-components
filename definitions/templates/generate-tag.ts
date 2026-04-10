@@ -41,16 +41,15 @@ export const GenerateTagTemplate = defineJob(GenerateTagJobInputs, (inputValues)
             DEVGUARD_ARTIFACT_NAME: `${inputValues.devguard_artifact_name}`,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main-latest",
+            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
             pull_policy: `${inputValues.pull_policy}` as any,
         },
-        script: [
-            `echo "Running generate-tag job..."`,
-            `devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "${inputValues.image_variant}" --architecture "${inputValues.architecture}" --imagePath "${inputValues.image_path}" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "${inputValues.upstream_version}" >> generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
-            `echo "Tag generation completed. Generated tags:"`,
-            `cat generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
-            `echo 'Filename: generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env'`,
-        ],
+        script: `echo "Running generate-tag job..."
+devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "${inputValues.image_variant}" --architecture "${inputValues.architecture}" --imagePath "${inputValues.image_path}" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "${inputValues.upstream_version}" >> generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env
+echo "Tag generation completed. Generated tags:"
+cat generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env
+echo 'Filename: generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env'
+` as any,
         artifacts: {
             reports: {
                 dotenv: `generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`

@@ -1,5 +1,4 @@
 import { ExportCIComponents, CIComponentGroupTemplate } from "@l3montree/programmatic-ci-components";
-import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 import { AttestJobInputs, AttestTemplate } from "./templates/attest";
 import { SecretScanningJobInputs, SecretScanningTemplate } from "./templates/secret-scanning";
 import { SASTJobInputs, StaticApplicationSecurityTestingTemplate } from "./templates/static-application-security-testing";
@@ -20,6 +19,7 @@ import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-base
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { ReleaseTemplate } from "./templates/release";
 import { Inputs } from "./templates/inputs";
+import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 
 
 
@@ -76,9 +76,11 @@ const clbiVexUpload  = VexUploadTemplate({ stage: "attestation", allow_failure: 
 
 const templates: CIComponentGroupTemplate = {
     // ── Individual job templates ──────────────────────────────────────────────
+    /*
     "source-provenance-attestation": [
         SourceProvenanceTemplate({}),
     ],
+    */
     "attest": [
         AttestTemplate({}),
     ],
@@ -204,6 +206,9 @@ await ExportCIComponents(templates, header, {
         // because sbom_file/vex_file are provided. Add output explicitly.
         inputOverrides: { output: Inputs.output },
         excludeInputs: ["needs", "dependencies"],
+    },
+    "software-composition-analysis": {
+        inputOverrides: { devguard_artifact_name: { ...Inputs.devguard_artifact_name, default: "source" as const } },
     },
 }).then(() => {
     // copy files over using fs

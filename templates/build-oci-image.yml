@@ -24,6 +24,9 @@ spec:
       type: string
       description: Suffix for the job name. You need this if you are using the component multiple times in one pipeline.
       default: ""
+    job_prefix:
+      default: ""
+      description: Prefix for the job name.
     git_strategy:
       description: The Git strategy to use for the job
       default: fetch
@@ -68,7 +71,7 @@ spec:
       description: The supply chain ID to use for the in-toto attestation
 ---
 include: []
-devguard:build_oci_image$[[ inputs.job_suffix ]]:
+$[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: $[[ inputs.stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
@@ -77,23 +80,21 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.6-devguard-scanner-v1.0.0-customized-busybox-jq@sha256:c7a3da8f93ee14a586bcbf3c213914b29ddbd512688139f2f5c84e753647698f
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   before_script:
-    - apk add jq
-    - |-
-      echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).
-       The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
+    - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
-    - echo "Running DevGuard Intoto Build...stopping..."
-    - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
+    - |-
+      echo "Running DevGuard Intoto Build...stopping..."
+      /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
   artifacts:
     paths:
       - $[[ inputs.image ]]

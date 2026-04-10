@@ -45,7 +45,7 @@ export const SignOciImageTemplate = defineJob(SignOciImageJobInputs, (inputValue
             GIT_STRATEGY: `${inputValues.git_strategy}`,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main-latest",
+            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
             pull_policy: `${inputValues.pull_policy}` as any,
             entrypoint: [""],
         },

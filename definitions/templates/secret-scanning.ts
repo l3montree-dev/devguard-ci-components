@@ -37,7 +37,7 @@ export const SecretScanningTemplate = defineJob(SecretScanningJobInputs, (inputV
             GIT_STRATEGY: `${inputValues.git_strategy}` as any,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main-latest",
+            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
             pull_policy: `${inputValues.pull_policy}` as any,
             entrypoint: [""],
         },

@@ -1,6 +1,5 @@
 import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
-import { build } from "bun"
 
 export const PushOciImageJobInputs = defineInputs({
     devguard_api_url: Inputs.devguard_api_url,
@@ -47,15 +46,17 @@ export const PushOciImageTemplate = defineJob(PushOciImageJobInputs, (inputValue
             GIT_STRATEGY: `${inputValues.git_strategy}`,
         },
         image: {
-            name: "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.3-devguard-scanner-v1.0.0-rc.4-customized-busybox-jq",
+            name: "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce",
             entrypoint: [""],
         },
-        script: [
-            `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-            `echo "Image: ${inputValues.image}"`,
-            `echo "Image Tag: ${inputValues.image_tag}"`,
-            `/crane push ${inputValues.image} ${inputValues.image_tag}`,
-            `/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="$\{DIGEST\}"`
-        ],
+        script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+
+echo "Image: ${inputValues.image}"
+echo "Image Tag: ${inputValues.image_tag}"
+
+/crane push ${inputValues.image} ${inputValues.image_tag}
+
+/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}"
+` as any,
     }
 }));

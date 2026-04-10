@@ -38,12 +38,11 @@ export const InfrastructureAsCodeScanningTemplate = defineJob(IaCJobInputs, (inp
             GIT_STRATEGY: `${inputValues.git_strategy}` as any,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main-latest",
+            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
             pull_policy: `${inputValues.pull_policy}` as any,
-            entrypoint: [""],
         },
         script: [
-            `echo "Running DevGuard IaC Scanning...`,
+            `echo "Running DevGuard IaC Scanning..."`,
             `devguard-scanner iac --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --path="${inputValues.path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui}`
         ],
     }

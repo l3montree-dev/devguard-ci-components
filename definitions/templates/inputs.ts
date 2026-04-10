@@ -3,12 +3,16 @@ import { ConfigInputs } from "../../../gitlab-ci-ts/dist";
 export const Inputs = {
   job_suffix: {
     type: "string" as const,
-    description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline.",
+    description: "Suffix for the job name. You need this if you are using the component multiple times in one pipeline." as const,
     default: "" as const,
+  },
+  job_prefix: {
+    default: "" as const,
+    description: "Prefix for the job name." as const,
   },
   stage: {
     default: "test" as const,
-    description: "The pipeline stage for the job",
+    description: "The pipeline stage for the job" as const,
   },
 
   /*
@@ -19,22 +23,22 @@ export const Inputs = {
     default: "https://api.devguard.org" as const,
   },
   devguard_web_ui: {
-    description: "The DevGuard Web-UI Instance URL",
+    description: "The DevGuard Web-UI Instance URL" as const,
     default: "https://app.devguard.org" as const,
   },
   devguard_asset_name: {
-    description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)",
+    description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)" as const,
     default: "$DEVGUARD_ASSET_NAME" as const,
   },
   devguard_token: {
-    description: "The DevGuard API token (use CI/CD variable, your private key)",
+    description: "The DevGuard API token (use CI/CD variable, your private key)" as const,
     default: "$DEVGUARD_TOKEN" as const,
   },
   devguard_artifact_name: {
-    description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)",
+    description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)" as const,
   },
   devguard_origin: {
-    description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')",
+    description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')" as const,
     default: "DEFAULT" as any,
   },
 
@@ -44,18 +48,18 @@ export const Inputs = {
   runner_tags: {
     default: [] as const,
     type: "array" as const,
-    description: "The runner tags to use for the job",
+    description: "The runner tags to use for the job" as const,
   },
   git_strategy: {
-    description: "The Git strategy to use for the job",
+    description: "The Git strategy to use for the job" as const,
     default: "none" as const,
   },
   pull_policy: {
-    description: "The pull policy for the container image (can be [always, if-not-present, never])",
+    description: "The pull policy for the container image (can be [always, if-not-present, never])" as const,
     default: "always" as const,
   },
   allow_failure: {
-    description: "Whether the job is allowed to fail without stopping the pipeline",
+    description: "Whether the job is allowed to fail without stopping the pipeline" as const,
     type: "boolean" as const,
     default: false as const,
   },
@@ -64,12 +68,12 @@ export const Inputs = {
   Job Dependencies
   */
   needs: {
-    description: "List of jobs this attestation depends on",
+    description: "List of jobs this attestation depends on" as const,
     type: "array" as const,
     default: [] as string[],
   },
   dependencies: {
-    description: "List of jobs to download artifacts from",
+    description: "List of jobs to download artifacts from" as const,
     type: "array" as const,
     default: [] as string[],
   },
@@ -78,51 +82,51 @@ export const Inputs = {
   Other inputs
   */
   default_ref: {
-    description: "Default branch reference",
+    description: "Default branch reference" as const,
     default: "$CI_DEFAULT_BRANCH" as const,
   },
   commit_ref: {
-    description: "Current commit reference",
+    description: "Current commit reference" as const,
     default: "$CI_COMMIT_REF_NAME" as const,
   },
   path: {
-    description: "The path to the git repository to scan",
+    description: "The path to the git repository to scan" as const,
     default: "$CI_PROJECT_DIR" as const,
   },
   is_tag: {
-    description: "Is the current commit a tag",
+    description: "Is the current commit a tag" as const,
     default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
   },
   fail_on_risk: {
-    description: "The risk level to fail the job on. Options are: none, low, medium, high, critical",
+    description: "The risk level to fail the job on. Options are: none, low, medium, high, critical" as const,
     default: "critical" as const,
   },
   fail_on_cvss: {
-    description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical",
+    description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical" as const,
     default: "critical" as const,
   },
   ignore_external_references: {
-    description: "Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.",
+    description: "Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation." as const,
     default: "false" as const,
   },
   ignore_upstream_attestations: {
     default: "false" as const,
-    description: "Whether to ignore upstream attestations when scanning the image."
+    description: "Whether to ignore upstream attestations when scanning the image." as const
   },
 
   /*
   Container Registry inputs
   */
   registry: {
-    description: "Container registry URL",
+    description: "Container registry URL" as const,
     default: "$CI_REGISTRY" as const,
   },
   registry_user: {
-    description: "Container registry username",
+    description: "Container registry username" as const,
     default: "$CI_REGISTRY_USER" as const,
   },
   registry_password: {
-    description: "Container registry password",
+    description: "Container registry password" as const,
     default: "$CI_REGISTRY_PASSWORD" as const,
   },
 
@@ -136,12 +140,12 @@ export const Inputs = {
       List of attestations to create. Each item should have:
       - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
       - predicate_type: the predicate type URL
-      `,
+      ` as const,
     default: [] as const,
     type: "array" as const,
   },
   image: { // TODO!.. this is used in different pipelines for different purposes - we should make this more generic or add a separate input for the image to attest in case of the attest template -> some should probably use image_tar_path instead
-    description: "Container image to use for attestation",
+    description: "Container image to use for attestation" as const,
     default: "$CI_REGISTRY_IMAGE" as const,
   },
 
@@ -193,41 +197,41 @@ export const Inputs = {
   Nix-specific inputs
   */
   nix_target: {
-    description: "Flake output attribute to build (e.g. devguardOCI). Must be a dockerTools.buildLayeredImage derivation.",
+    description: "Flake output attribute to build (e.g. devguardOCI). Must be a dockerTools.buildLayeredImage derivation." as const,
   },
   nix_cache_substituter: {
     default: "" as const,
-    description: "Nix binary cache substituter URL. Set to empty string to disable.",
+    description: "Nix binary cache substituter URL. Set to empty string to disable." as const,
   },
   nix_cache_public_key: {
     default: "" as const,
-    description: "Trusted public key for the Nix binary cache.",
+    description: "Trusted public key for the Nix binary cache." as const,
   },
   nix_cache_s3_endpoint: {
     default: "" as const,
-    description: "S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud). Leave empty to skip pushing.",
+    description: "S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud). Leave empty to skip pushing." as const,
   },
   nix_cache_s3_bucket: {
     default: "" as const,
-    description: "S3 bucket name for the cache.",
+    description: "S3 bucket name for the cache." as const,
   },
   nix_cache_region: {
     default: "" as const,
-    description: "S3 region for the cache bucket.",
+    description: "S3 region for the cache bucket." as const,
   },
 
   /*
   Upload inputs
   */
   sarif_file: {
-    description: "The SARIF file to upload",
+    description: "The SARIF file to upload" as const,
   },
   sbom_file: {
-    description: "The SBOM file to upload",
+    description: "The SBOM file to upload" as const,
   },
   vex_file: {
     default: "$CI_PROJECT_DIR/vex.json" as const,
-    description: "The VeX file to upload",
+    description: "The VeX file to upload" as const,
   },
 
   /*
@@ -235,11 +239,11 @@ export const Inputs = {
   */
   predicate_type: {
     default: "" as const,
-    description: "The predicate type to discover. If empty, all attestations will be discovered.",
+    description: "The predicate type to discover. If empty, all attestations will be discovered." as const,
   },
   output: {
     default: "." as const,
-    description: "Output directory for discovered attestations (relative to project root).",
+    description: "Output directory for discovered attestations (relative to project root)." as const,
   },
 
   /*
@@ -247,7 +251,7 @@ export const Inputs = {
   */
   docker_buildkit: {
     default: "" as const,
-    description: "Enable Docker BuildKit by setting to '1'.",
+    description: "Enable Docker BuildKit by setting to '1'." as const,
   },
 
   /*
@@ -255,32 +259,32 @@ export const Inputs = {
   */
   release_tag: {
     default: "$CI_COMMIT_TAG" as const,
-    description: "The tag to create the release for",
+    description: "The tag to create the release for" as const,
   },
   release_name: {
     default: "Release $CI_COMMIT_TAG" as const,
-    description: "The name of the release",
+    description: "The name of the release" as const,
   },
   release_description: {
     default: "" as const,
-    description: "Custom release description (optional, leave empty for auto-generated)",
+    description: "Custom release description (optional, leave empty for auto-generated)" as const,
   },
   rules: {
     type: "array" as const,
     default: [{ if: "$CI_COMMIT_TAG" }] as any,
-    description: "The rules to determine when to create a release",
+    description: "The rules to determine when to create a release" as const,
   },
   assets_links: {
     type: "array" as const,
     default: [] as any,
-    description: "List of asset links to attach to the release",
+    description: "List of asset links to attach to the release" as const,
   },
 
   /*
   Orchestration inputs
   */
   build_job_name: {
-    description: "The name of the external build job to depend on. Must produce an image tar file as artifact.",
+    description: "The name of the external build job to depend on. Must produce an image tar file as artifact." as const,
   },
 
   /*
@@ -288,10 +292,10 @@ export const Inputs = {
   */
   create_root_manifest: {
     default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
-    description: "Whether to also create a manifest without the branch ref in the tag.",
+    description: "Whether to also create a manifest without the branch ref in the tag." as const,
   },
   artifacts_subdirectory: {
     default: "." as const,
-    description: "Directory to store generated artifacts in (relative to project root).",
+    description: "Directory to store generated artifacts in (relative to project root)." as const,
   },
 } satisfies ConfigInputs;

@@ -1,4 +1,4 @@
-import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
+import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
 
 export const SCAJobInputs = defineInputs({
@@ -43,7 +43,7 @@ export const SoftwareCompositionAnalysisTemplate = defineJob(SCAJobInputs, (inpu
             GIT_STRATEGY: `${inputValues.git_strategy}` as any,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main-latest",
+            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
             pull_policy: `${inputValues.pull_policy}` as any,
         },
         script: [
