@@ -1,0 +1,1 @@
+bun run definitions/index.ts

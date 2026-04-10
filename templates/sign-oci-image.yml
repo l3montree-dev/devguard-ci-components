@@ -57,13 +57,13 @@ spec:
 ---
 include: []
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
-  tags: $[[inputs.runner_tags]]
-  stage: $[[inputs.stage]]
-  allow_failure: $[[inputs.allow_failure]]
-  needs: $[[inputs.needs]]
-  dependencies: $[[inputs.dependencies]]
+  tags: $[[ inputs.runner_tags ]]
+  stage: $[[ inputs.stage ]]
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
   variables:
-    GIT_STRATEGY: $[[inputs.git_strategy]]
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
     pull_policy: $[[ inputs.pull_policy ]]

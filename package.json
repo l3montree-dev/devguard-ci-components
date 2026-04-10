@@ -1,0 +1,25 @@
+{
+  "name": "devguard-ci-components",
+  "version": "1.0.0",
+  "description": "DevGuard simplifies vulnerability management for developers by integrating key security practices directly into the CI/CD workflow. With DevGuard, you can seamlessly perform tasks such as Software Composition Analysis (SCA), Container Scanning, Secret Scanning, SAST, IaC Scanning, and more, ensuring that vulnerabilities are detected and addressed early in your pipeline.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.opencode.de:l3montree/devguard-ci-components.git"
+  },
+  "dependencies": {
+    "@l3montree/programmatic-ci-components": "file:../programmatic-ci-components"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.9",
+    "@types/node": "^25.3.0"
+  },
+  "author": "L3montree GmbH",
+  "license": "ISC"
+}
