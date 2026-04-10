@@ -217,6 +217,73 @@ export const Inputs = {
   },
 
   /*
+  Upload inputs
+  */
+  sarif_file: {
+    description: "The SARIF file to upload",
+  },
+  sbom_file: {
+    description: "The SBOM file to upload",
+  },
+  vex_file: {
+    default: "$CI_PROJECT_DIR/vex.json" as const,
+    description: "The VeX file to upload",
+  },
+
+  /*
+  Discover base-image attestations inputs
+  */
+  predicate_type: {
+    default: "" as const,
+    description: "The predicate type to discover. If empty, all attestations will be discovered.",
+  },
+  output: {
+    default: "." as const,
+    description: "Output directory for discovered attestations (relative to project root).",
+  },
+
+  /*
+  Docker DinD build inputs
+  */
+  docker_buildkit: {
+    default: "" as const,
+    description: "Enable Docker BuildKit by setting to '1'.",
+  },
+
+  /*
+  Release inputs
+  */
+  release_tag: {
+    default: "$CI_COMMIT_TAG" as const,
+    description: "The tag to create the release for",
+  },
+  release_name: {
+    default: "Release $CI_COMMIT_TAG" as const,
+    description: "The name of the release",
+  },
+  release_description: {
+    default: "" as const,
+    description: "Custom release description (optional, leave empty for auto-generated)",
+  },
+  rules: {
+    type: "array" as const,
+    default: [{ if: "$CI_COMMIT_TAG" }] as any,
+    description: "The rules to determine when to create a release",
+  },
+  assets_links: {
+    type: "array" as const,
+    default: [] as any,
+    description: "List of asset links to attach to the release",
+  },
+
+  /*
+  Orchestration inputs
+  */
+  build_job_name: {
+    description: "The name of the external build job to depend on. Must produce an image tar file as artifact.",
+  },
+
+  /*
   Multi-arch manifest inputs
   */
   create_root_manifest: {
