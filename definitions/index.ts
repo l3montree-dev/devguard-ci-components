@@ -11,6 +11,8 @@ import { BuildOciImageJobInputs, BuildOciImageTemplate } from "./templates/build
 import { ContainerScanningJobInputs, ContainerScanningTemplate } from "./templates/container-scanning";
 import { PushOciImageJobInputs, PushOciImageTemplate } from "./templates/push-oci-image";
 import { SignOciImageJobInputs, SignOciImageTemplate } from "./templates/sign-oci-image";
+import { BuildNixExtractScannerTemplate, BuildNixGenerateTagTemplate, BuildNixTemplate } from "./templates/build-nix";
+import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 
 
 
@@ -53,6 +55,14 @@ const templates: CIComponentGroupTemplate = {
     ],
     "sign-oci-image": [
         SignOciImageTemplate({}),
+    ],
+    "build-nix": [
+        BuildNixExtractScannerTemplate({}),
+        BuildNixGenerateTagTemplate({}),
+        BuildNixTemplate({}),
+    ],
+    "create-manifest-multi-arch": [
+        CreateManifestMultiArchTemplate({}),
     ],
     "full": [
         SourceProvenanceTemplate({}),

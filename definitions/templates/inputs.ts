@@ -187,5 +187,44 @@ export const Inputs = {
   upstream_version: {
     default: "0" as const,
     description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
-  }
+  },
+
+  /*
+  Nix-specific inputs
+  */
+  nix_target: {
+    description: "Flake output attribute to build (e.g. devguardOCI). Must be a dockerTools.buildLayeredImage derivation.",
+  },
+  nix_cache_substituter: {
+    default: "" as const,
+    description: "Nix binary cache substituter URL. Set to empty string to disable.",
+  },
+  nix_cache_public_key: {
+    default: "" as const,
+    description: "Trusted public key for the Nix binary cache.",
+  },
+  nix_cache_s3_endpoint: {
+    default: "" as const,
+    description: "S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud). Leave empty to skip pushing.",
+  },
+  nix_cache_s3_bucket: {
+    default: "" as const,
+    description: "S3 bucket name for the cache.",
+  },
+  nix_cache_region: {
+    default: "" as const,
+    description: "S3 region for the cache bucket.",
+  },
+
+  /*
+  Multi-arch manifest inputs
+  */
+  create_root_manifest: {
+    default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
+    description: "Whether to also create a manifest without the branch ref in the tag.",
+  },
+  artifacts_subdirectory: {
+    default: "." as const,
+    description: "Directory to store generated artifacts in (relative to project root).",
+  },
 } satisfies ConfigInputs;
