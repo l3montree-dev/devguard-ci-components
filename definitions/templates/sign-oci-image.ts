@@ -10,7 +10,7 @@ devguard_api_url: Inputs.devguard_api_url,
         runner_tags: Inputs.runner_tags,
         stage: {
             ...Inputs.stage,
-            default: "oci-image"
+            default: "attestation"
         },
         job_suffix: Inputs.job_suffix,
         git_strategy: {
@@ -19,7 +19,10 @@ devguard_api_url: Inputs.devguard_api_url,
         },
         pull_policy: Inputs.pull_policy,
         allow_failure: Inputs.allow_failure,
-        needs: Inputs.needs,
+        needs: {
+            ...Inputs.needs,
+            description: "List of jobs this scan depends on" as const,
+        },
         dependencies: Inputs.dependencies,
 
         registry: Inputs.registry,
@@ -28,6 +31,7 @@ devguard_api_url: Inputs.devguard_api_url,
 
         image: {
             ...Inputs.image,
+            description: "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
             default: "$CI_REGISTRY_IMAGE:latest" as const,
         },
     });

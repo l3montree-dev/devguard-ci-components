@@ -21,7 +21,10 @@ export const SCAJobInputs = defineInputs({
         },
         pull_policy: Inputs.pull_policy,
         allow_failure: Inputs.allow_failure,
-        needs: Inputs.needs,
+        needs: {
+            ...Inputs.needs,
+            description: " The jobs that this job depends on" as const,
+        },
         dependencies: Inputs.dependencies,
         
         path: Inputs.path,

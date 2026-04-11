@@ -27,9 +27,13 @@ export const PushOciImageJobInputs = defineInputs({
 
         image: {
             ...Inputs.image,
+            description: "The image file to build (e.g. image.tar)" as const,
             default: "image.tar" as const,
         },
-        image_tag: Inputs.image_tag,
+        image_tag: {
+            ...Inputs.image_tag,
+            description: "The tag to use for the built image. Leave empty to use the generated tag from the 'generate-tag' component." as const,
+        },
 
         supplyChainId: Inputs.supplyChainId,
 });

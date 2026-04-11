@@ -16,7 +16,10 @@ export const ReleaseJobInputs = defineInputs({
     release_name: Inputs.release_name,
     release_description: Inputs.release_description,
     rules: Inputs.rules,
-    assets_links: Inputs.assets_links,
+    assets_links: {
+        ...Inputs.assets_links,
+        description: "List of assets links to attach to the release. Each item should have (name) the name of the link and (url) the URL to download the asset from and could have (filepath) the The redirect link to the url. Must start with a slash (/) and (link_type) the content kind of what users can download with url." as const,
+    },
 });
 
 export const ReleaseTemplate = defineJob(ReleaseJobInputs, (inputValues) => ({

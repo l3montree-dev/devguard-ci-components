@@ -35,7 +35,8 @@ export const Inputs = {
     default: "$DEVGUARD_TOKEN" as const,
   },
   devguard_artifact_name: {
-    description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)" as const,
+    description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image." as const,
+    default: "" as const,
   },
   devguard_origin: {
     description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')" as const,
@@ -136,11 +137,7 @@ export const Inputs = {
   */
 
   attestations: {
-    description: `|
-      List of attestations to create. Each item should have:
-      - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
-      - predicate_type: the predicate type URL
-      ` as const,
+    description: "List of attestations to create. Each item should have:\n- source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.\n- predicate_type: the predicate type URL" as const,
     default: [] as const,
     type: "array" as const,
   },

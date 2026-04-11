@@ -22,7 +22,9 @@ export const DiscoverBaseimageAttestationsJobInputs = defineInputs({
 
     predicate_type: Inputs.predicate_type,
     output: Inputs.output,
-    path: Inputs.path,
+    path: {
+        description: "Path to the Containerfile/Dockerfile",
+    },
 });
 
 export const DiscoverBaseimageAttestationsTemplate = defineJob(DiscoverBaseimageAttestationsJobInputs, (inputValues) => ({

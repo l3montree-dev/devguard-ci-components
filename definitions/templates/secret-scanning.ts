@@ -16,7 +16,10 @@ export const SecretScanningJobInputs = defineInputs({
         },
         pull_policy: Inputs.pull_policy,
         allow_failure: Inputs.allow_failure,
-        needs: Inputs.needs,
+        needs: {
+            ...Inputs.needs,
+            description: "List of jobs this scan depends on" as const,
+        },
         dependencies: Inputs.dependencies,
         
         path: Inputs.path,

@@ -29,6 +29,7 @@ export const BuildOciImageJobInputs = defineInputs({
 
     image: {
         ...Inputs.image,
+        description: "The image file to build (e.g. image.tar)" as const,
         default: "image.tar" as const,
     },
     image_tag: Inputs.image_tag,
