@@ -112,7 +112,7 @@ const templates: CIComponentGroupTemplate = {
         PushOciImageTemplate({}),
     ],
     "sign-oci-image": [
-        SignOciImageTemplate({}),
+        SignOciImageTemplate({ }),
     ],
     "build-nix": [
         BuildNixExtractScannerTemplate({}),
@@ -164,13 +164,11 @@ const templates: CIComponentGroupTemplate = {
     "container-scanning-and-attest": [
         csaGenerateTag, csaContainerScanning, csaPushOciImage, csaSignOciImage, csaAttest,
     ],
-    /* // todo.. need to resolve default value for devguard_artifact_name
     "container-lifecycle-with-base-image-inspection": [
         clbiDiscoverAttestations,
         clbiGenerateTag, clbiBuildOciImage, clbiContainerScanning, clbiPushOciImage, clbiSignOciImage, clbiAttest,
         clbiSbomUpload, clbiVexUpload,
     ],
-    */
 }
 
 const header = `# Copyright 2025 l3montree GmbH.
@@ -181,35 +179,19 @@ const header = `# Copyright 2025 l3montree GmbH.
 
 await ExportCIComponents(templates, header, {
     full: {
-        // needs/dependencies are hardcoded in job bodies above (not inputs),
-        // so remove their now-orphaned input keys from the merged spec.
-        excludeInputs: ["needs", "dependencies"],
-    },
-    "container-lifecycle": {
-        excludeInputs: ["needs", "dependencies"],
-    },
-    "container-lifecycle-nix": {
-        excludeInputs: ["needs", "dependencies"],
-    },
-    "push-and-attest": {
-        // build_job_name is referenced as $[[ inputs.build_job_name ]] in job bodies
-        // but comes from no individual template — add it explicitly here.
-        inputOverrides: { build_job_name: Inputs.build_job_name },
-        excludeInputs: ["needs", "dependencies"],
-    },
-    "container-scanning-and-attest": {
-        inputOverrides: { build_job_name: Inputs.build_job_name },
-        excludeInputs: ["needs", "dependencies"],
+        devguard_artifact_name: {
+            type: "string" as const,
+            description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image." as const,
+            default: "" as const,
+        },
     },
     "container-lifecycle-with-base-image-inspection": {
-        // output is referenced in sbom/vex file paths but removed from sbom/vex specs
-        // because sbom_file/vex_file are provided. Add output explicitly.
-        inputOverrides: { output: Inputs.output },
-        excludeInputs: ["needs", "dependencies"],
-    },
-    "software-composition-analysis": {
-        inputOverrides: { devguard_artifact_name: { ...Inputs.devguard_artifact_name, default: "source" as const } },
-    },
+        devguard_artifact_name: {
+            type: "string" as const,
+            description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image." as const,
+            default: "" as const,
+        },
+    }
 }).then(() => {
     // copy files over using fs
     for (const templateName of Object.keys(templates)) {
