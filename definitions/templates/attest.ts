@@ -64,7 +64,7 @@ echo 'Attestations: ${inputValues.attestations}'
 devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 ATT_JSON_CLEAN=$(echo '${inputValues.attestations}' \\
-| sed 's/:\\([a-z_]\\+\\)=>"\\1":/g' \\
+| sed 's/:\\([a-z_]\\+\\)=>/"\\1":/g' \\
 | sed 's/=>/:/g' \\
 | sed "s/'/\\"/g")
 # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
