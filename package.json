@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "generate": "tsc --noEmit && bun run definitions/index.ts"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,8 @@
   },
   "devDependencies": {
     "@types/bun": "^1.3.9",
-    "@types/node": "^25.3.0"
+    "@types/node": "^25.3.0",
+    "typescript": "6.0.2"
   },
   "author": "L3montree GmbH",
   "license": "ISC"

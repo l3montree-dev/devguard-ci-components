@@ -6,14 +6,15 @@
     "configurations": [
 
         {
-            "type": "bun",
-            "internalConsoleOptions": "neverOpen",
+            "type": "node",
             "request": "launch",
-            "name": "Generate Definitions",
-            "program": "definitions/index.ts",
-            "cwd": "${workspaceFolder}",
-            "stopOnEntry": false,
-            "watchMode": false
+            "name": "Generate CI Components",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "generate"
+            ],
+            "console": "integratedTerminal",
         },
     ]
 }
