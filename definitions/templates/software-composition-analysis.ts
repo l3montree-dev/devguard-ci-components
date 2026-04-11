@@ -5,7 +5,10 @@ export const SCAJobInputs = defineInputs({
     devguard_api_url: Inputs.devguard_api_url,
         devguard_asset_name: Inputs.devguard_asset_name,
         devguard_token: Inputs.devguard_token,
-        devguard_artifact_name: Inputs.devguard_artifact_name,
+        devguard_artifact_name: {
+            ...Inputs.devguard_artifact_name,
+            default: "source" as const,
+        },
         devguard_web_ui: Inputs.devguard_web_ui,
         devguard_origin: Inputs.devguard_origin,
 
