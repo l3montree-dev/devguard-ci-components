@@ -177,8 +177,10 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
-  dependencies: $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+  needs:
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+  dependencies:
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: fetch
   image:
@@ -225,8 +227,10 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:container_scanning$[[ inputs.job_suffix ]]
-  dependencies: devguard:container_scanning$[[ inputs.job_suffix ]]
+  needs:
+    - devguard:container_scanning$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:container_scanning$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   image:
@@ -246,8 +250,12 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]]
-  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   image:
@@ -267,8 +275,16 @@ devguard:attest$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]],$[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]],devguard:container_scanning$[[ inputs.job_suffix ]]
-  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]],$[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]],devguard:container_scanning$[[ inputs.job_suffix ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - devguard:container_scanning$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - devguard:container_scanning$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   script: |

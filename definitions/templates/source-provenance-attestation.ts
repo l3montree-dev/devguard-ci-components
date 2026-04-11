@@ -12,7 +12,7 @@ export const SourceProvenanceTemplate = defineJob(JobInputs, (inputValues) => ({
     remote: {
         component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main',
         inputs: {
-            job_suffix: `${inputValues.job_suffix}`,
+            job_suffix: inputValues.job_suffix,
             image: `$IMAGE_TAG`,
             needs: [ `devguard:generate_tag${inputValues.job_suffix}` ],
             dependencies: [ `devguard:generate_tag${inputValues.job_suffix}` ],

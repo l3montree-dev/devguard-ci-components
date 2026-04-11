@@ -35,16 +35,16 @@ export const AttestTemplate = defineJob(AttestJobInputs, (inputValues) => ({
     job: {
         image: {
             name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-            pull_policy: `${inputValues.pull_policy}` as any,
+            pull_policy: inputValues.pull_policy as any,
             entrypoint: [""],
         },
-        tags: `${inputValues.runner_tags}` as any,
-        stage: `${inputValues.stage}`,
-        allow_failure: `${inputValues.allow_failure}` as any,
-        needs: `${inputValues.needs}` as any,
-        dependencies: `${inputValues.dependencies}` as any,
+        tags: inputValues.runner_tags as any,
+        stage: inputValues.stage,
+        allow_failure: inputValues.allow_failure as any,
+        needs: inputValues.needs as any,
+        dependencies: inputValues.dependencies as any,
         variables: {
-            GIT_STRATEGY: `${inputValues.git_strategy}` as any,
+            GIT_STRATEGY: inputValues.git_strategy as any,
         },
         script: `echo "Attesting artifacts for ${inputValues.image}"
 echo "Artifact Name: ${inputValues.devguard_artifact_name}"

@@ -30,19 +30,19 @@ export const GenerateTagJobInputs = defineInputs({
 export const GenerateTagTemplate = defineJob(GenerateTagJobInputs, (inputValues) => ({
     name: `devguard:generate_tag${inputValues.job_suffix}`,
     job: {
-        tags: `${inputValues.runner_tags}` as any,
-        stage: `${inputValues.stage}`,
-        allow_failure: `${inputValues.allow_failure}` as any,
-        needs: `${inputValues.needs}` as any,
-        dependencies: `${inputValues.dependencies}` as any,
+        tags: inputValues.runner_tags as any,
+        stage: inputValues.stage,
+        allow_failure: inputValues.allow_failure as any,
+        needs: inputValues.needs as any,
+        dependencies: inputValues.dependencies as any,
         variables: {
-            GIT_STRATEGY: `${inputValues.git_strategy}` as any,
-            IMAGE_SUFFIX: `${inputValues.image_suffix}`,
-            DEVGUARD_ARTIFACT_NAME: `${inputValues.devguard_artifact_name}`,
+            GIT_STRATEGY: inputValues.git_strategy as any,
+            IMAGE_SUFFIX: inputValues.image_suffix,
+            DEVGUARD_ARTIFACT_NAME: inputValues.devguard_artifact_name,
         },
         image: {
             name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-            pull_policy: `${inputValues.pull_policy}` as any,
+            pull_policy: inputValues.pull_policy as any,
         },
         script: `echo "Running generate-tag job..."
 devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "${inputValues.image_variant}" --architecture "${inputValues.architecture}" --imagePath "${inputValues.image_path}" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "${inputValues.upstream_version}" >> generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env

@@ -31,17 +31,17 @@ export const SecretScanningJobInputs = defineInputs({
 export const SecretScanningTemplate = defineJob(SecretScanningJobInputs, (inputValues) => ({
     name: `devguard:secret_scanning${inputValues.job_suffix}`,
     job: {
-        tags: `${inputValues.runner_tags}` as any,
-        stage: `${inputValues.stage}`,
-        allow_failure: `${inputValues.allow_failure}` as any,
-        needs: `${inputValues.needs}` as any,
-        dependencies: `${inputValues.dependencies}` as any,
+        tags: inputValues.runner_tags as any,
+        stage: inputValues.stage as any,
+        allow_failure: inputValues.allow_failure as any,
+        needs: inputValues.needs as any,
+        dependencies: inputValues.dependencies as any,
         variables: {
-            GIT_STRATEGY: `${inputValues.git_strategy}` as any,
+            GIT_STRATEGY: inputValues.git_strategy as any,
         },
         image: {
             name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-            pull_policy: `${inputValues.pull_policy}` as any,
+            pull_policy: inputValues.pull_policy as any,
             entrypoint: [""],
         },
         script: [

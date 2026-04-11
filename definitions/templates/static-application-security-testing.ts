@@ -28,17 +28,17 @@ export const SASTJobInputs = defineInputs({
 export const StaticApplicationSecurityTestingTemplate = defineJob(SASTJobInputs, (inputValues) => ({
     name: `devguard:static-application-security-testing${inputValues.job_suffix}`,
     job: {
-        tags: `${inputValues.runner_tags}` as any,
-        stage: `${inputValues.stage}`,
-        allow_failure: `${inputValues.allow_failure}` as any,
-        needs: `${inputValues.needs}` as any,
-        dependencies: `${inputValues.dependencies}` as any,
+        tags: inputValues.runner_tags as any,
+        stage: inputValues.stage as any,
+        allow_failure: inputValues.allow_failure as any,
+        needs: inputValues.needs as any,
+        dependencies: inputValues.dependencies as any,
         variables: {
-            GIT_STRATEGY: `${inputValues.git_strategy}` as any,
+            GIT_STRATEGY: inputValues.git_strategy as any,
         },
         image: {
             name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-            pull_policy: `${inputValues.pull_policy}` as any,
+            pull_policy: inputValues.pull_policy as any,
         },
         script: [
             `echo "Running DevGuard SAST..."`,

@@ -112,8 +112,12 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:generate_tag$[[ inputs.job_suffix ]],$[[ inputs.build_job_name ]]
-  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],$[[ inputs.build_job_name ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.build_job_name ]]
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.build_job_name ]]
   variables:
     GIT_STRATEGY: none
   image:
@@ -133,8 +137,12 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]]
-  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   image:
@@ -154,8 +162,14 @@ devguard:attest$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:generate_tag$[[ inputs.job_suffix ]],$[[ inputs.build_job_name ]],devguard:push_oci_image$[[ inputs.job_suffix ]]
-  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],$[[ inputs.build_job_name ]],devguard:push_oci_image$[[ inputs.job_suffix ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.build_job_name ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.build_job_name ]]
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   script: |

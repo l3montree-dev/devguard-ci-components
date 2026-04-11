@@ -41,13 +41,13 @@ export const PushOciImageJobInputs = defineInputs({
 export const PushOciImageTemplate = defineJob(PushOciImageJobInputs, (inputValues) => ({
     name: `devguard:push_oci_image${inputValues.job_suffix}`,
     job: {
-        tags: `${inputValues.runner_tags}` as any,
-        stage: `${inputValues.stage}`,
-        allow_failure: `${inputValues.allow_failure}` as any,
-        needs: `${inputValues.needs}` as any,
-        dependencies: `${inputValues.dependencies}` as any,
+        tags: inputValues.runner_tags as any,
+        stage: inputValues.stage as any,
+        allow_failure: inputValues.allow_failure as any,
+        needs: inputValues.needs as any,
+        dependencies: inputValues.dependencies as any,
         variables: {
-            GIT_STRATEGY: `${inputValues.git_strategy}`,
+            GIT_STRATEGY: inputValues.git_strategy as any,
         },
         image: {
             name: "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce",
