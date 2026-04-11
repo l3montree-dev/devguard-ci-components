@@ -1,1 +1,3 @@
-bun run definitions/index.ts
+```bash
+npm run generate
+```
