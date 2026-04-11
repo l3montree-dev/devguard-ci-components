@@ -146,7 +146,7 @@ const templates: CIComponentGroupTemplate = {
 
     // ── Orchestration templates ───────────────────────────────────────────────
     "full": [
-        SourceProvenanceTemplate({}),
+        // SourceProvenanceTemplate({}),
         AttestTemplate({ stage: AttestJobInputs.stage.default }),
         SecretScanningTemplate({ git_strategy: SecretScanningJobInputs.git_strategy.default }),
         StaticApplicationSecurityTestingTemplate({ git_strategy: SASTJobInputs.git_strategy.default }),
