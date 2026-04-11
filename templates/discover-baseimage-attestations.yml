@@ -42,8 +42,7 @@ spec:
       default: .
       description: Output directory for discovered attestations (relative to project root).
     path:
-      description: The path to the git repository to scan
-      default: $CI_PROJECT_DIR
+      description: Path to the Containerfile/Dockerfile
 ---
 include: []
 devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:

@@ -18,7 +18,7 @@ spec:
       type: array
       description: The runner tags to use for the job
     stage:
-      default: oci-image
+      default: attestation
       description: The pipeline stage for the job
     job_suffix:
       type: string
@@ -35,7 +35,7 @@ spec:
       type: boolean
       default: false
     needs:
-      description: List of jobs this attestation depends on
+      description: List of jobs this scan depends on
       type: array
       default: []
     dependencies:
@@ -52,7 +52,7 @@ spec:
       description: Container registry password
       default: $CI_REGISTRY_PASSWORD
     image:
-      description: Container image to use for attestation
+      description: The container image to sign (e.g., registry.example.com/project/image:tag)
       default: $CI_REGISTRY_IMAGE:latest
 ---
 include: []

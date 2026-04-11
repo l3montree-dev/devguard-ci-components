@@ -55,7 +55,7 @@ spec:
       description: Container registry password
       default: $CI_REGISTRY_PASSWORD
     image:
-      description: Container image to use for attestation
+      description: The image file to build (e.g. image.tar)
       default: image.tar
     image_tag:
       default: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA

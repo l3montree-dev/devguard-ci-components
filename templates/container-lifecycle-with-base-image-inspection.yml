@@ -35,11 +35,9 @@ spec:
       default: .
       description: Output directory for discovered attestations (relative to project root).
     path:
-      description: The path to the git repository to scan
-      default: $CI_PROJECT_DIR
+      description: Path to the Containerfile/Dockerfile
     devguard_artifact_name:
-      type: string
-      description: The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image.
+      description: The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image.
       default: ""
     runner_tags:
       default: []
@@ -116,15 +114,10 @@ spec:
       default: "false"
       description: Whether to ignore upstream attestations when scanning the image.
     attestations:
-      description: "|
-
-        \      List of attestations to create. Each item should have:
-
-        \      - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
-
-        \      - predicate_type: the predicate type URL
-
-        \      "
+      description: |-
+        List of attestations to create. Each item should have:
+        - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
+        - predicate_type: the predicate type URL
       default: []
       type: array
     image:
@@ -322,7 +315,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
     ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
-    | sed 's/:\([a-z_]\+\)=>"\1":/g' \
+    | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
     # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
