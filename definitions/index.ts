@@ -11,6 +11,7 @@ import { ContainerScanningJobInputs, ContainerScanningTemplate } from "./templat
 import { PushOciImageJobInputs, PushOciImageTemplate } from "./templates/push-oci-image";
 import { SignOciImageJobInputs, SignOciImageTemplate } from "./templates/sign-oci-image";
 import { BuildNixExtractScannerTemplate, BuildNixGenerateTagTemplate, BuildNixTemplate } from "./templates/build-nix";
+// import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { SarifUploadTemplate } from "./templates/sarif-upload";
 import { SbomUploadTemplate } from "./templates/sbom-upload";
@@ -119,6 +120,11 @@ const templates: CIComponentGroupTemplate = {
         BuildNixGenerateTagTemplate({}),
         BuildNixTemplate({}),
     ],
+    /*
+    "build-nix-multiarch": [
+        BuildNixMultiArchBuildImageTemplate({}),
+        BuildNixMultiArchCreateManifestTemplate({}),
+    ],*/
     "create-manifest-multi-arch": [
         CreateManifestMultiArchTemplate({}),
     ],
@@ -179,18 +185,10 @@ const header = `# Copyright 2025 l3montree GmbH.
 
 await ExportCIComponents(templates, header, {
     full: {
-        devguard_artifact_name: {
-            type: "string" as const,
-            description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image." as const,
-            default: "" as const,
-        },
+        devguard_artifact_name: Inputs.devguard_artifact_name,
     },
     "container-lifecycle-with-base-image-inspection": {
-        devguard_artifact_name: {
-            type: "string" as const,
-            description: "The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image." as const,
-            default: "" as const,
-        },
+        devguard_artifact_name: Inputs.devguard_artifact_name,
     }
 }).then(() => {
     // copy files over using fs
