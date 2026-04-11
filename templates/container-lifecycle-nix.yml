@@ -19,6 +19,14 @@ spec:
       description: Whether the job is allowed to fail without stopping the pipeline
       type: boolean
       default: false
+    needs:
+      description: List of jobs this attestation depends on
+      type: array
+      default: []
+    dependencies:
+      description: List of jobs to download artifacts from
+      type: array
+      default: []
     devguard_artifact_name:
       description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
     image_suffix:

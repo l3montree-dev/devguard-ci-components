@@ -11,6 +11,14 @@ spec:
     pull_policy:
       description: The pull policy for the container image (can be [always, if-not-present, never])
       default: always
+    needs:
+      description: List of jobs this attestation depends on
+      type: array
+      default: []
+    dependencies:
+      description: List of jobs to download artifacts from
+      type: array
+      default: []
     registry:
       description: Container registry URL
       default: $CI_REGISTRY
@@ -30,7 +38,9 @@ spec:
       description: The path to the git repository to scan
       default: $CI_PROJECT_DIR
     devguard_artifact_name:
-      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      type: string
+      description: The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image.
+      default: ""
     runner_tags:
       default: []
       type: array
@@ -63,6 +73,9 @@ spec:
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
+    job_prefix:
+      default: ""
+      description: Prefix for the job name.
     build_args:
       default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
       description: The build arguments to pass to the Kaniko build command
@@ -85,8 +98,8 @@ spec:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
     image_tag:
-      default: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-      description: The tag to use for the built image
+      default: ""
+      description: The (remote) OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path.
     fail_on_risk:
       description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
       default: critical
@@ -147,20 +160,20 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]
     DEVGUARD_ARTIFACT_NAME: $[[ inputs.devguard_artifact_name ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
-  script:
-    - echo "Running generate-tag job..."
-    - devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
-    - echo "Tag generation completed. Generated tags:"
-    - cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
-    - "echo 'Filename: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env'"
+  script: |
+    echo "Running generate-tag job..."
+    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    echo "Tag generation completed. Generated tags:"
+    cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    echo 'Filename: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env'
   artifacts:
     reports:
       dotenv: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
     paths:
       - generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
-devguard:build_oci_image$[[ inputs.job_suffix ]]:
+$[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
@@ -171,23 +184,21 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.6-devguard-scanner-v1.0.0-customized-busybox-jq@sha256:c7a3da8f93ee14a586bcbf3c213914b29ddbd512688139f2f5c84e753647698f
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   before_script:
-    - apk add jq
-    - |-
-      echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).
-       The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
+    - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
     - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --destination $IMAGE_TAG $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
-    - echo "Running DevGuard Intoto Build...stopping..."
-    - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
+    - |-
+      echo "Running DevGuard Intoto Build...stopping..."
+      /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
   artifacts:
     paths:
       - image.tar
@@ -198,24 +209,50 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:build_oci_image$[[ inputs.job_suffix ]]
-  dependencies: devguard:build_oci_image$[[ inputs.job_suffix ]]
+  needs: $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+  dependencies: $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
     - |-
       if [ -n "$[[ inputs.image_tag ]]" ]; then
-              echo "Scanning remote image: $[[ inputs.image_tag ]]"
-              devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-              devguard-scanner container-scanning           --origin="$[[ inputs.devguard_origin ]]"           --assetName="$[[ inputs.devguard_asset_name ]]"           --apiUrl="$[[ inputs.devguard_api_url ]]"           --token="$[[ inputs.devguard_token ]]"           --image="$[[ inputs.image_tag ]]"           --defaultRef="$[[ inputs.default_ref ]]"           --ref="$[[ inputs.commit_ref ]]"           --isTag="$[[ inputs.is_tag ]]"           --artifactName="$[[ inputs.devguard_artifact_name ]]"           --webUI="$[[ inputs.devguard_web_ui ]]"           --failOnRisk="$[[ inputs.fail_on_risk ]]"           --failOnCVSS="$[[ inputs.fail_on_cvss ]]"           --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]           --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
-            else
-              echo "Scanning local tar file: image.tar"
-              devguard-scanner container-scanning           --origin="$[[ inputs.devguard_origin ]]"           --assetName="$[[ inputs.devguard_asset_name ]]"           --apiUrl="$[[ inputs.devguard_api_url ]]"           --token="$[[ inputs.devguard_token ]]"           --path="image.tar"           --defaultRef="$[[ inputs.default_ref ]]"           --ref="$[[ inputs.commit_ref ]]"           --isTag="$[[ inputs.is_tag ]]"           --artifactName="$[[ inputs.devguard_artifact_name ]]"           --webUI="$[[ inputs.devguard_web_ui ]]"           --failOnRisk="$[[ inputs.fail_on_risk ]]"           --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
-            fi
+        echo "Scanning remote image: $[[ inputs.image_tag ]]"
+        devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+        devguard-scanner container-scanning \
+          --origin="$[[ inputs.devguard_origin ]]" \
+          --assetName="$[[ inputs.devguard_asset_name ]]" \
+          --apiUrl="$[[ inputs.devguard_api_url ]]" \
+          --token="$[[ inputs.devguard_token ]]" \
+          --image="$[[ inputs.image_tag ]]" \
+          --defaultRef="$[[ inputs.default_ref ]]" \
+          --ref="$[[ inputs.commit_ref ]]" \
+          --isTag="$[[ inputs.is_tag ]]" \
+          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+          --webUI="$[[ inputs.devguard_web_ui ]]" \
+          --failOnRisk="$[[ inputs.fail_on_risk ]]" \
+          --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
+          --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
+          --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
+      else
+        echo "Scanning local tar file: image.tar"
+        devguard-scanner container-scanning \
+          --origin="$[[ inputs.devguard_origin ]]" \
+          --assetName="$[[ inputs.devguard_asset_name ]]" \
+          --apiUrl="$[[ inputs.devguard_api_url ]]" \
+          --token="$[[ inputs.devguard_token ]]" \
+          --path="image.tar" \
+          --defaultRef="$[[ inputs.default_ref ]]" \
+          --ref="$[[ inputs.commit_ref ]]" \
+          --isTag="$[[ inputs.is_tag ]]" \
+          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+          --webUI="$[[ inputs.devguard_web_ui ]]" \
+          --failOnRisk="$[[ inputs.fail_on_risk ]]" \
+          --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
+      fi
 devguard:push_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: oci-image
@@ -225,15 +262,18 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.26.3-devguard-scanner-v1.0.0-rc.4-customized-busybox-jq
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
     entrypoint:
       - ""
-  script:
-    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - 'echo "Image: image.tar"'
-    - 'echo "Image Tag: $IMAGE_TAG"'
-    - /crane push image.tar $IMAGE_TAG
-    - /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
+  script: |
+    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+
+    echo "Image: image.tar"
+    echo "Image Tag: $IMAGE_TAG"
+
+    /crane push image.tar $IMAGE_TAG
+
+    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
@@ -243,7 +283,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -252,83 +292,133 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
     - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
 devguard:attest$[[ inputs.job_suffix ]]:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main-latest
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]],devguard:build_oci_image$[[ inputs.job_suffix ]],devguard:container_scanning$[[ inputs.job_suffix ]]
-  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]],devguard:build_oci_image$[[ inputs.job_suffix ]],devguard:container_scanning$[[ inputs.job_suffix ]]
+  needs: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]],$[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]],devguard:container_scanning$[[ inputs.job_suffix ]]
+  dependencies: devguard:generate_tag$[[ inputs.job_suffix ]],devguard:push_oci_image$[[ inputs.job_suffix ]],$[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]],devguard:container_scanning$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
-  before_script:
-    - apk add --no-cache jq gettext
-  script:
-    - echo "Attesting artifacts for $[[ inputs.image ]]"
-    - 'echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"'
-    - 'echo "Asset Name: $[[ inputs.devguard_asset_name ]]"'
-    - "# URL encode artifact name for API calls"
-    - API_ARTIFACT_NAME=$(python3 - c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
-    - 'echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"'
-    - "# Slugify the commit ref(replace special characters with hyphens)"
-    - API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
-    - 'echo "Slugified Commit Ref: $API_COMMIT_REF"'
-    - "echo 'Attestations: $[[ inputs.attestations ]]'"
-    - "# Login to registry"
-    - devguard-scanner login -u $[[inputs.registry_user]] -p $[[inputs.registry_password]] $[[inputs.registry]]
-    - "# Convert inputs.attestations to a valid JSON array if it's an array of JSON strings"
-    - ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' | sed 's/:([a-z_]+)=>/"\1":/g' | sed 's/=>/:/g' | sed "s/'/\"/g")
-    - ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq .)
-    - "# Process each attestation"
-    - |
-      echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
-              SOURCE=$(echo "$attestation" | jq -r '.source')
-              PREDICATE_TYPE=$(echo "$attestation" | jq -r '.predicate_type')
-              
-              echo ""
-              echo "========================================"
-              echo "Processing attestation with predicate: $PREDICATE_TYPE"
-              SOURCE=$(echo "$SOURCE" | envsubst)
-              
-              # Check if source is a URL (starts with http:// or https://)
-              if [[ "$SOURCE" =~ ^https?:// ]]; then
-                # Replace ARTIFACT_NAME placeholder with URL-encoded artifact name
-                URL="${SOURCE//ARTIFACT_NAME/$API_ARTIFACT_NAME}"
-                
-                # Replace COMMIT_REF placeholder with URL-encoded commit ref
-                URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
-                
-                # Also handle any environment variable substitution
-                URL=$(echo "$URL" | envsubst)
+  script: |
+    echo "Attesting artifacts for $[[ inputs.image ]]"
+    echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
+    echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
-                # Extract filename from URL or use a default
-                FILENAME=$(basename "$URL" | cut -d'?' -f1)
-                if [ -z "$FILENAME" ] || [ "$FILENAME" = "/" ]; then
-                  FILENAME="downloaded-$(echo "$PREDICATE_TYPE" | md5sum | cut -d' ' -f1).json"
-                fi
-                
-                echo "Downloading from URL: $URL"
-                echo "Saving as: $FILENAME"
-                
-                devguard-scanner curl "$URL" --token="$[[ inputs.devguard_token ]]" > "$FILENAME"
-                FILE_PATH="$FILENAME"
-              else
-                # It's a file path
-                FILE_PATH="$SOURCE"
-                echo "Using local file: $FILE_PATH"
-              fi
-              
-              # Create attestation
-              if [ -f "$FILE_PATH" ]; then
-                echo "Creating attestation for $FILE_PATH"
-                devguard-scanner attest "$FILE_PATH"             --predicateType="$PREDICATE_TYPE"             $[[ inputs.image ]]             --defaultRef="$[[ inputs.default_ref ]]"             --ref="$[[ inputs.commit_ref ]]"             --token="$[[ inputs.devguard_token ]]"             --apiUrl="$[[ inputs.devguard_api_url ]]"             --assetName="$[[ inputs.devguard_asset_name ]]"             --artifactName="$[[ inputs.devguard_artifact_name ]]"
-                echo "✓ Attestation created successfully"
-              else
-                echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
-              fi
-              echo "========================================"
-            done
-    - echo ""
-    - echo "All attestations completed"
+    # URL encode artifact name for API calls
+    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
+    echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
+
+    # Slugify the commit ref (replace special characters with hyphens)
+    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
+    echo "Slugified Commit Ref: $API_COMMIT_REF"
+
+    echo 'Attestations: $[[ inputs.attestations ]]'
+
+    # Login to registry
+    devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+
+    ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
+    | sed 's/:\([a-z_]\+\)=>"\1":/g' \
+    | sed 's/=>/:/g' \
+    | sed "s/'/\"/g")
+    # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
+
+    ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
+
+    # Process each attestation
+    echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
+      SOURCE=$(echo "$attestation" | jq -r '.source')
+      PREDICATE_TYPE=$(echo "$attestation" | jq -r '.predicate_type')
+
+      echo ""
+      echo "========================================"
+      echo "Processing attestation with predicate: $PREDICATE_TYPE"
+      SOURCE=$(echo "$SOURCE" | envsubst)
+
+      # Check if source is a URL (starts with http:// or https://)
+      if [[ "$SOURCE" =~ ^https?:// ]]; then
+        # Replace ARTIFACT_NAME placeholder with URL-encoded artifact name
+        URL="${SOURCE//ARTIFACT_NAME/$API_ARTIFACT_NAME}"
+
+        # Replace COMMIT_REF placeholder with URL-encoded commit ref
+        URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
+
+        # Also handle any environment variable substitution
+        URL=$(echo "$URL" | envsubst)
+
+        # Extract filename from URL or use a default
+        FILENAME=$(basename "$URL" | cut -d'?' -f1)
+        if [ -z "$FILENAME" ] || [ "$FILENAME" = "/" ]; then
+          FILENAME="downloaded-$(echo "$PREDICATE_TYPE" | md5sum | cut -d' ' -f1).json"
+        fi
+
+        echo "Downloading from URL: $URL"
+        echo "Saving as: $FILENAME"
+
+        devguard-scanner curl "$URL" --token="$[[ inputs.devguard_token ]]" > "/tmp/$FILENAME"
+        FILE_PATH="/tmp/$FILENAME"
+      else
+        # It's a file path
+        FILE_PATH="$SOURCE"
+        echo "Using local file: $FILE_PATH"
+      fi
+
+      # Create attestation
+      if [ -f "$FILE_PATH" ]; then
+        echo "Creating attestation for $FILE_PATH"
+        devguard-scanner attest "$FILE_PATH" \
+          --predicateType="$PREDICATE_TYPE" \
+          $[[ inputs.image ]] \
+          --defaultRef="$[[ inputs.default_ref ]]" \
+          --ref="$[[ inputs.commit_ref ]]" \
+          --token="$[[ inputs.devguard_token ]]" \
+          --apiUrl="$[[ inputs.devguard_api_url ]]" \
+          --assetName="$[[ inputs.devguard_asset_name ]]" \
+          --artifactName="$[[ inputs.devguard_artifact_name ]]"
+        echo "✓ Attestation created successfully"
+      else
+        echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
+      fi
+      echo "========================================"
+    done
+
+    echo ""
+    echo "All attestations completed"
+devguard:sbom_upload$[[ inputs.job_suffix ]]:
+  tags: $[[ inputs.runner_tags ]]
+  stage: attestation
+  allow_failure: true
+  needs:
+    - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    pull_policy: $[[ inputs.pull_policy ]]
+  script:
+    - echo "Running DevGuard SBOM Upload..."
+    - devguard-scanner sbom $[[ inputs.output ]]/attestation-bom.json --origin="BASE_IMAGE_SBOM" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]] --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
+devguard:vex_upload$[[ inputs.job_suffix ]]:
+  tags: $[[ inputs.runner_tags ]]
+  stage: attestation
+  allow_failure: true
+  needs:
+    - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+    - devguard:sbom_upload$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
+    - devguard:sbom_upload$[[ inputs.job_suffix ]]
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    pull_policy: $[[ inputs.pull_policy ]]
+  script:
+    - echo "Running DevGuard VeX Upload..."
+    - devguard-scanner vex $[[ inputs.output ]]/attestation-vex.json --origin="BASE_IMAGE_VEX" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]

@@ -18,7 +18,9 @@ spec:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
     devguard_artifact_name:
-      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      type: string
+      description: The name of the artifact you are building. Useful when a pipeline builds more than one artifact (e.g. different containers). If not provided, will use the generated PURL from the built image.
+      default: ""
     runner_tags:
       default: []
       type: array
@@ -33,6 +35,14 @@ spec:
       description: Whether the job is allowed to fail without stopping the pipeline
       type: boolean
       default: false
+    needs:
+      description: List of jobs this attestation depends on
+      type: array
+      default: []
+    dependencies:
+      description: List of jobs to download artifacts from
+      type: array
+      default: []
     default_ref:
       description: Default branch reference
       default: $CI_DEFAULT_BRANCH

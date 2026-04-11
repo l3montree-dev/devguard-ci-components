@@ -21,6 +21,14 @@ spec:
       description: Whether the job is allowed to fail without stopping the pipeline
       type: boolean
       default: false
+    needs:
+      description: List of jobs this attestation depends on
+      type: array
+      default: []
+    dependencies:
+      description: List of jobs to download artifacts from
+      type: array
+      default: []
     image_suffix:
       default: default
       description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
@@ -105,8 +113,6 @@ spec:
     image:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
-    build_job_name:
-      description: The name of the external build job to depend on. Must produce an image tar file as artifact.
 ---
 include: []
 devguard:generate_tag$[[ inputs.job_suffix ]]:
