@@ -27,8 +27,9 @@ import { SourceProvenanceTemplate } from "./templates/source-provenance-attestat
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({ stage: "generate-tag", git_strategy: GenerateTagJobInputs.git_strategy.default });
 const fullBuildOciImage = BuildOciImageTemplate({ stage: "build", git_strategy: BuildOciImageJobInputs.git_strategy.default, image: BuildOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name ], dependencies: [ fullGenerateTag.name ] });
-const fullContrainerScannig = ContainerScanningTemplate({ stage: "test", git_strategy: ContainerScanningJobInputs.git_strategy.default, image_tag: "$IMAGE_TAG", needs: [ fullBuildOciImage.name ], dependencies: [ fullBuildOciImage.name ] });
-const fullPushOCIImage = PushOciImageTemplate({ stage: "deploy", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullContrainerScannig.name ], dependencies: [ fullContrainerScannig.name ] });
+const fullContrainerScannig = ContainerScanningTemplate({ stage: "test", git_strategy: ContainerScanningJobInputs.git_strategy.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name, fullBuildOciImage.name ], dependencies: [ fullGenerateTag.name, fullBuildOciImage.name ] });
+const fullPushOCIImage = PushOciImageTemplate({ stage: "deploy", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name ], dependencies: [ fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name ] });
+const fullSignOciImage = SignOciImageTemplate({ stage: "deploy", git_strategy: SignOciImageJobInputs.git_strategy.default, image: SignOciImageJobInputs.image.default,  needs: [ fullGenerateTag.name, fullPushOCIImage.name ], dependencies: [ fullGenerateTag.name, fullPushOCIImage.name ] })
 
 // ── container-lifecycle ───────────────────────────────────────────────────────
 const clGenerateTag       = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
@@ -156,7 +157,7 @@ const templates: CIComponentGroupTemplate = {
         fullBuildOciImage,
         fullContrainerScannig,
         fullPushOCIImage,
-        SignOciImageTemplate({ stage: "deploy", git_strategy: SignOciImageJobInputs.git_strategy.default, image: SignOciImageJobInputs.image.default,  needs: [ fullPushOCIImage.name ], dependencies: [ fullPushOCIImage.name ] }),
+        fullSignOciImage,
     ],
     "container-lifecycle": [
         clGenerateTag, clBuildOciImage, clContainerScanning, clPushOciImage, clSignOciImage, clAttest,
