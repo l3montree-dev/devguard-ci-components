@@ -53,6 +53,10 @@ spec:
     image_suffix:
       default: "default"
       description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix. This will create images like $CONTAINER_IMAGE/<IMAGE_SUFFIX>:tag"
+
+    small_artifact_registry:
+      default: "false"
+      description: "If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step."
 ---
 variables:
   GIT_STRATEGY: $[[ inputs.git_strategy ]]
@@ -128,6 +132,7 @@ include:
       pull_policy: $[[ inputs.pull_policy ]]
       allow_failure: $[[ inputs.allow_failure ]]
       build_args: $[[ inputs.build_args ]]
+      push_image: $[[ inputs.small_artifact_registry ]]
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
@@ -148,6 +153,7 @@ include:
       allow_failure: $[[ inputs.allow_failure ]]
       fail_on_cvss: $[[ inputs.fail_on_cvss ]]
       fail_on_risk: $[[ inputs.fail_on_risk ]]
+      fetch_image_from_registry: $[[ inputs.small_artifact_registry ]]
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
@@ -156,6 +162,8 @@ include:
         - devguard:build_oci_image$[[ inputs.job_suffix ]]
 
   - remote: "https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/push-oci-image.yml"
+    rules:
+      - if: '"$[[ inputs.small_artifact_registry ]]" != "true"'
     inputs:
       devguard_asset_name: $[[ inputs.devguard_asset_name ]]
       devguard_api_url: $[[ inputs.devguard_api_url ]]
