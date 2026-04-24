@@ -284,7 +284,7 @@ devguard:software_composition_analysis$[[ inputs.job_suffix ]]:
     - devguard-scanner sca --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --path="$[[ inputs.path ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --webUI=$[[ inputs.devguard_web_ui ]] --artifactName=$[[ inputs.devguard_artifact_name ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]] --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
 devguard:generate_tag$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: generate-tag
+  stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs: $[[ inputs.needs ]]
   dependencies: $[[ inputs.dependencies ]]
@@ -308,7 +308,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
       - generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
 $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: build
+  stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
@@ -340,7 +340,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     when: on_success
 devguard:container_scanning$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: test
+  stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
@@ -392,7 +392,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
       fi
 devguard:push_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: deploy
+  stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
@@ -419,7 +419,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: deploy
+  stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
