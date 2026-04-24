@@ -49,8 +49,6 @@ const clnSignOciImage      = SignOciImageTemplate({ stage: "attestation", git_st
 const clnAttest            = AttestTemplate({ stage: "attestation", git_strategy: "none", needs: [clnGenerateTag.name, clnPushOciImage.name, clnBuildOciImage.name, clnContainerScanning.name], dependencies: [clnGenerateTag.name, clnPushOciImage.name, clnBuildOciImage.name, clnContainerScanning.name] });
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
-// build_job_name is an external input — kept as $[[ inputs.build_job_name ]] in job bodies
-// and added to the spec via inputOverrides in ExportCIComponents below.
 const paGenerateTag   = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
 const paPushOciImage  = PushOciImageTemplate({ stage: "oci-image", git_strategy: "none", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"], dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"] });
 const paSignOciImage  = SignOciImageTemplate({ stage: "attestation", git_strategy: "none", image: "$IMAGE_TAG", needs: [paGenerateTag.name, paPushOciImage.name], dependencies: [paGenerateTag.name, paPushOciImage.name] });
@@ -116,16 +114,6 @@ const templates: CIComponentGroupTemplate = {
     "sign-oci-image": [
         SignOciImageTemplate({ }),
     ],
-    "build-nix": [
-        BuildNixExtractScannerTemplate({}),
-        BuildNixGenerateTagTemplate({}),
-        BuildNixTemplate({}),
-    ],
-    /*
-    "build-nix-multiarch": [
-        BuildNixMultiArchBuildImageTemplate({}),
-        BuildNixMultiArchCreateManifestTemplate({}),
-    ],*/
     "create-manifest-multi-arch": [
         CreateManifestMultiArchTemplate({}),
     ],
@@ -159,6 +147,7 @@ const templates: CIComponentGroupTemplate = {
         fullPushOCIImage,
         fullSignOciImage,
     ],
+    /*
     "container-lifecycle": [
         clGenerateTag, clBuildOciImage, clContainerScanning, clPushOciImage, clSignOciImage, clAttest,
     ],
@@ -176,6 +165,16 @@ const templates: CIComponentGroupTemplate = {
         clbiGenerateTag, clbiBuildOciImage, clbiContainerScanning, clbiPushOciImage, clbiSignOciImage, clbiAttest,
         clbiSbomUpload, clbiVexUpload,
     ],
+    "build-nix": [
+        BuildNixExtractScannerTemplate({}),
+        BuildNixGenerateTagTemplate({}),
+        BuildNixTemplate({}),
+    ],
+    "build-nix-multiarch": [
+        BuildNixMultiArchBuildImageTemplate({}),
+        BuildNixMultiArchCreateManifestTemplate({}),
+    ],
+    */
 }
 
 const header = `# Copyright 2025 l3montree GmbH.
