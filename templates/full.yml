@@ -356,15 +356,15 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   script:
     - echo "Running DevGuard Container Scanning..."
     - |-
-      if [ -n "$IMAGE_TAG" ]; then
-        echo "Scanning remote image: $IMAGE_TAG"
+      if [ -n "" ]; then
+        echo "Scanning remote image: "
         devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
         devguard-scanner container-scanning \
           --origin="$[[ inputs.devguard_origin ]]" \
           --assetName="$[[ inputs.devguard_asset_name ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --token="$[[ inputs.devguard_token ]]" \
-          --image="$IMAGE_TAG" \
+          --image="" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
