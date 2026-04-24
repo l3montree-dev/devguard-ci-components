@@ -3,7 +3,10 @@ import { Inputs } from "./inputs"
 
 
 export const GenerateTagJobInputs = defineInputs({
-    devguard_artifact_name: Inputs.devguard_artifact_name, // TODO!
+    devguard_artifact_name: {
+        ...Inputs.devguard_artifact_name,
+        description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image" as const,
+    },
 
     runner_tags: Inputs.runner_tags,
     stage: {

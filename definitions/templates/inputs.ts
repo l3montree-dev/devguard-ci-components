@@ -35,7 +35,7 @@ export const Inputs = {
     default: "$DEVGUARD_TOKEN" as const,
   },
   devguard_artifact_name: {
-    description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image." as const,
+    description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)" as const,
     default: "" as const,
   },
   devguard_origin: {
