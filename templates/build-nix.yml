@@ -156,7 +156,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - devguard:extract_scanner$[[ inputs.job_suffix ]]
     - $[[ inputs.dependencies ]]
   image:
-    name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
+    name: registry.opencode.de/oci-community/images/applicative-systems/nix@sha256:015cd492622692aed94680e76f6f5a13549d3011ab97835527a1d30edbdc43c0
     entrypoint: ["/bin/sh", "-c"]
   before_script:
     - chmod +x ./devguard-scanner
