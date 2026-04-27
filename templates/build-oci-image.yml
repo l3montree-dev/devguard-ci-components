@@ -49,7 +49,10 @@ spec:
       description: "Default branch reference"
     commit_ref:
       default: "$CI_COMMIT_REF_NAME"
-      description: "Current commit reference"  
+      description: "Current commit reference"
+    is_tag:
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
+      description: "Is the current commit a tag"
 
     registry:
       default: "$CI_REGISTRY"
@@ -105,7 +108,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
 
     - |
       echo "Running DevGuard Intoto Build...stopping..."
-      /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance --defaultBranch="$[[ inputs.default_ref ]]" --commitRef="$[[ inputs.commit_ref ]]"
+      /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --commitRef="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]"
   artifacts:
     paths:
       - $[[ inputs.image ]]
