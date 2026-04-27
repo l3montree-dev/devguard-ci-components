@@ -1,4 +1,4 @@
-FROM ghcr.io/l3montree-dev/devguard/scanner:v1.3.0@sha256:d7c86e2983b96a0c96dfcb7325764a597f9e9e084d8db33ff7bb77222bfed3ca AS devguard-scanner
+FROM ghcr.io/l3montree-dev/devguard/scanner:main-latest@sha256:86e73b8fcfa92e25f564550155685e815703a6e47fc18001b4da5865359f7701 AS devguard-scanner
 # https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
 # See the Scanner Dockerfile for the used versions of crane and devguard-scanner
 
@@ -12,8 +12,8 @@ FROM alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a
 
 WORKDIR /
 
-COPY --from=devguard-scanner /nix/store/z8alkwf5k7lmcpxn120sgipysh3qrl28-crane-0.21.3/bin/crane .
-COPY --from=devguard-scanner /nix/store/yrwdlpmnvsxsdymq7v6x70grvwk0kihp-devguard-scanner-962ba4f/bin/devguard-scanner .
+COPY --from=devguard-scanner /usr/local/bin/crane .
+COPY --from=devguard-scanner /usr/local/bin/devguard-scanner .
 
 COPY --from=kaniko-executor /kaniko /kaniko
 COPY --from=kaniko-executor /workspace /workspace
