@@ -44,7 +44,7 @@ spec:
     default_ref:
       default: "$CI_DEFAULT_BRANCH"
       description: "Default branch reference"
-    commit_ref:
+    ref:
       default: "$CI_COMMIT_REF_NAME"
       description: "Current commit reference"
     is_tag:
@@ -81,7 +81,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.2.3-customized-busybox-jq@sha256:5292d05f129fc47a9dfc1c2c10bd253d41e08a12d3db69785e99b9199301e7b0
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.0-customized-busybox-jq@sha256:905a4228d92cc5c7a59bdf5f52521ba87b552fddb1a8962439baeb4560458d50
     entrypoint: [""]
 
   script: |
@@ -92,4 +92,4 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
 
     /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
 
-    /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --commitRef="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]"
+    /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
