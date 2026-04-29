@@ -42,6 +42,16 @@ spec:
       description: List of jobs to download artifacts from
       type: array
       default: []
+    default_ref:
+      default: "$CI_DEFAULT_BRANCH"
+      description: "Default branch reference"
+    ref:
+      default: "$CI_COMMIT_REF_NAME"
+      description: "Current commit reference"
+    is_tag:
+      default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)'
+      description: "Is the current commit a tag"
+
     registry:
       description: Container registry URL
       default: $CI_REGISTRY
@@ -71,9 +81,9 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
-    entrypoint:
-      - ""
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.0-customized-busybox-jq@sha256:ff1ca87871d61db261906952aa70452095f281a23ea710959b762cc605d71b02
+    entrypoint: [""]
+
   script: |
     /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
@@ -82,4 +92,4 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
 
     /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
 
-    /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
+    /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"

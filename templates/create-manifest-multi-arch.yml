@@ -32,7 +32,7 @@ spec:
 include: []
 devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
-  image: docker:28.5.2@sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac
+  image: api.devguard.org/docker.io/library/docker:28.5.2@sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac
   needs: $[[ inputs.needs ]]
   dependencies: $[[ inputs.dependencies ]]
   before_script:

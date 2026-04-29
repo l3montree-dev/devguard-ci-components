@@ -57,6 +57,13 @@ spec:
       type: array
       description: "Jobs to download artifacts from."
 
+    default_ref:
+      default: "$CI_DEFAULT_BRANCH"
+      description: "Default branch reference"
+    commit_ref:
+      default: "$CI_COMMIT_REF_NAME"
+      description: "Current commit reference"      
+
     supplyChainId:
       default: "$CI_COMMIT_SHA"
       description: "Supply chain ID forwarded to intoto provenance."
@@ -149,7 +156,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - devguard:extract_scanner$[[ inputs.job_suffix ]]
     - $[[ inputs.dependencies ]]
   image:
-    name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
+    name: registry.opencode.de/oci-community/images/applicative-systems/nix@sha256:44a08cc8d2b0d0eda0f61bb13d4d0439d931d6fdc55e5c74bcd4205ab7401637
     entrypoint: ["/bin/sh", "-c"]
   before_script:
     - chmod +x ./devguard-scanner
@@ -198,6 +205,8 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         --assetName="$[[ inputs.devguard_asset_name ]]"
         --supplyChainId="$[[ inputs.supplyChainId ]]"
         --generateSlsaProvenance
+        --defaultRef="$[[ inputs.default_ref ]]"
+        --ref="$[[ inputs.commit_ref ]]" 
   artifacts:
     paths:
       - $[[ inputs.image ]]
