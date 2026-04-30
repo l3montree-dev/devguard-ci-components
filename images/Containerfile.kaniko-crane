@@ -1,24 +1,15 @@
-FROM ghcr.io/l3montree-dev/devguard/scanner:main@sha256:454d4960b2c7f020010036d23b19afea67d54f7b65003017d4cc35d9fab8ae82 AS devguard-scanner
-# https://github.com/l3montree-dev/devguard/blob/main/Dockerfile.scanner
-# See the Scanner Dockerfile for the used versions of crane and devguard-scanner
+FROM ghcr.io/l3montree-dev/devguard/scanner:v1.3.1@sha256:9eb855f1f27194e18f0a2a27d9dcbf5c4475a80d17b5bc46020a926bdd71b0aa AS devguard-scanner
+# https://github.com/l3montree-dev/devguard
 
 # checkov:skip=CKV_DOCKER_2
 # checkov:skip=CKV_DOCKER_3
 
+FROM registry.opencode.de/oci-community/images/l3montree/kaniko:v1.27.3-main-debug@sha256:449a1f0d88d5a7444709724b85f6b801b8dde9ff36ea2d1c1223bb385707ff54
 # https://github.com/osscontainertools/kaniko
-FROM ghcr.io/osscontainertools/kaniko:v1.27.3-debug@sha256:a7e2df20e8ee98874f9856a04622de6a76e93609f7e5cba5949eb5436959720c AS kaniko-executor
+# https://gitlab.opencode.de/oci-community/images/l3montree/kaniko
 
-FROM alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
-
-WORKDIR /
-
-COPY --from=devguard-scanner /nix/store/3pidi30fdmvfwq2l4jwd1vxw36h3j9fj-crane-0.21.3/bin/crane .
-COPY --from=devguard-scanner /nix/store/izg7np6nxgczwfz5wc6pyax1rc9p9l7x-devguard-scanner-23ad2fe/bin/devguard-scanner .
-
-COPY --from=kaniko-executor /kaniko /kaniko
-COPY --from=kaniko-executor /workspace /workspace
-
-RUN apk update && apk add --no-cache git dbus dbus-x11 gnome-keyring busybox jq
+COPY --from=devguard-scanner /nix/store/3pidi30fdmvfwq2l4jwd1vxw36h3j9fj-crane-0.21.3/bin/crane /crane
+COPY --from=devguard-scanner /nix/store/zzx6y1a0xcamldrv9wrd6sms3b7fp26w-devguard-scanner-ab2a655/bin/devguard-scanner /devguard-scanner
 
 WORKDIR /workspace
 
