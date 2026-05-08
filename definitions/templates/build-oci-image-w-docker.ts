@@ -87,14 +87,19 @@ export const BuildOciImageWDockerTemplate = defineJob(BuildOciImageWDockerJobInp
             `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
             `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
             `echo "Running DevGuard Intoto Build...stopping..."`,
-            `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`
+            `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
+            `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
         ],
         artifacts: {
             paths: [
                 inputValues.image,
-                `image-digest.txt`,
-                `build.provenance.json`,
+                "image-digest.txt",
+                "build.provenance.json",
+                "variables.env",
             ],
+            reports: {
+                dotenv: "variables.env",
+            },
             when: "on_success",
         }
     }

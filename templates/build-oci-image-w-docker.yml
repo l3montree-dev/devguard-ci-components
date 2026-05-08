@@ -123,9 +123,13 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
     - echo "Running DevGuard Intoto Build...stopping..."
     - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
+    - echo "IMAGE_TAG=$[[ inputs.image_tag ]]@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:
       - $[[ inputs.image ]]
       - image-digest.txt
       - build.provenance.json
+      - variables.env
+    reports:
+      dotenv: variables.env
     when: on_success
