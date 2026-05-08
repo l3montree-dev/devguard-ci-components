@@ -27,8 +27,8 @@ import { SourceProvenanceTemplate } from "./templates/source-provenance-attestat
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: GenerateTagJobInputs.git_strategy.default });
 const fullBuildOciImage = BuildOciImageTemplate({ stage: "oci-image", git_strategy: BuildOciImageJobInputs.git_strategy.default, image: BuildOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [fullGenerateTag.name], dependencies: [fullGenerateTag.name], push_image: "$[[ inputs.small_artifact_registry ]]" });
-const fullContrainerScannig = ContainerScanningTemplate({ stage: "oci-image", git_strategy: ContainerScanningJobInputs.git_strategy.default, image_tag: "", needs: [fullGenerateTag.name, fullBuildOciImage.name], dependencies: [fullGenerateTag.name, fullBuildOciImage.name] });
-const fullPushOciImage = PushOciImageTemplate({ stage: "oci-image", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name], disable_job: "$[[ inputs.small_artifact_registry ]]" });
+const fullContrainerScanning = ContainerScanningTemplate({ stage: "oci-image", git_strategy: ContainerScanningJobInputs.git_strategy.default, image_tag: "", devguard_artifact_name: "$ARTIFACT_NAME", needs: [fullGenerateTag.name, fullBuildOciImage.name], dependencies: [fullGenerateTag.name, fullBuildOciImage.name] });
+const fullPushOciImage = PushOciImageTemplate({ stage: "oci-image", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScanning.name], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScanning.name], disable_job: "$[[ inputs.small_artifact_registry ]]" });
 const fullSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: SignOciImageJobInputs.git_strategy.default, image: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name] })
 const fullSourceProvenanceAttestation = SourceProvenanceTemplate({ stage: AttestJobInputs.stage.default });
 const fullAttest = AttestTemplate({
@@ -172,7 +172,7 @@ const templates: CIComponentGroupTemplate = {
         SoftwareCompositionAnalysisTemplate({ git_strategy: SCAJobInputs.git_strategy.default }),
         fullGenerateTag,
         fullBuildOciImage,
-        fullContrainerScannig,
+        fullContrainerScanning,
         fullPushOciImage,
         fullSignOciImage,
         fullAttest,

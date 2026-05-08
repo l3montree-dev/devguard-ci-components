@@ -278,7 +278,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
     - 'echo "Default Ref: $[[ inputs.default_ref ]]"'
     - 'echo "Commit Ref: $[[ inputs.commit_ref ]]"'
     - 'echo "Is Tag: $[[ inputs.is_tag ]]"'
-    - 'echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"'
+    - 'echo "Artifact Name: $ARTIFACT_NAME"'
     - 'echo "Web UI: $[[ inputs.devguard_web_ui ]]"'
     - 'echo "Fail on Risk: $[[ inputs.fail_on_risk ]]"'
     - 'echo "Fail on CVSS: $[[ inputs.fail_on_cvss ]]"'
@@ -296,7 +296,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
               --defaultRef="$[[ inputs.default_ref ]]" \
               --ref="$[[ inputs.commit_ref ]]" \
               --isTag="$[[ inputs.is_tag ]]" \
-              --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+              --artifactName="$ARTIFACT_NAME" \
               --webUI="$[[ inputs.devguard_web_ui ]]" \
               --failOnRisk="$[[ inputs.fail_on_risk ]]" \
               --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
@@ -314,7 +314,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+          --artifactName="$ARTIFACT_NAME" \
           --webUI="$[[ inputs.devguard_web_ui ]]" \
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
@@ -331,7 +331,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+          --artifactName="$ARTIFACT_NAME" \
           --webUI="$[[ inputs.devguard_web_ui ]]" \
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
