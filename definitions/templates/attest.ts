@@ -59,12 +59,12 @@ echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 API_COMMIT_REF=$(devguard-scanner slug "${inputValues.commit_ref}")
 echo "Slugified Commit Ref: $API_COMMIT_REF"
 
-echo 'Attestations: ${inputValues.attestations}'
+echo 'Attestations: ${JSON.stringify(inputValues.attestations)}'
 
 # Login to registry
 devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
-ATT_JSON_CLEAN=$(echo '${inputValues.attestations}' \\
+ATT_JSON_CLEAN=$(echo '${JSON.stringify(inputValues.attestations)}' \\
 | sed 's/:\\([a-z_]\\+\\)=>/"\\1":/g' \\
 | sed 's/=>/:/g' \\
 | sed "s/'/\\"/g")

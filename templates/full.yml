@@ -13,20 +13,20 @@ spec:
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
-    devguard_artifact_name:
-      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-      default: ""
+    devguard_web_ui:
+      description: The DevGuard Web-UI Instance URL
+      default: https://app.devguard.org
     runner_tags:
       default: []
       type: array
       description: The runner tags to use for the job
+    stage:
+      default: test
+      description: The pipeline stage for the job
     job_suffix:
       type: string
       description: Suffix for the job name. You need this if you are using the component multiple times in one pipeline.
       default: ""
-    git_strategy:
-      description: The Git strategy to use for the job
-      default: none
     pull_policy:
       description: The pull policy for the container image (can be [always, if-not-present, never])
       default: always
@@ -42,43 +42,21 @@ spec:
       description: List of jobs to download artifacts from
       type: array
       default: []
+    path:
+      description: The path to the git repository to scan
+      default: $CI_PROJECT_DIR
     default_ref:
       description: Default branch reference
       default: $CI_DEFAULT_BRANCH
     commit_ref:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
-    registry:
-      description: Container registry URL
-      default: $CI_REGISTRY
-    registry_user:
-      description: Container registry username
-      default: $CI_REGISTRY_USER
-    registry_password:
-      description: Container registry password
-      default: $CI_REGISTRY_PASSWORD
-    attestations:
-      description: |-
-        List of attestations to create. Each item should have:
-        - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
-        - predicate_type: the predicate type URL
-      default: []
-      type: array
-    image:
-      description: Container image to use for attestation
-      default: $CI_REGISTRY_IMAGE
-    devguard_web_ui:
-      description: The DevGuard Web-UI Instance URL
-      default: https://app.devguard.org
-    stage:
-      default: test
-      description: The pipeline stage for the job
-    path:
-      description: The path to the git repository to scan
-      default: $CI_PROJECT_DIR
     is_tag:
       description: Is the current commit a tag
       default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
+    devguard_artifact_name:
+      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      default: ""
     devguard_origin:
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
       default: DEFAULT
@@ -109,6 +87,15 @@ spec:
     job_prefix:
       default: ""
       description: Prefix for the job name.
+    registry:
+      description: Container registry URL
+      default: $CI_REGISTRY
+    registry_user:
+      description: Container registry username
+      default: $CI_REGISTRY_USER
+    registry_password:
+      description: Container registry password
+      default: $CI_REGISTRY_PASSWORD
     build_args:
       default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
       description: The build arguments to pass to the Kaniko build command
@@ -127,6 +114,12 @@ spec:
     fetch_image_from_registry:
       default: "false"
       description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
+    git_strategy:
+      description: The Git strategy to use for the job
+      default: none
+    image:
+      description: Container image to use for attestation
+      default: $CI_REGISTRY_IMAGE
     small_artifact_registry:
       default: "false"
       description: If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step.
@@ -143,104 +136,6 @@ include:
       stage: attestation
     rules:
       - if: $CI_SERVER_FQDN == "gitlab.opencode.de"
-devguard:attest$[[ inputs.job_suffix ]]:
-  image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
-    pull_policy: $[[ inputs.pull_policy ]]
-    entrypoint:
-      - ""
-  tags: $[[ inputs.runner_tags ]]
-  stage: attestation
-  allow_failure: $[[ inputs.allow_failure ]]
-  needs: $[[ inputs.needs ]]
-  dependencies: $[[ inputs.dependencies ]]
-  variables:
-    GIT_STRATEGY: $[[ inputs.git_strategy ]]
-  script: |
-    echo "Attesting artifacts for $[[ inputs.image ]]"
-    echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
-    echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
-
-    # URL encode artifact name for API calls
-    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
-    echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
-
-    # Slugify the commit ref (replace special characters with hyphens)
-    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
-    echo "Slugified Commit Ref: $API_COMMIT_REF"
-
-    echo 'Attestations: $[[ inputs.attestations ]]'
-
-    # Login to registry
-    devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-
-    ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
-    | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
-    | sed 's/=>/:/g' \
-    | sed "s/'/\"/g")
-    # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
-
-    ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
-
-    # Process each attestation
-    echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
-      SOURCE=$(echo "$attestation" | jq -r '.source')
-      PREDICATE_TYPE=$(echo "$attestation" | jq -r '.predicate_type')
-
-      echo ""
-      echo "========================================"
-      echo "Processing attestation with predicate: $PREDICATE_TYPE"
-      SOURCE=$(echo "$SOURCE" | envsubst)
-
-      # Check if source is a URL (starts with http:// or https://)
-      if [[ "$SOURCE" =~ ^https?:// ]]; then
-        # Replace ARTIFACT_NAME placeholder with URL-encoded artifact name
-        URL="${SOURCE//ARTIFACT_NAME/$API_ARTIFACT_NAME}"
-
-        # Replace COMMIT_REF placeholder with URL-encoded commit ref
-        URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
-
-        # Also handle any environment variable substitution
-        URL=$(echo "$URL" | envsubst)
-
-        # Extract filename from URL or use a default
-        FILENAME=$(basename "$URL" | cut -d'?' -f1)
-        if [ -z "$FILENAME" ] || [ "$FILENAME" = "/" ]; then
-          FILENAME="downloaded-$(echo "$PREDICATE_TYPE" | md5sum | cut -d' ' -f1).json"
-        fi
-
-        echo "Downloading from URL: $URL"
-        echo "Saving as: $FILENAME"
-
-        devguard-scanner curl "$URL" --token="$[[ inputs.devguard_token ]]" > "/tmp/$FILENAME"
-        FILE_PATH="/tmp/$FILENAME"
-      else
-        # It's a file path
-        FILE_PATH="$SOURCE"
-        echo "Using local file: $FILE_PATH"
-      fi
-
-      # Create attestation
-      if [ -f "$FILE_PATH" ]; then
-        echo "Creating attestation for $FILE_PATH"
-        devguard-scanner attest "$FILE_PATH" \
-          --predicateType="$PREDICATE_TYPE" \
-          $[[ inputs.image ]] \
-          --defaultRef="$[[ inputs.default_ref ]]" \
-          --ref="$[[ inputs.commit_ref ]]" \
-          --token="$[[ inputs.devguard_token ]]" \
-          --apiUrl="$[[ inputs.devguard_api_url ]]" \
-          --assetName="$[[ inputs.devguard_asset_name ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]"
-        echo "✓ Attestation created successfully"
-      else
-        echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
-      fi
-      echo "========================================"
-    done
-
-    echo ""
-    echo "All attestations completed"
 devguard:secret_scanning$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: $[[ inputs.stage ]]
@@ -465,10 +360,8 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - job: devguard:generate_tag$[[ inputs.job_suffix ]]
-      optional: false
-    - job: $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
-      optional: false
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
       optional: true
   dependencies:
@@ -485,3 +378,109 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
+devguard:attest$[[ inputs.job_suffix ]]:
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint:
+      - ""
+  tags: $[[ inputs.runner_tags ]]
+  stage: attestation
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - job: source-provenance-attestation
+      optional: true
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+  variables:
+    GIT_STRATEGY: $[[ inputs.git_strategy ]]
+  script: |
+    echo "Attesting artifacts for $[[ inputs.image ]]"
+    echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
+    echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
+
+    # URL encode artifact name for API calls
+    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
+    echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
+
+    # Slugify the commit ref (replace special characters with hyphens)
+    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
+    echo "Slugified Commit Ref: $API_COMMIT_REF"
+
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"./artifacts/attestation-report.sarif","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.0.json"}]'
+
+    # Login to registry
+    devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"./artifacts/attestation-report.sarif","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.0.json"}]' \
+    | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
+    | sed 's/=>/:/g' \
+    | sed "s/'/\"/g")
+    # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
+
+    ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
+
+    # Process each attestation
+    echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
+      SOURCE=$(echo "$attestation" | jq -r '.source')
+      PREDICATE_TYPE=$(echo "$attestation" | jq -r '.predicate_type')
+
+      echo ""
+      echo "========================================"
+      echo "Processing attestation with predicate: $PREDICATE_TYPE"
+      SOURCE=$(echo "$SOURCE" | envsubst)
+
+      # Check if source is a URL (starts with http:// or https://)
+      if [[ "$SOURCE" =~ ^https?:// ]]; then
+        # Replace ARTIFACT_NAME placeholder with URL-encoded artifact name
+        URL="${SOURCE//ARTIFACT_NAME/$API_ARTIFACT_NAME}"
+
+        # Replace COMMIT_REF placeholder with URL-encoded commit ref
+        URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
+
+        # Also handle any environment variable substitution
+        URL=$(echo "$URL" | envsubst)
+
+        # Extract filename from URL or use a default
+        FILENAME=$(basename "$URL" | cut -d'?' -f1)
+        if [ -z "$FILENAME" ] || [ "$FILENAME" = "/" ]; then
+          FILENAME="downloaded-$(echo "$PREDICATE_TYPE" | md5sum | cut -d' ' -f1).json"
+        fi
+
+        echo "Downloading from URL: $URL"
+        echo "Saving as: $FILENAME"
+
+        devguard-scanner curl "$URL" --token="$[[ inputs.devguard_token ]]" > "/tmp/$FILENAME"
+        FILE_PATH="/tmp/$FILENAME"
+      else
+        # It's a file path
+        FILE_PATH="$SOURCE"
+        echo "Using local file: $FILE_PATH"
+      fi
+
+      # Create attestation
+      if [ -f "$FILE_PATH" ]; then
+        echo "Creating attestation for $FILE_PATH"
+        devguard-scanner attest "$FILE_PATH" \
+          --predicateType="$PREDICATE_TYPE" \
+          $[[ inputs.image ]] \
+          --defaultRef="$[[ inputs.default_ref ]]" \
+          --ref="$[[ inputs.commit_ref ]]" \
+          --token="$[[ inputs.devguard_token ]]" \
+          --apiUrl="$[[ inputs.devguard_api_url ]]" \
+          --assetName="$[[ inputs.devguard_asset_name ]]" \
+          --artifactName="$[[ inputs.devguard_artifact_name ]]"
+        echo "✓ Attestation created successfully"
+      else
+        echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
+      fi
+      echo "========================================"
+    done
+
+    echo ""
+    echo "All attestations completed"

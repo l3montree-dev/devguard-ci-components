@@ -98,12 +98,12 @@ devguard:attest$[[ inputs.job_suffix ]]:
     API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
     echo "Slugified Commit Ref: $API_COMMIT_REF"
 
-    echo 'Attestations: $[[ inputs.attestations ]]'
+    echo 'Attestations: "$[[ inputs.attestations ]]"'
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
+    ATT_JSON_CLEAN=$(echo '"$[[ inputs.attestations ]]"' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
