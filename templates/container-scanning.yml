@@ -105,6 +105,9 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
+    - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
+    - 'echo "Image Tar Path: $[[ inputs.image_tar_path ]]"'
+    - 'echo "Fetch Image From Registry: $[[ inputs.fetch_image_from_registry ]]"'
     - |-
       if [ "$[[ inputs.fetch_image_from_registry ]]" = "true" ]; then
               echo "Scanning remote image from registry: $IMAGE_TAG"

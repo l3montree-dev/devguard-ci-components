@@ -65,6 +65,9 @@ export const ContainerScanningTemplate = defineJob(ContainerScanningJobInputs, (
         },
         script: [
             `echo "Running DevGuard Container Scanning..."`,
+            `echo "Image Tag: ${inputValues.image_tag}"`,
+            `echo "Image Tar Path: ${inputValues.image_tar_path}"`,
+            `echo "Fetch Image From Registry: ${inputValues.fetch_image_from_registry}"`,
             `if [ "${inputValues.fetch_image_from_registry}" = "true" ]; then
         echo "Scanning remote image from registry: $IMAGE_TAG"
         devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
