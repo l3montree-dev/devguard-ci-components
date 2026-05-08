@@ -32,7 +32,9 @@ const fullPushOciImage = PushOciImageTemplate({ stage: "oci-image", image: PushO
 const fullSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: SignOciImageJobInputs.git_strategy.default, image: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name] })
 const fullSourceProvenanceAttestation = SourceProvenanceTemplate({ stage: AttestJobInputs.stage.default });
 const fullAttest = AttestTemplate({
-    stage: AttestJobInputs.stage.default, needs: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: "source-provenance-artifacts", optional: true }], 
+    stage: AttestJobInputs.stage.default,
+    devguard_artifact_name: "$ARTIFACT_NAME",
+    needs: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: "source-provenance-artifacts", optional: true }], 
     dependencies: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name], 
     attestations: [
         {
