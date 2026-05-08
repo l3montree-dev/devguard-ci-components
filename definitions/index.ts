@@ -36,7 +36,7 @@ const fullAttest = AttestTemplate({
     devguard_artifact_name: "$ARTIFACT_NAME",
     image: "$IMAGE_TAG",
     needs: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: "source-provenance-artifacts", optional: true }], 
-    dependencies: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name], 
+    dependencies: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: "source-provenance-artifacts", optional: true }],
     attestations: [
         {
             "source": "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
