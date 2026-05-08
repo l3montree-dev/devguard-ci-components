@@ -416,6 +416,12 @@ devguard:attest$[[ inputs.job_suffix ]]:
     echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
+    echo "Current Dir:"
+    ls -la
+    echo "---"
+    echo "Artifacts Dir:"
+    ls -la artifacts/
+
     # URL encode artifact name for API calls
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
@@ -424,12 +430,12 @@ devguard:attest$[[ inputs.job_suffix ]]:
     API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
     echo "Slugified Commit Ref: $API_COMMIT_REF"
 
-    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"./artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]'
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"./artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")

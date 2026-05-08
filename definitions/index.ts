@@ -55,7 +55,7 @@ const fullAttest = AttestTemplate({
             "predicate_type": "https://slsa.dev/provenance/v1"
         },
         {
-            "source": "./artifacts/attestation-report.json",
+            "source": "artifacts/attestation-report.json",
             "predicate_type": "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"
         }
     ] as any
