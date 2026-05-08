@@ -18,7 +18,6 @@ devguard_api_url: Inputs.devguard_api_url,
         pull_policy: Inputs.pull_policy,
         allow_failure: Inputs.allow_failure,
         needs: Inputs.needs,
-        dependencies: Inputs.dependencies,
         
         default_ref: Inputs.default_ref,
         commit_ref: Inputs.commit_ref,
@@ -43,7 +42,6 @@ export const AttestTemplate = defineJob(AttestJobInputs, (inputValues) => ({
         stage: inputValues.stage,
         allow_failure: inputValues.allow_failure as any,
         needs: inputValues.needs as any,
-        dependencies: inputValues.dependencies as any,
         variables: {
             GIT_STRATEGY: inputValues.git_strategy as any,
         },

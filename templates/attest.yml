@@ -41,10 +41,6 @@ spec:
       description: List of jobs this attestation depends on
       type: array
       default: []
-    dependencies:
-      description: List of jobs to download artifacts from
-      type: array
-      default: []
     default_ref:
       description: Default branch reference
       default: $CI_DEFAULT_BRANCH
@@ -82,7 +78,6 @@ devguard:attest$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
   needs: $[[ inputs.needs ]]
-  dependencies: $[[ inputs.dependencies ]]
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   script: |
