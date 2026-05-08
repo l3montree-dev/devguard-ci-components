@@ -132,17 +132,16 @@ spec:
       description: If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step.
 ---
 include:
-  - remote:
-      component: $CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main
-      inputs:
-        job_suffix: $[[ inputs.job_suffix ]]
-        image: $IMAGE_TAG
-        needs:
-          - devguard:generate_tag$[[ inputs.job_suffix ]]
-        dependencies:
-          - devguard:generate_tag$[[ inputs.job_suffix ]]
-      rules:
-        - if: $CI_SERVER_FQDN == "gitlab.opencode.de"
+  - remote: https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/templates/attestation.yml
+    inputs:
+      job_suffix: $[[ inputs.job_suffix ]]
+      image: $IMAGE_TAG
+      needs:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+      dependencies:
+        - devguard:generate_tag$[[ inputs.job_suffix ]]
+    rules:
+      - if: $CI_SERVER_FQDN == "gitlab.opencode.de"
 devguard:attest$[[ inputs.job_suffix ]]:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main

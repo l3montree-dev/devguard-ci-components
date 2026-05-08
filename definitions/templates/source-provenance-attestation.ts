@@ -10,19 +10,17 @@ export const SourceProvenanceTemplate = defineJob(JobInputs, (inputValues) => ({
     name: "source-provenance-attestation",
     inputs: {},
     include: {
-        remote: {
-            component: '$CI_SERVER_FQDN/open-code/badgebackend/source-provenance-attestation-service/attestation@main',
-            inputs: {
-                job_suffix: inputValues.job_suffix,
-                image: `$IMAGE_TAG`,
-                needs: [`devguard:generate_tag${inputValues.job_suffix}`],
-                dependencies: [`devguard:generate_tag${inputValues.job_suffix}`],
+        remote: "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/templates/attestation.yml",
+        inputs: {
+            job_suffix: inputValues.job_suffix,
+            image: `$IMAGE_TAG`,
+            needs: [`devguard:generate_tag${inputValues.job_suffix}`],
+            dependencies: [`devguard:generate_tag${inputValues.job_suffix}`],
+        },
+        rules: [
+            {
+                if: '$CI_SERVER_FQDN == "gitlab.opencode.de"',
             },
-            rules: [
-                {
-                    if: '$CI_SERVER_FQDN == "gitlab.opencode.de"',
-                },
-            ]
-        } as any,
+        ]
     }
 } satisfies IncludeWithSpec));
