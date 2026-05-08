@@ -1,6 +1,5 @@
 import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
-import { build } from "bun"
 import { ContainerImages } from "../container-image-versions";
 
 export const SignOciImageJobInputs = defineInputs({

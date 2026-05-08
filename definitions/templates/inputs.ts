@@ -1,4 +1,4 @@
-import { ConfigInputs } from "../../../gitlab-ci-ts/dist";
+import { ConfigInputs } from "@l3montree/programmatic-ci-components";
 
 export const Inputs = {
   job_suffix: {
