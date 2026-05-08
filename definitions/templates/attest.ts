@@ -49,12 +49,6 @@ export const AttestTemplate = defineJob(AttestJobInputs, (inputValues) => ({
 echo "Artifact Name: ${inputValues.devguard_artifact_name}"
 echo "Asset Name: ${inputValues.devguard_asset_name}"
 
-echo "Current Dir:"
-ls -la
-echo "---"
-echo "Artifacts Dir:"
-ls -la artifacts/
-
 # URL encode artifact name for API calls
 API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('${inputValues.devguard_artifact_name}', safe=''))")
 echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"

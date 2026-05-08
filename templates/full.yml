@@ -412,12 +412,6 @@ devguard:attest$[[ inputs.job_suffix ]]:
     echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
-    echo "Current Dir:"
-    ls -la
-    echo "---"
-    echo "Artifacts Dir:"
-    ls -la artifacts/
-
     # URL encode artifact name for API calls
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
