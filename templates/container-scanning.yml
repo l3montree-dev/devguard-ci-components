@@ -89,7 +89,7 @@ spec:
       description: Whether to ignore upstream attestations when scanning the image.
     fetch_image_from_registry:
       default: "false"
-      description: "If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact."
+      description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
 ---
 include: []
 devguard:container_scanning$[[ inputs.job_suffix ]]:
@@ -105,25 +105,25 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
-    - |
+    - |-
       if [ "$[[ inputs.fetch_image_from_registry ]]" = "true" ]; then
-        echo "Scanning remote image from registry: $IMAGE_TAG"
-        devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-        devguard-scanner container-scanning \
-          --origin="$[[ inputs.devguard_origin ]]" \
-          --assetName="$[[ inputs.devguard_asset_name ]]" \
-          --apiUrl="$[[ inputs.devguard_api_url ]]" \
-          --token="$[[ inputs.devguard_token ]]" \
-          --image="$IMAGE_TAG" \
-          --defaultRef="$[[ inputs.default_ref ]]" \
-          --ref="$[[ inputs.commit_ref ]]" \
-          --isTag="$[[ inputs.is_tag ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]" \
-          --webUI="$[[ inputs.devguard_web_ui ]]" \
-          --failOnRisk="$[[ inputs.fail_on_risk ]]" \
-          --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
-          --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
-          --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
+              echo "Scanning remote image from registry: $IMAGE_TAG"
+              devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+              devguard-scanner container-scanning \
+                --origin="$[[ inputs.devguard_origin ]]" \
+                --assetName="$[[ inputs.devguard_asset_name ]]" \
+                --apiUrl="$[[ inputs.devguard_api_url ]]" \
+                --token="$[[ inputs.devguard_token ]]" \
+                --image="$IMAGE_TAG" \
+                --defaultRef="$[[ inputs.default_ref ]]" \
+                --ref="$[[ inputs.commit_ref ]]" \
+                --isTag="$[[ inputs.is_tag ]]" \
+                --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+                --webUI="$[[ inputs.devguard_web_ui ]]" \
+                --failOnRisk="$[[ inputs.fail_on_risk ]]" \
+                --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
+                --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
+                --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
       elif [ -n "$[[ inputs.image_tag ]]" ]; then
         echo "Scanning remote image: $[[ inputs.image_tag ]]"
         devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]

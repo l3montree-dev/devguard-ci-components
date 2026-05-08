@@ -112,21 +112,24 @@ spec:
     build_args:
       default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
       description: The build arguments to pass to the Kaniko build command
-    push_image:
-      default: "false"
-      description: If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts.
     supplyChainId:
       default: $CI_COMMIT_SHA
       description: The supply chain ID to use for the in-toto attestation
+    ref:
+      description: Current commit reference
+      default: $CI_COMMIT_REF_NAME
     image_tar_path:
       default: image.tar
       description: The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty.
     ignore_upstream_attestations:
       default: "false"
       description: Whether to ignore upstream attestations when scanning the image.
+    fetch_image_from_registry:
+      default: "false"
+      description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
     small_artifact_registry:
       default: "false"
-      description: "If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step."
+      description: If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step.
 ---
 include: []
 devguard:attest$[[ inputs.job_suffix ]]:
@@ -320,7 +323,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.1@sha256:2966ade3c7d565ae56c48cfa50d5df6e36a5371f4173606eb4de57558186433d
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -329,12 +332,11 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
-    - |-
-      echo "Running DevGuard Intoto Build...stopping..."
-      /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
+    - /crane digest $([[ "$[[ inputs.small_artifact_registry ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
+    - echo "Running DevGuard Intoto Build...stopping..."
+    - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
   artifacts:
     paths:
       - image.tar
@@ -359,7 +361,25 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   script:
     - echo "Running DevGuard Container Scanning..."
     - |-
-      if [ -n "" ]; then
+      if [ "$[[ inputs.fetch_image_from_registry ]]" = "true" ]; then
+              echo "Scanning remote image from registry: $IMAGE_TAG"
+              devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+              devguard-scanner container-scanning \
+                --origin="$[[ inputs.devguard_origin ]]" \
+                --assetName="$[[ inputs.devguard_asset_name ]]" \
+                --apiUrl="$[[ inputs.devguard_api_url ]]" \
+                --token="$[[ inputs.devguard_token ]]" \
+                --image="$IMAGE_TAG" \
+                --defaultRef="$[[ inputs.default_ref ]]" \
+                --ref="$[[ inputs.commit_ref ]]" \
+                --isTag="$[[ inputs.is_tag ]]" \
+                --artifactName="$[[ inputs.devguard_artifact_name ]]" \
+                --webUI="$[[ inputs.devguard_web_ui ]]" \
+                --failOnRisk="$[[ inputs.fail_on_risk ]]" \
+                --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
+                --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
+                --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
+      elif [ -n "" ]; then
         echo "Scanning remote image: "
         devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
         devguard-scanner container-scanning \
@@ -408,9 +428,12 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.1@sha256:2966ade3c7d565ae56c48cfa50d5df6e36a5371f4173606eb4de57558186433d
     entrypoint:
       - ""
+  rules:
+    - if: $[[ inputs.small_artifact_registry ]] == "true"
+      when: never
   script: |
     /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
@@ -419,16 +442,21 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
 
     /crane push image.tar $IMAGE_TAG
 
-    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}"
+    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag$[[ inputs.job_suffix ]]
-    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+    - job: devguard:generate_tag$[[ inputs.job_suffix ]]
+      optional: false
+    - job: $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+      optional: false
+    - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
+      optional: true
   dependencies:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:push_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: fetch
