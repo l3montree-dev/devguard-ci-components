@@ -3,6 +3,7 @@ import { Inputs } from "./inputs";
 
 const JobInputs = defineInputs({
     job_suffix: Inputs.job_suffix,
+    stage: Inputs.stage,
 });
 
 export const SourceProvenanceTemplate = defineJob(JobInputs, (inputValues) => ({
@@ -16,6 +17,7 @@ export const SourceProvenanceTemplate = defineJob(JobInputs, (inputValues) => ({
             image: `$IMAGE_TAG`,
             needs: [`devguard:generate_tag${inputValues.job_suffix}`],
             dependencies: [`devguard:generate_tag${inputValues.job_suffix}`],
+            stage: inputValues.stage,
         },
         rules: [
             {

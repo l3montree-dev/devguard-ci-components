@@ -140,6 +140,7 @@ include:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
+      stage: attestation
     rules:
       - if: $CI_SERVER_FQDN == "gitlab.opencode.de"
 devguard:attest$[[ inputs.job_suffix ]]:
