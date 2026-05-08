@@ -117,9 +117,6 @@ spec:
     git_strategy:
       description: The Git strategy to use for the job
       default: none
-    image:
-      description: Container image to use for attestation
-      default: $CI_REGISTRY_IMAGE
     small_artifact_registry:
       default: "false"
       description: If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step.
@@ -400,7 +397,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   script: |
-    echo "Attesting artifacts for $[[ inputs.image ]]"
+    echo "Attesting artifacts for $IMAGE_TAG"
     echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
@@ -468,7 +465,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
         echo "Creating attestation for $FILE_PATH"
         devguard-scanner attest "$FILE_PATH" \
           --predicateType="$PREDICATE_TYPE" \
-          $[[ inputs.image ]] \
+          $IMAGE_TAG \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --token="$[[ inputs.devguard_token ]]" \
