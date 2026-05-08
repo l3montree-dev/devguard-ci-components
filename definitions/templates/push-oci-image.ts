@@ -65,6 +65,9 @@ export const PushOciImageTemplate = defineJob(PushOciImageJobInputs, (inputValue
                 if: `${inputValues.disable_job} == "true"`,
                 when: "never",
             },
+            {
+                when: "on_success",
+            }
         ],
         script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
