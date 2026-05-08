@@ -20,7 +20,7 @@ import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-base
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { ReleaseTemplate } from "./templates/release";
 import { Inputs } from "./templates/inputs";
-// import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
+import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 
 
 
@@ -135,7 +135,7 @@ const templates: CIComponentGroupTemplate = {
 
     // ── Orchestration templates ───────────────────────────────────────────────
     "full": [
-        // SourceProvenanceTemplate({}),
+        SourceProvenanceTemplate({}),
         AttestTemplate({ stage: AttestJobInputs.stage.default }),
         SecretScanningTemplate({ git_strategy: SecretScanningJobInputs.git_strategy.default }),
         StaticApplicationSecurityTestingTemplate({ git_strategy: SASTJobInputs.git_strategy.default }),
