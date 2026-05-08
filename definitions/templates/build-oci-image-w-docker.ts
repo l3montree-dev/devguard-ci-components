@@ -1,5 +1,6 @@
 import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 
 export const BuildOciImageWDockerJobInputs = defineInputs({
@@ -39,8 +40,6 @@ export const BuildOciImageWDockerJobInputs = defineInputs({
     supplyChainId: Inputs.supplyChainId,
 });
 
-const dockerImage = "registry.opencode.de/plain/oci/valkey/dockerkrane:latest@sha256:4fbbf08bcfa3f9911b093842f730c12902eb009e0716888174cc2cc7ecaaeee6";
-
 export const BuildOciImageWDockerTemplate = defineJob(BuildOciImageWDockerJobInputs, (inputValues) => ({
     name: `devguard:build_oci_image${inputValues.job_suffix}`,
     job: {
@@ -57,7 +56,7 @@ export const BuildOciImageWDockerTemplate = defineJob(BuildOciImageWDockerJobInp
         },
         services: [
             {
-                name: dockerImage,
+                name: ContainerImages.DOCKER_KRANE,
                 entrypoint: ["/bin/sh", "-c"],
                 command: [
                     `if [[ $(df -PT /var/lib/docker | awk 'NR==2 {print $2}') == virtiofs ]]; then\n  apk add e2fsprogs && \\\n  truncate -s 20G /tmp/disk.img && \\\n  mkfs.ext4 /tmp/disk.img && \\\n  mount /tmp/disk.img /var/lib/docker; fi && \\\n  dockerd-entrypoint.sh;`,
@@ -68,7 +67,7 @@ export const BuildOciImageWDockerTemplate = defineJob(BuildOciImageWDockerJobInp
             },
         ] as any,
         image: {
-            name: dockerImage,
+            name: ContainerImages.DOCKER_KRANE,
             pull_policy: inputValues.pull_policy as any,
             entrypoint: [""],
         },

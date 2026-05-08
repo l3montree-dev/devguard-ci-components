@@ -1,5 +1,6 @@
 import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 
 export const SbomUploadJobInputs = defineInputs({
@@ -47,7 +48,7 @@ export const SbomUploadTemplate = defineJob(SbomUploadJobInputs, (inputValues) =
             GIT_STRATEGY: inputValues.git_strategy,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
+            name: ContainerImages.DEVGUARD_SCANNER,
             pull_policy: inputValues.pull_policy as any,
         },
         script: [

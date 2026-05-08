@@ -1,5 +1,6 @@
 import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 
 export const GenerateTagJobInputs = defineInputs({
@@ -44,7 +45,7 @@ export const GenerateTagTemplate = defineJob(GenerateTagJobInputs, (inputValues)
             DEVGUARD_ARTIFACT_NAME: inputValues.devguard_artifact_name,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
+            name: ContainerImages.DEVGUARD_SCANNER,
             pull_policy: inputValues.pull_policy as any,
         },
         script: `echo "Running generate-tag job..."

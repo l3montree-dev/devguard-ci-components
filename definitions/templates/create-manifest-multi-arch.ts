@@ -1,5 +1,6 @@
 import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 
 export const CreateManifestMultiArchJobInputs = defineInputs({
@@ -19,7 +20,7 @@ export const CreateManifestMultiArchTemplate = defineJob(CreateManifestMultiArch
     name: `devguard:create_manifest_multi_arch${inputValues.job_suffix}`,
     job: {
         stage: inputValues.stage,
-        image: `docker:28.5.2@sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac`,
+        image: ContainerImages.DOCKER,
         needs: inputValues.needs as any,
         dependencies: inputValues.dependencies as any,
         before_script: [

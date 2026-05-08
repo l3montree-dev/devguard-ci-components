@@ -1,5 +1,6 @@
 import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 
 export const ReleaseJobInputs = defineInputs({
@@ -34,7 +35,7 @@ export const ReleaseTemplate = defineJob(ReleaseJobInputs, (inputValues) => ({
             GIT_STRATEGY: inputValues.git_strategy,
         },
         rules: inputValues.rules as any,
-        image: `registry.gitlab.com/gitlab-org/release-cli:latest`,
+        image: ContainerImages.GITLAB_RELEASE_CLI,
         script: [
             `echo "Creating release for tag $CI_COMMIT_TAG"`,
         ],

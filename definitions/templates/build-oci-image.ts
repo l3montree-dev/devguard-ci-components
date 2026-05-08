@@ -1,5 +1,6 @@
 import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 
 export const BuildOciImageJobInputs = defineInputs({
@@ -51,7 +52,7 @@ export const BuildOciImageTemplate = defineJob(BuildOciImageJobInputs, (inputVal
             GIT_STRATEGY: inputValues.git_strategy,
         },
         image: {
-            name: "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.1-devguard-scanner-v1.2.0-customized-busybox-jq@sha256:9bb25b0fa08af957b6b0071e24b930d3399e1e4a78dc88463f873f941191e9ce",
+            name: ContainerImages.KANIKO,
             pull_policy: inputValues.pull_policy as any,
             entrypoint: [""],
         },

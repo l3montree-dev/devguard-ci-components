@@ -1,5 +1,6 @@
 import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
+import { ContainerImages } from "../container-image-versions";
 
 export const SecretScanningJobInputs = defineInputs({
     devguard_api_url: Inputs.devguard_api_url,
@@ -40,7 +41,7 @@ export const SecretScanningTemplate = defineJob(SecretScanningJobInputs, (inputV
             GIT_STRATEGY: inputValues.git_strategy as any,
         },
         image: {
-            name: "ghcr.io/l3montree-dev/devguard/scanner:main",
+            name: ContainerImages.DEVGUARD_SCANNER,
             pull_policy: inputValues.pull_policy as any,
             entrypoint: [""],
         },
