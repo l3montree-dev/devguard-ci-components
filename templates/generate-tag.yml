@@ -63,17 +63,18 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]
     DEVGUARD_ARTIFACT_NAME: $[[ inputs.devguard_artifact_name ]]
+    ENV_FILENAME: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script: |
     echo "Running generate-tag job..."
-    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+    devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "$[[ inputs.image_variant ]]" --architecture "$[[ inputs.architecture ]]" --imagePath "$[[ inputs.image_path ]]" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "$[[ inputs.upstream_version ]]" >> ${ENV_FILENAME}
     echo "Tag generation completed. Generated tags:"
-    cat generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
-    echo 'Filename: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env'
+    cat ${ENV_FILENAME}
+    echo "Filename: ${ENV_FILENAME}"
   artifacts:
     reports:
-      dotenv: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+      dotenv: ${ENV_FILENAME}
     paths:
-      - generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
+      - ${ENV_FILENAME}

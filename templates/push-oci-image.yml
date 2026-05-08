@@ -89,6 +89,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   rules:
     - if: $[[ inputs.disable_job ]] == "true"
       when: never
+    - when: on_success
   script: |
     /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
