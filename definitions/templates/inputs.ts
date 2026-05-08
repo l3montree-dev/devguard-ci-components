@@ -71,7 +71,7 @@ export const Inputs = {
   needs: {
     description: "List of jobs this attestation depends on" as const,
     type: "array" as const,
-    default: [] as string[],
+    default: [] as string[] | { name: string; optional: boolean }[],
   },
   dependencies: {
     description: "List of jobs to download artifacts from" as const,
@@ -148,47 +148,63 @@ export const Inputs = {
 
   image_tag: {
     default: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" as const,
-    description: "The tag to use for the built image"
+    description: "The tag to use for the built image" as const,
   },
   image_tar_path: {
     default: "image.tar" as const,
-    description: "The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty."
+    description: "The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty." as const,
   },
   build_args: {
     default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile" as const,
-    description: "The build arguments to pass to the Kaniko build command"
+    description: "The build arguments to pass to the Kaniko build command" as const,
   },
   push_image: {
     default: "false" as const,
-    description: "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts."
+    description: "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts." as const,
   },
   supplyChainId: {
     default: "$CI_COMMIT_SHA" as const,
-    description: "The supply chain ID to use for the in-toto attestation"
+    description: "The supply chain ID to use for the in-toto attestation" as const,
   },
 
 
 
   image_suffix: {
     default: "default" as const,
-    description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix."
+    description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix." as const,
   },
   image_variant: {
     default: "" as const,
-    description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant."
+    description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant." as const,
   },
   architecture: {
     default: "amd64" as const,
-    description: "Target architecture (e.g., amd64 or arm64)"
+    description: "Target architecture (e.g., amd64 or arm64)" as const,
   },
   image_path: {
     default: "$CI_REGISTRY_IMAGE" as const,
-    description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs."
+    description: "Path to the built image (e.g., registry.example.com/project/image). If not provided, the job will attempt to discover the image from previous jobs." as const,
   },
   upstream_version: {
     default: "0" as const,
-    description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter."
+    description: "Upstream version to use for tag generation. If not provided, the job will ignore this parameter." as const,
   },
+
+  fetch_image_from_registry: {
+    default: "false" as const,
+    description: "If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact." as const,
+  },
+
+  small_artifact_registry: {
+        default: "false" as const,
+        description: "If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step." as const,
+  },
+
+  disable_job: {
+    default: "false" as const,
+    description: "Whether to disable the job. This is useful when you want to conditionally disable this job in orchestration templates." as const,
+  },
+
 
   /*
   Nix-specific inputs

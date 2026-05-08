@@ -38,6 +38,10 @@ export const BuildOciImageJobInputs = defineInputs({
     push_image: Inputs.push_image,
 
     supplyChainId: Inputs.supplyChainId,
+
+    default_ref: Inputs.default_ref,
+    ref: Inputs.commit_ref,
+    is_tag: Inputs.is_tag,
 });
 
 export const BuildOciImageTemplate = defineJob(BuildOciImageJobInputs, (inputValues) => ({
@@ -68,8 +72,8 @@ export const BuildOciImageTemplate = defineJob(BuildOciImageJobInputs, (inputVal
             `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
             `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
 
-            `echo "Running DevGuard Intoto Build...stopping..."
-/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance`
+            `echo "Running DevGuard Intoto Build...stopping..."`,
+            `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`
         ],
         artifacts: {
             paths: [

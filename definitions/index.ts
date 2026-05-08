@@ -20,16 +20,16 @@ import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-base
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { ReleaseTemplate } from "./templates/release";
 import { Inputs } from "./templates/inputs";
-import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
+// import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 
 
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: GenerateTagJobInputs.git_strategy.default });
-const fullBuildOciImage = BuildOciImageTemplate({ stage: "oci-image", git_strategy: BuildOciImageJobInputs.git_strategy.default, image: BuildOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name ], dependencies: [ fullGenerateTag.name ] });
+const fullBuildOciImage = BuildOciImageTemplate({ stage: "oci-image", git_strategy: BuildOciImageJobInputs.git_strategy.default, image: BuildOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name ], dependencies: [ fullGenerateTag.name ], push_image: "$[[ inputs.small_artifact_registry ]]" });
 const fullContrainerScannig = ContainerScanningTemplate({ stage: "oci-image", git_strategy: ContainerScanningJobInputs.git_strategy.default, image_tag: "", needs: [ fullGenerateTag.name, fullBuildOciImage.name ], dependencies: [ fullGenerateTag.name, fullBuildOciImage.name ] });
-const fullPushOCIImage = PushOciImageTemplate({ stage: "oci-image", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name ], dependencies: [ fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name ] });
-const fullSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: SignOciImageJobInputs.git_strategy.default, image: "$IMAGE_TAG",  needs: [ fullGenerateTag.name, fullPushOCIImage.name ], dependencies: [ fullGenerateTag.name, fullPushOCIImage.name ] })
+const fullPushOciImage = PushOciImageTemplate({ stage: "oci-image", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [ fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name ], dependencies: [ fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScannig.name ], disable_job: "$[[ inputs.small_artifact_registry ]]" });
+const fullSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: SignOciImageJobInputs.git_strategy.default, image: "$IMAGE_TAG",  needs: [ { job: fullGenerateTag.name, optional: false }, { job: fullBuildOciImage.name, optional: false }, { job: fullPushOciImage.name, optional: true } ], dependencies: [ fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name ] })
 
 // ── container-lifecycle ───────────────────────────────────────────────────────
 const clGenerateTag       = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
@@ -144,7 +144,7 @@ const templates: CIComponentGroupTemplate = {
         fullGenerateTag,
         fullBuildOciImage,
         fullContrainerScannig,
-        fullPushOCIImage,
+        fullPushOciImage,
         fullSignOciImage,
     ],
     /*
@@ -186,6 +186,7 @@ const header = `# Copyright 2025 l3montree GmbH.
 await ExportCIComponents(templates, header, {
     full: {
         devguard_artifact_name: Inputs.devguard_artifact_name,
+        small_artifact_registry: Inputs.small_artifact_registry,
     },
     "container-lifecycle-with-base-image-inspection": {
         devguard_artifact_name: Inputs.devguard_artifact_name,

@@ -44,6 +44,8 @@ export const ContainerScanningJobInputs = defineInputs({
         is_tag: Inputs.is_tag,
         ignore_external_references: Inputs.ignore_external_references,
         ignore_upstream_attestations: Inputs.ignore_upstream_attestations,
+
+        fetch_image_from_registry: Inputs.fetch_image_from_registry,
 });
 
 export const ContainerScanningTemplate = defineJob(ContainerScanningJobInputs, (inputValues) => ({
@@ -63,7 +65,25 @@ export const ContainerScanningTemplate = defineJob(ContainerScanningJobInputs, (
         },
         script: [
             `echo "Running DevGuard Container Scanning..."`,
-            `if [ -n "${inputValues.image_tag}" ]; then
+            `if [ "${inputValues.fetch_image_from_registry}" = "true" ]; then
+        echo "Scanning remote image from registry: $IMAGE_TAG"
+        devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+        devguard-scanner container-scanning \\
+          --origin="${inputValues.devguard_origin}" \\
+          --assetName="${inputValues.devguard_asset_name}" \\
+          --apiUrl="${inputValues.devguard_api_url}" \\
+          --token="${inputValues.devguard_token}" \\
+          --image="$IMAGE_TAG" \\
+          --defaultRef="${inputValues.default_ref}" \\
+          --ref="${inputValues.commit_ref}" \\
+          --isTag="${inputValues.is_tag}" \\
+          --artifactName="${inputValues.devguard_artifact_name}" \\
+          --webUI="${inputValues.devguard_web_ui}" \\
+          --failOnRisk="${inputValues.fail_on_risk}" \\
+          --failOnCVSS="${inputValues.fail_on_cvss}" \\
+          --ignoreExternalReferences=${inputValues.ignore_external_references} \\
+          --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations}
+elif [ -n "${inputValues.image_tag}" ]; then
   echo "Scanning remote image: ${inputValues.image_tag}"
   devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
   devguard-scanner container-scanning \\

@@ -37,6 +37,12 @@ export const PushOciImageJobInputs = defineInputs({
         },
 
         supplyChainId: Inputs.supplyChainId,
+
+        default_ref: Inputs.default_ref,
+        ref: Inputs.commit_ref,
+        is_tag: Inputs.is_tag,
+
+        disable_job: Inputs.disable_job,
 });
 
 export const PushOciImageTemplate = defineJob(PushOciImageJobInputs, (inputValues) => ({
@@ -54,6 +60,12 @@ export const PushOciImageTemplate = defineJob(PushOciImageJobInputs, (inputValue
             name: ContainerImages.KANIKO,
             entrypoint: [""],
         },
+        rules: [
+            {
+                if: `${inputValues.disable_job} == "true"`,
+                when: "never",
+            },
+        ],
         script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 echo "Image: ${inputValues.image}"
@@ -61,7 +73,7 @@ echo "Image Tag: ${inputValues.image_tag}"
 
 /crane push ${inputValues.image} ${inputValues.image_tag}
 
-/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}"
+/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"
 ` as any,
     }
 }));
