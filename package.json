@@ -14,6 +14,9 @@
     "url": "git@gitlab.opencode.de:l3montree/devguard-ci-components.git"
   },
   "dependencies": {
+    "@l3montree/programmatic-ci-components": "git+https://gitlab.opencode.de/l3montree/programmatic-ci-components.git#main"
+  },
+  "use-the-following-for-local-debugging": {
     "@l3montree/programmatic-ci-components": "file:../programmatic-ci-components"
   },
   "devDependencies": {
