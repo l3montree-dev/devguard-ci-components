@@ -32,7 +32,9 @@ const fullPushOciImage = PushOciImageTemplate({ stage: "oci-image", image: PushO
 const fullSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: SignOciImageJobInputs.git_strategy.default, image: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name] })
 const fullSourceProvenanceAttestation = SourceProvenanceTemplate({ stage: AttestJobInputs.stage.default });
 const fullAttest = AttestTemplate({
-    stage: AttestJobInputs.stage.default, needs: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: fullSourceProvenanceAttestation.name, optional: true }], dependencies: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name], attestations: [
+    stage: AttestJobInputs.stage.default, needs: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: "source-provenance-artifacts", optional: true }], 
+    dependencies: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name], 
+    attestations: [
         {
             "source": "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
             "predicate_type": "https://cyclonedx.org/bom",

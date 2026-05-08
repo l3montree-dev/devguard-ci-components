@@ -391,7 +391,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - devguard:sign_oci_image$[[ inputs.job_suffix ]]
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
-    - job: source-provenance-attestation
+    - job: source-provenance-artifacts
       optional: true
   dependencies:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
