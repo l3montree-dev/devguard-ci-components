@@ -1,6 +1,6 @@
-import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
 import { Inputs } from "./inputs"
 import { ContainerImages } from "../container-image-versions";
+import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
 
 export const AttestJobInputs = defineInputs({
 devguard_api_url: Inputs.devguard_api_url,

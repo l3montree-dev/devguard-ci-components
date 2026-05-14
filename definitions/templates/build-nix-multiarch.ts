@@ -1,4 +1,4 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components"
+import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
 import { Inputs } from "./inputs"
 
 export const BuildNixMultiArchJobInputs = defineInputs({

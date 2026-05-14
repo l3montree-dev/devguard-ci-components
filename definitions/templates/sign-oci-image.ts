@@ -1,4 +1,4 @@
-import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
+import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
 import { Inputs } from "./inputs"
 import { ContainerImages } from "../container-image-versions";
 

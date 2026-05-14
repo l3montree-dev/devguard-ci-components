@@ -1,4 +1,3 @@
-import { ExportCIComponents, CIComponentGroupTemplate } from "@l3montree/programmatic-ci-components";
 import { AttestJobInputs, AttestTemplate } from "./templates/attest";
 import { SecretScanningJobInputs, SecretScanningTemplate } from "./templates/secret-scanning";
 import { SASTJobInputs, StaticApplicationSecurityTestingTemplate } from "./templates/static-application-security-testing";
@@ -21,6 +20,8 @@ import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-dock
 import { ReleaseTemplate } from "./templates/release";
 import { Inputs } from "./templates/inputs";
 import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
+import { CIComponentGroupTemplate } from "./lib/types";
+import { ExportCIComponents } from "./lib/utils";
 
 
 

@@ -1,4 +1,5 @@
-import { defineInputs, defineJob, IncludeWithSpec } from "@l3montree/programmatic-ci-components";
+import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
+import { IncludeWithSpec } from "../lib/types";
 import { Inputs } from "./inputs";
 
 const JobInputs = defineInputs({
