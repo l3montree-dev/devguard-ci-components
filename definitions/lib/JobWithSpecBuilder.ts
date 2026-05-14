@@ -3,10 +3,18 @@ import { JobWithSpec } from "./types";
 
 export type ArrayInputItem = string | unknown[];
 
+export const unresolvedInput = (varName: string): string =>
+  `$[[ inputs.${varName} ]]`;
+
+export const resolveInputValue = <T>(
+  varName: string,
+  value: T | undefined,
+): T | string => value ?? unresolvedInput(varName);
+
 const input = <T extends string>(
   varName: T,
   data: { [key: string]: ArrayInputItem | undefined },
-) => data[varName] ?? `$[[ inputs.${varName} ]]`;
+) => resolveInputValue(varName, data[varName]);
 
 export type InputDefinitions = { [key: string]: ConfigInputs[string] };
 export type InputValues<TInputDefinitions extends InputDefinitions> = {

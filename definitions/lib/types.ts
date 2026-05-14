@@ -1,7 +1,11 @@
 import { ConfigInputs, IncludeItem, JobTemplate } from "./ci";
+import { WorkflowJob } from "./workflow-job";
 
 // Allow GitLab CI input placeholders ($[[ inputs.xxx ]]) for any field value
-export type JobTemplateLike = { [K in keyof JobTemplate]?: unknown };
+// OR allow new WorkflowJob instances with transformation methods
+export type JobTemplateLike =
+  | { [K in keyof JobTemplate]?: unknown }
+  | WorkflowJob;
 
 export type JobWithSpec = EntryWithSpec & {
   job: JobTemplateLike;

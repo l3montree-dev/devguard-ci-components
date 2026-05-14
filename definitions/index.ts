@@ -29,6 +29,10 @@ import {
   SecretScanningTemplate,
 } from "./templates/secret-scanning";
 import {
+  SecretScanningJobInputsPoc,
+  SecretScanningTemplatePoc,
+} from "./templates/secret-scanning-poc";
+import {
   SignOciImageJobInputs,
   SignOciImageTemplate,
 } from "./templates/sign-oci-image";
@@ -404,6 +408,7 @@ const templates: CIComponentGroupTemplate = {
     */
   attest: [AttestTemplate({})],
   "secret-scanning": [SecretScanningTemplate({})],
+  "secret-scanning-poc": [SecretScanningTemplatePoc({})],
   "static-application-security-testing": [
     StaticApplicationSecurityTestingTemplate({}),
   ],
