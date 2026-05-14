@@ -1,20 +1,23 @@
 import { ConfigInputs, IncludeItem, JobTemplate } from "./ci";
 
+// Allow GitLab CI input placeholders ($[[ inputs.xxx ]]) for any field value
+export type JobTemplateLike = { [K in keyof JobTemplate]?: unknown };
+
 export type JobWithSpec = EntryWithSpec & {
-    job: JobTemplate,
-    secrets?: string[],
-}
+  job: JobTemplateLike;
+  secrets?: string[];
+};
 
 export type IncludeWithSpec = EntryWithSpec & {
-    include: IncludeItem;
+  include: IncludeItem;
 };
 
 export type EntryWithSpec = {
-    name: string;
-    inputs: ConfigInputs;
-    platforms?: ('gitlab' | 'github')[]
-}
+  name: string;
+  inputs: ConfigInputs;
+  platforms?: ("gitlab" | "github")[];
+};
 
 export type CIComponentGroupTemplate = {
-    [key: string]: (JobWithSpec | IncludeWithSpec)[];
-}
+  [key: string]: (JobWithSpec | IncludeWithSpec)[];
+};

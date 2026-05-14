@@ -27,7 +27,9 @@ export type Services = (
          */
         user?: string | number;
       };
-      pull_policy?: ("always" | "never" | "if-not-present") | ("always" | "never" | "if-not-present")[];
+      pull_policy?:
+        | ("always" | "never" | "if-not-present")
+        | ("always" | "never" | "if-not-present")[];
       command?: string | (string | string[])[];
       alias?: string;
       variables?: JobVariables;
@@ -274,7 +276,9 @@ export type Image =
          */
         user?: string | number;
       };
-      pull_policy?: ("always" | "never" | "if-not-present") | ("always" | "never" | "if-not-present")[];
+      pull_policy?:
+        | ("always" | "never" | "if-not-present")
+        | ("always" | "never" | "if-not-present")[];
     };
 export type Interruptible = boolean;
 export type Identity = "google_cloud";
@@ -330,7 +334,9 @@ export type Services1 = (
          */
         user?: string | number;
       };
-      pull_policy?: ("always" | "never" | "if-not-present") | ("always" | "never" | "if-not-present")[];
+      pull_policy?:
+        | ("always" | "never" | "if-not-present")
+        | ("always" | "never" | "if-not-present")[];
       command?: string | (string | string[])[];
       alias?: string;
       variables?: JobVariables;
@@ -833,7 +839,13 @@ export type Rules =
       | string[]
     )[]
   | null;
-export type When = "on_success" | "on_failure" | "always" | "never" | "manual" | "delayed";
+export type When =
+  | "on_success"
+  | "on_failure"
+  | "always"
+  | "never"
+  | "manual"
+  | "delayed";
 export type StartIn = string;
 export type AllowFailure =
   | boolean
@@ -900,7 +912,17 @@ export type Steps = Step[];
  * Filter job by different keywords that determine origin or state, or by supplying string/regex to check against branch/tag names.
  */
 export type FilterRefs = (
-  | ("branches" | "tags" | "api" | "external" | "pipelines" | "pushes" | "schedules" | "triggers" | "web")
+  | (
+      | "branches"
+      | "tags"
+      | "api"
+      | "external"
+      | "pipelines"
+      | "pushes"
+      | "schedules"
+      | "triggers"
+      | "web"
+    )
   | string
 )[];
 /**
@@ -977,7 +999,9 @@ export interface GitLabCI {
            */
           user?: string | number;
         };
-        pull_policy?: ("always" | "never" | "if-not-present") | ("always" | "never" | "if-not-present")[];
+        pull_policy?:
+          | ("always" | "never" | "if-not-present")
+          | ("always" | "never" | "if-not-present")[];
       };
   services?: Services;
   before_script?: string | (string | string[])[];
@@ -1010,9 +1034,9 @@ export interface GitLabCI {
   workflow?: {
     name?: WorkflowName;
     auto_cancel?: WorkflowAutoCancel;
-    rules?: ({} | string[])[];
+    rules?: (object | string[])[];
   };
-  jobs: Record<string, Job>
+  jobs: Record<string, Job>;
 }
 export interface ConfigInputs {
   /**
@@ -1021,7 +1045,7 @@ export interface ConfigInputs {
    */
   [k: string]:
     | (BaseInput & {
-        rules?: {}[];
+        rules?: object[];
       } & {
         [k: string]: unknown;
       })
@@ -1032,9 +1056,16 @@ export interface BaseInput {
   description?: string;
   options?: (string | number | boolean)[];
   regex?: string;
-  default?: {
-    [k: string]: unknown;
-  } | string | string[] | number | boolean | null | any
+  default?:
+    | {
+        [k: string]: unknown;
+      }
+    | string
+    | string[]
+    | number
+    | boolean
+    | null
+    | any;
 }
 export interface JobVariables {
   /**
@@ -1185,7 +1216,7 @@ export interface StepNamedValues {
    * This interface was referenced by `StepNamedValues`'s JSON-Schema definition
    * via the `patternProperty` "^[a-zA-Z_][a-zA-Z0-9_]*$".
    */
-  [k: string]: string | number | boolean | null | unknown[] | {};
+  [k: string]: string | number | boolean | null | unknown[] | object;
 }
 /**
  * GitReference is a reference to a step in a Git repository.
