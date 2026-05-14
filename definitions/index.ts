@@ -52,6 +52,10 @@ import { SarifUploadTemplate } from "./templates/sarif-upload";
 import { SbomUploadTemplate } from "./templates/sbom-upload";
 import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 import { VexUploadTemplate } from "./templates/vex-upload";
+import {
+  BuildNixMultiArchBuildImageTemplate,
+  BuildNixMultiArchCreateManifestTemplate,
+} from "./templates/build-nix-multiarch";
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({
@@ -442,34 +446,52 @@ const templates: CIComponentGroupTemplate = {
     fullSignOciImage,
     fullAttest,
   ],
-  /*
-    "container-lifecycle": [
-        clGenerateTag, clBuildOciImage, clContainerScanning, clPushOciImage, clSignOciImage, clAttest,
-    ],
-    "container-lifecycle-nix": [
-        clnExtractScanner, clnGenerateTag, clnBuildOciImage, clnContainerScanning, clnPushOciImage, clnSignOciImage, clnAttest,
-    ],
-    "push-and-attest": [
-        paGenerateTag, paPushOciImage, paSignOciImage, paAttest,
-    ],
-    "container-scanning-and-attest": [
-        csaGenerateTag, csaContainerScanning, csaPushOciImage, csaSignOciImage, csaAttest,
-    ],
-    "container-lifecycle-with-base-image-inspection": [
-        clbiDiscoverAttestations,
-        clbiGenerateTag, clbiBuildOciImage, clbiContainerScanning, clbiPushOciImage, clbiSignOciImage, clbiAttest,
-        clbiSbomUpload, clbiVexUpload,
-    ],
-    "build-nix": [
-        BuildNixExtractScannerTemplate({}),
-        BuildNixGenerateTagTemplate({}),
-        BuildNixTemplate({}),
-    ],
-    "build-nix-multiarch": [
-        BuildNixMultiArchBuildImageTemplate({}),
-        BuildNixMultiArchCreateManifestTemplate({}),
-    ],
-    */
+
+  "container-lifecycle": [
+    clGenerateTag,
+    clBuildOciImage,
+    clContainerScanning,
+    clPushOciImage,
+    clSignOciImage,
+    clAttest,
+  ],
+  "container-lifecycle-nix": [
+    clnExtractScanner,
+    clnGenerateTag,
+    clnBuildOciImage,
+    clnContainerScanning,
+    clnPushOciImage,
+    clnSignOciImage,
+    clnAttest,
+  ],
+  "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
+  "container-scanning-and-attest": [
+    csaGenerateTag,
+    csaContainerScanning,
+    csaPushOciImage,
+    csaSignOciImage,
+    csaAttest,
+  ],
+  "container-lifecycle-with-base-image-inspection": [
+    clbiDiscoverAttestations,
+    clbiGenerateTag,
+    clbiBuildOciImage,
+    clbiContainerScanning,
+    clbiPushOciImage,
+    clbiSignOciImage,
+    clbiAttest,
+    clbiSbomUpload,
+    clbiVexUpload,
+  ],
+  "build-nix": [
+    BuildNixExtractScannerTemplate({}),
+    BuildNixGenerateTagTemplate({}),
+    BuildNixTemplate({}),
+  ],
+  "build-nix-multiarch": [
+    BuildNixMultiArchBuildImageTemplate({}),
+    BuildNixMultiArchCreateManifestTemplate({}),
+  ],
 };
 
 const header = `# Copyright 2025 l3montree GmbH.
