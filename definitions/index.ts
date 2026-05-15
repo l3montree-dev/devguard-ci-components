@@ -58,6 +58,7 @@ import {
   BuildNixMultiArchCreateManifestTemplate,
 } from "./templates/build-nix-multiarch";
 import { CIComponentGroupTemplate, ExportCIComponents } from "@l3montree/programmatic-ci-components";
+import { SecretScanningTemplateGitHub, SecretScanningTemplateGitLab } from "./templates/secret-scanning-multi";
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({
@@ -400,6 +401,8 @@ const clbiVexUpload = VexUploadTemplate({
 const templates: CIComponentGroupTemplate = {
   "secret-scanning": [SecretScanningTemplate({})],
   "secret-scanning-poc": [SecretScanningTemplatePoc({})],
+  "secret-scanning-gitlab": [SecretScanningTemplateGitLab({})],
+  "secret-scanning-github": [SecretScanningTemplateGitHub({})],
 
   // ── Individual job templates ──────────────────────────────────────────────
   /*

@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SarifUploadJobInputs = defineInputs({
+export const SarifUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -27,7 +27,7 @@ export const SarifUploadJobInputs = defineInputs({
   sarif_file: Inputs.sarif_file,
 });
 
-export const SarifUploadTemplate = defineJob(
+export const SarifUploadTemplate = defineJobGitLab(
   SarifUploadJobInputs,
   (inputValues) => ({
     name: `devguard:sarif_upload${inputValues.job_suffix}`,

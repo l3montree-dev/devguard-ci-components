@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SCAJobInputs = defineInputs({
+export const SCAJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -38,7 +38,7 @@ export const SCAJobInputs = defineInputs({
   ignore_external_references: Inputs.ignore_external_references,
 });
 
-export const SoftwareCompositionAnalysisTemplate = defineJob(
+export const SoftwareCompositionAnalysisTemplate = defineJobGitLab(
   SCAJobInputs,
   (inputValues) => ({
     name: `devguard:software_composition_analysis${inputValues.job_suffix}`,

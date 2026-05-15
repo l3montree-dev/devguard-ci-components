@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const VexUploadJobInputs = defineInputs({
+export const VexUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -32,7 +32,7 @@ export const VexUploadJobInputs = defineInputs({
   vex_file: Inputs.vex_file,
 });
 
-export const VexUploadTemplate = defineJob(
+export const VexUploadTemplate = defineJobGitLab(
   VexUploadJobInputs,
   (inputValues) => ({
     name: `devguard:vex_upload${inputValues.job_suffix}`,

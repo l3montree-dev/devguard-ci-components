@@ -1,12 +1,12 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
-export const BuildNixExtractScannerJobInputs = defineInputs({
+export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
 });
 
-export const BuildNixExtractScannerTemplate = defineJob(
+export const BuildNixExtractScannerTemplate = defineJobGitLab(
   BuildNixExtractScannerJobInputs,
   (inputValues) => ({
     name: `devguard:extract_scanner${inputValues.job_suffix}`,
@@ -25,7 +25,7 @@ export const BuildNixExtractScannerTemplate = defineJob(
 );
 
 // Job 2: generate image tag (Nix variant - uses scanner:main directly)
-export const BuildNixGenerateTagJobInputs = defineInputs({
+export const BuildNixGenerateTagJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
@@ -48,7 +48,7 @@ export const BuildNixGenerateTagJobInputs = defineInputs({
   upstream_version: Inputs.upstream_version,
 });
 
-export const BuildNixGenerateTagTemplate = defineJob(
+export const BuildNixGenerateTagTemplate = defineJobGitLab(
   BuildNixGenerateTagJobInputs,
   (inputValues) => ({
     name: `devguard:generate_tag${inputValues.job_suffix}`,
@@ -84,7 +84,7 @@ export const BuildNixGenerateTagTemplate = defineJob(
 );
 
 // Job 3: build OCI image using Nix (dockerTools.buildLayeredImage)
-export const BuildNixJobInputs = defineInputs({
+export const BuildNixJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -110,7 +110,7 @@ export const BuildNixJobInputs = defineInputs({
   nix_cache_region: Inputs.nix_cache_region,
 });
 
-export const BuildNixTemplate = defineJob(BuildNixJobInputs, (inputValues) => ({
+export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues) => ({
   name: `devguard:build_oci_image${inputValues.job_suffix}`,
   job: {
     tags: inputValues.runner_tags,

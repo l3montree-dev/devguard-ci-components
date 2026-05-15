@@ -1,12 +1,12 @@
-import { defineInputs, defineJob, IncludeWithSpec } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab, IncludeWithSpec } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 
-const JobInputs = defineInputs({
+const JobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
   stage: Inputs.stage,
 });
 
-export const SourceProvenanceTemplate = defineJob(
+export const SourceProvenanceTemplate = defineJobGitLab(
   JobInputs,
   (inputValues) =>
     ({

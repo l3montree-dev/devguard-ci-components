@@ -7,15 +7,15 @@
 
 import {
   BaseWorkflowJob,
-  defineInputs,
-  InputValues,
-  JobWithSpec,
+  defineInputsGitLab,
+  GitLabJobWithSpec,
+  InputValuesGitLab,
   resolveInputValue,
 } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SecretScanningJobInputsPoc = defineInputs({
+export const SecretScanningJobInputsPoc = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -42,7 +42,7 @@ export const SecretScanningJobInputsPoc = defineInputs({
   is_tag: Inputs.is_tag,
 });
 
-type SecretScanningInputValues = InputValues<typeof SecretScanningJobInputsPoc>;
+type SecretScanningInputValues = InputValuesGitLab<typeof SecretScanningJobInputsPoc>;
 
 const resolveInput = <T extends keyof SecretScanningInputValues>(
   inputValues: Partial<SecretScanningInputValues>,
@@ -58,10 +58,10 @@ export class SecretScanningJob extends BaseWorkflowJob {
   constructor(inputValues: Partial<SecretScanningInputValues> = {}) {
     const jobSuffix = String(resolveInput(inputValues, "job_suffix"));
     const runnerTags = Array.isArray(inputValues.runner_tags)
-      ? (inputValues.runner_tags as string[])
+      ? (inputValues.runner_tags as any)
       : undefined;
     const needs = Array.isArray(inputValues.needs)
-      ? (inputValues.needs as (string | { job: string; optional?: boolean })[])
+      ? (inputValues.needs as any)
       : undefined;
     const allowFailure =
       inputValues.allow_failure === undefined
@@ -93,7 +93,7 @@ export class SecretScanningJob extends BaseWorkflowJob {
 
 export const SecretScanningTemplatePoc = (
   inputValues: Partial<SecretScanningInputValues> = {},
-): JobWithSpec => ({
+): GitLabJobWithSpec => ({
   name: `devguard:secret_scanning${String(resolveInput(inputValues, "job_suffix"))}`,
   inputs: SecretScanningJobInputsPoc,
   job: new SecretScanningJob(inputValues),

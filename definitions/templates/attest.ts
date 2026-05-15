@@ -1,8 +1,8 @@
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 
-export const AttestJobInputs = defineInputs({
+export const AttestJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -30,7 +30,7 @@ export const AttestJobInputs = defineInputs({
   image: Inputs.image,
 });
 
-export const AttestTemplate = defineJob(AttestJobInputs, (inputValues) => ({
+export const AttestTemplate = defineJobGitLab(AttestJobInputs, (inputValues) => ({
   name: `devguard:attest${inputValues.job_suffix}`,
   job: {
     image: {

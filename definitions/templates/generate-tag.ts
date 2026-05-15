@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const GenerateTagJobInputs = defineInputs({
+export const GenerateTagJobInputs = defineInputsGitLab({
   devguard_artifact_name: {
     ...Inputs.devguard_artifact_name,
     description:
@@ -31,7 +31,7 @@ export const GenerateTagJobInputs = defineInputs({
   upstream_version: Inputs.upstream_version,
 });
 
-export const GenerateTagTemplate = defineJob(
+export const GenerateTagTemplate = defineJobGitLab(
   GenerateTagJobInputs,
   (inputValues) => ({
     name: `devguard:generate_tag${inputValues.job_suffix}`,

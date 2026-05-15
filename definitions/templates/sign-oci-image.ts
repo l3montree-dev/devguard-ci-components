@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SignOciImageJobInputs = defineInputs({
+export const SignOciImageJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -37,7 +37,7 @@ export const SignOciImageJobInputs = defineInputs({
   },
 });
 
-export const SignOciImageTemplate = defineJob(
+export const SignOciImageTemplate = defineJobGitLab(
   SignOciImageJobInputs,
   (inputValues) => ({
     name: `devguard:sign_oci_image${inputValues.job_suffix}`,

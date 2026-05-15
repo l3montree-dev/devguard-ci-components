@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const PushOciImageJobInputs = defineInputs({
+export const PushOciImageJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -46,7 +46,7 @@ export const PushOciImageJobInputs = defineInputs({
   disable_job: Inputs.disable_job,
 });
 
-export const PushOciImageTemplate = defineJob(
+export const PushOciImageTemplate = defineJobGitLab(
   PushOciImageJobInputs,
   (inputValues) => ({
     name: `devguard:push_oci_image${inputValues.job_suffix}`,
