@@ -1,234 +1,518 @@
-import { ExportCIComponents, CIComponentGroupTemplate } from "@l3montree/programmatic-ci-components";
 import { AttestJobInputs, AttestTemplate } from "./templates/attest";
-import { SecretScanningJobInputs, SecretScanningTemplate } from "./templates/secret-scanning";
-import { SASTJobInputs, StaticApplicationSecurityTestingTemplate } from "./templates/static-application-security-testing";
-import * as fs from "node:fs";
-import { IaCJobInputs, InfrastructureAsCodeScanningTemplate } from "./templates/infrastructure-as-code-scanning";
-import { SCAJobInputs, SoftwareCompositionAnalysisTemplate } from "./templates/software-composition-analysis";
-import { GenerateTagJobInputs, GenerateTagTemplate } from "./templates/generate-tag";
-import { BuildOciImageJobInputs, BuildOciImageTemplate } from "./templates/build-oci-image";
-import { ContainerScanningJobInputs, ContainerScanningTemplate } from "./templates/container-scanning";
-import { PushOciImageJobInputs, PushOciImageTemplate } from "./templates/push-oci-image";
-import { SignOciImageJobInputs, SignOciImageTemplate } from "./templates/sign-oci-image";
-import { BuildNixExtractScannerTemplate, BuildNixGenerateTagTemplate, BuildNixTemplate } from "./templates/build-nix";
+import {
+  BuildNixExtractScannerTemplate,
+  BuildNixGenerateTagTemplate,
+  BuildNixTemplate,
+} from "./templates/build-nix";
+import {
+  BuildOciImageJobInputs,
+  BuildOciImageTemplate,
+} from "./templates/build-oci-image";
+import {
+  ContainerScanningJobInputs,
+  ContainerScanningTemplate,
+} from "./templates/container-scanning";
+import {
+  GenerateTagJobInputs,
+  GenerateTagTemplate,
+} from "./templates/generate-tag";
+import {
+  IaCJobInputs,
+  InfrastructureAsCodeScanningTemplate,
+} from "./templates/infrastructure-as-code-scanning";
+import {
+  PushOciImageJobInputs,
+  PushOciImageTemplate,
+} from "./templates/push-oci-image";
+import {
+  SecretScanningJobInputs,
+  SecretScanningTemplate,
+} from "./templates/secret-scanning";
+import {
+  SecretScanningJobInputsPoc,
+  SecretScanningTemplatePoc,
+} from "./templates/secret-scanning-poc";
+import {
+  SignOciImageJobInputs,
+  SignOciImageTemplate,
+} from "./templates/sign-oci-image";
+import {
+  SCAJobInputs,
+  SoftwareCompositionAnalysisTemplate,
+} from "./templates/software-composition-analysis";
+import {
+  SASTJobInputs,
+  StaticApplicationSecurityTestingTemplate,
+} from "./templates/static-application-security-testing";
 // import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
+import { CIComponentGroupTemplate } from "./lib/types";
+import { ExportCIComponents } from "./lib/utils";
+import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
+import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
+import { Inputs } from "./templates/inputs";
+import { ReleaseTemplate } from "./templates/release";
 import { SarifUploadTemplate } from "./templates/sarif-upload";
 import { SbomUploadTemplate } from "./templates/sbom-upload";
-import { VexUploadTemplate } from "./templates/vex-upload";
-import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
-import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
-import { ReleaseTemplate } from "./templates/release";
-import { Inputs } from "./templates/inputs";
 import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
-
-
+import { VexUploadTemplate } from "./templates/vex-upload";
+import {
+  BuildNixMultiArchBuildImageTemplate,
+  BuildNixMultiArchCreateManifestTemplate,
+} from "./templates/build-nix-multiarch";
 
 // ── full ──────────────────────────────────────────────────────────────────────
-const fullGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: GenerateTagJobInputs.git_strategy.default });
-const fullBuildOciImage = BuildOciImageTemplate({ stage: "oci-image", git_strategy: BuildOciImageJobInputs.git_strategy.default, image: BuildOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [fullGenerateTag.name], dependencies: [fullGenerateTag.name], push_image: "$[[ inputs.small_artifact_registry ]]" });
-const fullContrainerScanning = ContainerScanningTemplate({ stage: "oci-image", git_strategy: ContainerScanningJobInputs.git_strategy.default, image_tag: "", devguard_artifact_name: "$ARTIFACT_NAME", needs: [fullGenerateTag.name, fullBuildOciImage.name], dependencies: [fullGenerateTag.name, fullBuildOciImage.name] });
-const fullPushOciImage = PushOciImageTemplate({ stage: "oci-image", image: PushOciImageJobInputs.image.default, image_tag: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScanning.name], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScanning.name], disable_job: "$[[ inputs.small_artifact_registry ]]" });
-const fullSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: SignOciImageJobInputs.git_strategy.default, image: "$IMAGE_TAG", needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }], dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name] })
-const fullSourceProvenanceAttestation = SourceProvenanceTemplate({ stage: AttestJobInputs.stage.default });
+const fullGenerateTag = GenerateTagTemplate({
+  stage: "oci-image",
+  git_strategy: GenerateTagJobInputs.git_strategy.default,
+});
+const fullBuildOciImage = BuildOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: BuildOciImageJobInputs.git_strategy.default,
+  image: BuildOciImageJobInputs.image.default,
+  image_tag: "$IMAGE_TAG",
+  needs: [fullGenerateTag.name],
+  dependencies: [fullGenerateTag.name],
+  push_image: "$[[ inputs.small_artifact_registry ]]",
+});
+const fullContrainerScanning = ContainerScanningTemplate({
+  stage: "oci-image",
+  git_strategy: ContainerScanningJobInputs.git_strategy.default,
+  image_tag: "",
+  devguard_artifact_name: "$ARTIFACT_NAME",
+  needs: [fullGenerateTag.name, fullBuildOciImage.name],
+  dependencies: [fullGenerateTag.name, fullBuildOciImage.name],
+});
+const fullPushOciImage = PushOciImageTemplate({
+  stage: "oci-image",
+  image: PushOciImageJobInputs.image.default,
+  image_tag: "$IMAGE_TAG",
+  needs: [
+    fullGenerateTag.name,
+    fullBuildOciImage.name,
+    fullContrainerScanning.name,
+  ],
+  dependencies: [
+    fullGenerateTag.name,
+    fullBuildOciImage.name,
+    fullContrainerScanning.name,
+  ],
+  disable_job: "$[[ inputs.small_artifact_registry ]]",
+});
+const fullSignOciImage = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: SignOciImageJobInputs.git_strategy.default,
+  image: "$IMAGE_TAG",
+  needs: [
+    fullGenerateTag.name,
+    fullBuildOciImage.name,
+    { job: fullPushOciImage.name, optional: true },
+  ],
+  dependencies: [
+    fullGenerateTag.name,
+    fullBuildOciImage.name,
+    fullPushOciImage.name,
+  ],
+});
+const fullSourceProvenanceAttestation = SourceProvenanceTemplate({
+  stage: AttestJobInputs.stage.default,
+});
 const fullAttest = AttestTemplate({
-    stage: AttestJobInputs.stage.default,
-    devguard_artifact_name: "$ARTIFACT_NAME",
-    image: "$IMAGE_TAG",
-    needs: [fullGenerateTag.name, fullSignOciImage.name, fullBuildOciImage.name, { job: "source-provenance-artifacts", optional: true }],
-    attestations: [
-        {
-            "source": "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
-            "predicate_type": "https://cyclonedx.org/bom",
-        },
-        {
-            "source": "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/",
-            "predicate_type": "https://cyclonedx.org/vex"
-        },
-        {
-            "source": "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
-            "predicate_type": "https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-        },
-        {
-            "source": "build.provenance.json",
-            "predicate_type": "https://slsa.dev/provenance/v1"
-        },
-        {
-            "source": "artifacts/attestation-report.json",
-            "predicate_type": "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"
-        }
-    ] as any
+  stage: AttestJobInputs.stage.default,
+  devguard_artifact_name: "$ARTIFACT_NAME",
+  image: "$IMAGE_TAG",
+  needs: [
+    fullGenerateTag.name,
+    fullSignOciImage.name,
+    fullBuildOciImage.name,
+    { job: "source-provenance-artifacts", optional: true },
+  ],
+  attestations: [
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
+      predicate_type: "https://cyclonedx.org/bom",
+    },
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/",
+      predicate_type: "https://cyclonedx.org/vex",
+    },
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
+      predicate_type:
+        "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
+    },
+    {
+      source: "build.provenance.json",
+      predicate_type: "https://slsa.dev/provenance/v1",
+    },
+    {
+      source: "artifacts/attestation-report.json",
+      predicate_type:
+        "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json",
+    },
+  ],
 });
 
 // ── container-lifecycle ───────────────────────────────────────────────────────
-const clGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
-const clBuildOciImage = BuildOciImageTemplate({ stage: "oci-image", git_strategy: "fetch", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [clGenerateTag.name], dependencies: [clGenerateTag.name] });
-const clContainerScanning = ContainerScanningTemplate({ stage: "oci-image", git_strategy: "fetch", image_tar_path: "image.tar", needs: [clBuildOciImage.name], dependencies: [clBuildOciImage.name] });
-const clPushOciImage = PushOciImageTemplate({ stage: "oci-image", git_strategy: "none", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [clContainerScanning.name], dependencies: [clContainerScanning.name] });
-const clSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: "none", image: "$IMAGE_TAG", needs: [clGenerateTag.name, clPushOciImage.name], dependencies: [clGenerateTag.name, clPushOciImage.name] });
-const clAttest = AttestTemplate({ stage: "attestation", git_strategy: "none", needs: [clGenerateTag.name, clPushOciImage.name, clBuildOciImage.name, clContainerScanning.name] });
+const clGenerateTag = GenerateTagTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+});
+const clBuildOciImage = BuildOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [clGenerateTag.name],
+  dependencies: [clGenerateTag.name],
+});
+const clContainerScanning = ContainerScanningTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+  image_tar_path: "image.tar",
+  needs: [clBuildOciImage.name],
+  dependencies: [clBuildOciImage.name],
+});
+const clPushOciImage = PushOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "none",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [clContainerScanning.name],
+  dependencies: [clContainerScanning.name],
+});
+const clSignOciImage = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  needs: [clGenerateTag.name, clPushOciImage.name],
+  dependencies: [clGenerateTag.name, clPushOciImage.name],
+});
+const clAttest = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  needs: [
+    clGenerateTag.name,
+    clPushOciImage.name,
+    clBuildOciImage.name,
+    clContainerScanning.name,
+  ],
+});
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
 const clnExtractScanner = BuildNixExtractScannerTemplate({});
-const clnGenerateTag = BuildNixGenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
-const clnBuildOciImage = BuildNixTemplate({ stage: "oci-image", image: "image.tar", needs: [clnGenerateTag.name], dependencies: [clnGenerateTag.name] });
-const clnContainerScanning = ContainerScanningTemplate({ stage: "oci-image", git_strategy: "fetch", image_tar_path: "image.tar", needs: [clnGenerateTag.name, clnBuildOciImage.name], dependencies: [clnGenerateTag.name, clnBuildOciImage.name] });
-const clnPushOciImage = PushOciImageTemplate({ stage: "oci-image", git_strategy: "none", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [clnGenerateTag.name, clnBuildOciImage.name, clnContainerScanning.name], dependencies: [clnGenerateTag.name, clnBuildOciImage.name, clnContainerScanning.name] });
-const clnSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: "none", image: "$IMAGE_TAG", needs: [clnGenerateTag.name, clnPushOciImage.name], dependencies: [clnGenerateTag.name, clnPushOciImage.name] });
-const clnAttest = AttestTemplate({ stage: "attestation", git_strategy: "none", needs: [clnGenerateTag.name, clnPushOciImage.name, clnBuildOciImage.name, clnContainerScanning.name] });
+const clnGenerateTag = BuildNixGenerateTagTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+});
+const clnBuildOciImage = BuildNixTemplate({
+  stage: "oci-image",
+  image: "image.tar",
+  needs: [clnGenerateTag.name],
+  dependencies: [clnGenerateTag.name],
+});
+const clnContainerScanning = ContainerScanningTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+  image_tar_path: "image.tar",
+  needs: [clnGenerateTag.name, clnBuildOciImage.name],
+  dependencies: [clnGenerateTag.name, clnBuildOciImage.name],
+});
+const clnPushOciImage = PushOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "none",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [
+    clnGenerateTag.name,
+    clnBuildOciImage.name,
+    clnContainerScanning.name,
+  ],
+  dependencies: [
+    clnGenerateTag.name,
+    clnBuildOciImage.name,
+    clnContainerScanning.name,
+  ],
+});
+const clnSignOciImage = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  needs: [clnGenerateTag.name, clnPushOciImage.name],
+  dependencies: [clnGenerateTag.name, clnPushOciImage.name],
+});
+const clnAttest = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  needs: [
+    clnGenerateTag.name,
+    clnPushOciImage.name,
+    clnBuildOciImage.name,
+    clnContainerScanning.name,
+  ],
+});
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
-const paGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
-const paPushOciImage = PushOciImageTemplate({ stage: "oci-image", git_strategy: "none", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"], dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"] });
-const paSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: "none", image: "$IMAGE_TAG", needs: [paGenerateTag.name, paPushOciImage.name], dependencies: [paGenerateTag.name, paPushOciImage.name] });
-const paAttest = AttestTemplate({ stage: "attestation", git_strategy: "none", needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", paPushOciImage.name] });
+const paGenerateTag = GenerateTagTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+});
+const paPushOciImage = PushOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "none",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+  dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+});
+const paSignOciImage = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  needs: [paGenerateTag.name, paPushOciImage.name],
+  dependencies: [paGenerateTag.name, paPushOciImage.name],
+});
+const paAttest = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  needs: [
+    paGenerateTag.name,
+    "$[[ inputs.build_job_name ]]",
+    paPushOciImage.name,
+  ],
+});
 
 // ── container-scanning-and-attest ─────────────────────────────────────────────
-const csaGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
-const csaContainerScanning = ContainerScanningTemplate({ stage: "oci-image", git_strategy: "fetch", needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"], dependencies: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"] });
-const csaPushOciImage = PushOciImageTemplate({ stage: "oci-image", git_strategy: "none", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [csaGenerateTag.name, csaContainerScanning.name, "$[[ inputs.build_job_name ]]"], dependencies: [csaGenerateTag.name, csaContainerScanning.name, "$[[ inputs.build_job_name ]]"] });
-const csaSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: "none", image: "$IMAGE_TAG", needs: [csaGenerateTag.name, csaPushOciImage.name], dependencies: [csaGenerateTag.name, csaPushOciImage.name] });
-const csaAttest = AttestTemplate({ stage: "attestation", git_strategy: "none", needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]", csaContainerScanning.name, csaPushOciImage.name] });
+const csaGenerateTag = GenerateTagTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+});
+const csaContainerScanning = ContainerScanningTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+  needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+  dependencies: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+});
+const csaPushOciImage = PushOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "none",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [
+    csaGenerateTag.name,
+    csaContainerScanning.name,
+    "$[[ inputs.build_job_name ]]",
+  ],
+  dependencies: [
+    csaGenerateTag.name,
+    csaContainerScanning.name,
+    "$[[ inputs.build_job_name ]]",
+  ],
+});
+const csaSignOciImage = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  needs: [csaGenerateTag.name, csaPushOciImage.name],
+  dependencies: [csaGenerateTag.name, csaPushOciImage.name],
+});
+const csaAttest = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  needs: [
+    csaGenerateTag.name,
+    "$[[ inputs.build_job_name ]]",
+    csaContainerScanning.name,
+    csaPushOciImage.name,
+  ],
+});
 
 // ── container-lifecycle-with-base-image-inspection ────────────────────────────
-const clbiDiscoverAttestations = DiscoverBaseimageAttestationsTemplate({ stage: "oci-image", allow_failure: true as any });
-const clbiGenerateTag = GenerateTagTemplate({ stage: "oci-image", git_strategy: "fetch" });
-const clbiBuildOciImage = BuildOciImageTemplate({ stage: "oci-image", git_strategy: "fetch", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [clbiGenerateTag.name], dependencies: [clbiGenerateTag.name] });
-const clbiContainerScanning = ContainerScanningTemplate({ stage: "oci-image", git_strategy: "fetch", image_tar_path: "image.tar", needs: [clbiBuildOciImage.name], dependencies: [clbiBuildOciImage.name] });
-const clbiPushOciImage = PushOciImageTemplate({ stage: "oci-image", git_strategy: "none", image: "image.tar", image_tag: "$IMAGE_TAG", needs: [clbiContainerScanning.name], dependencies: [clbiContainerScanning.name] });
-const clbiSignOciImage = SignOciImageTemplate({ stage: "attestation", git_strategy: "none", image: "$IMAGE_TAG", needs: [clbiGenerateTag.name, clbiPushOciImage.name], dependencies: [clbiGenerateTag.name, clbiPushOciImage.name] });
-const clbiAttest = AttestTemplate({ stage: "attestation", git_strategy: "none", needs: [clbiGenerateTag.name, clbiPushOciImage.name, clbiBuildOciImage.name, clbiContainerScanning.name] });
+const clbiDiscoverAttestations = DiscoverBaseimageAttestationsTemplate({
+  stage: "oci-image",
+  allow_failure: true,
+});
+const clbiGenerateTag = GenerateTagTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+});
+const clbiBuildOciImage = BuildOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [clbiGenerateTag.name],
+  dependencies: [clbiGenerateTag.name],
+});
+const clbiContainerScanning = ContainerScanningTemplate({
+  stage: "oci-image",
+  git_strategy: "fetch",
+  image_tar_path: "image.tar",
+  needs: [clbiBuildOciImage.name],
+  dependencies: [clbiBuildOciImage.name],
+});
+const clbiPushOciImage = PushOciImageTemplate({
+  stage: "oci-image",
+  git_strategy: "none",
+  image: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [clbiContainerScanning.name],
+  dependencies: [clbiContainerScanning.name],
+});
+const clbiSignOciImage = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  needs: [clbiGenerateTag.name, clbiPushOciImage.name],
+  dependencies: [clbiGenerateTag.name, clbiPushOciImage.name],
+});
+const clbiAttest = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  needs: [
+    clbiGenerateTag.name,
+    clbiPushOciImage.name,
+    clbiBuildOciImage.name,
+    clbiContainerScanning.name,
+  ],
+});
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
-const clbiSbomUpload = SbomUploadTemplate({ stage: "attestation", allow_failure: true as any, git_strategy: "none", sbom_file: "$[[ inputs.output ]]/attestation-bom.json", devguard_origin: "BASE_IMAGE_SBOM", needs: [clbiDiscoverAttestations.name], dependencies: [clbiDiscoverAttestations.name] });
-const clbiVexUpload = VexUploadTemplate({ stage: "attestation", allow_failure: true as any, git_strategy: "none", vex_file: "$[[ inputs.output ]]/attestation-vex.json", devguard_origin: "BASE_IMAGE_VEX", needs: [clbiDiscoverAttestations.name, clbiSbomUpload.name], dependencies: [clbiDiscoverAttestations.name, clbiSbomUpload.name] });
-
+const clbiSbomUpload = SbomUploadTemplate({
+  stage: "attestation",
+  allow_failure: true,
+  git_strategy: "none",
+  sbom_file: "$[[ inputs.output ]]/attestation-bom.json",
+  devguard_origin: "BASE_IMAGE_SBOM",
+  needs: [clbiDiscoverAttestations.name],
+  dependencies: [clbiDiscoverAttestations.name],
+});
+const clbiVexUpload = VexUploadTemplate({
+  stage: "attestation",
+  allow_failure: true,
+  git_strategy: "none",
+  vex_file: "$[[ inputs.output ]]/attestation-vex.json",
+  devguard_origin: "BASE_IMAGE_VEX",
+  needs: [clbiDiscoverAttestations.name, clbiSbomUpload.name],
+  dependencies: [clbiDiscoverAttestations.name, clbiSbomUpload.name],
+});
 
 const templates: CIComponentGroupTemplate = {
-    // ── Individual job templates ──────────────────────────────────────────────
-    /*
+  // ── Individual job templates ──────────────────────────────────────────────
+  /*
     "source-provenance-attestation": [
         SourceProvenanceTemplate({}),
     ],
     */
-    "attest": [
-        AttestTemplate({}),
-    ],
-    "secret-scanning": [
-        SecretScanningTemplate({}),
-    ],
-    "static-application-security-testing": [
-        StaticApplicationSecurityTestingTemplate({})
-    ],
-    "infrastructure-as-code-scanning": [
-        InfrastructureAsCodeScanningTemplate({}),
-    ],
-    "software-composition-analysis": [
-        SoftwareCompositionAnalysisTemplate({}),
-    ],
-    "generate-tag": [
-        GenerateTagTemplate({}),
-    ],
-    "build-oci-image": [
-        BuildOciImageTemplate({}),
-    ],
-    "build-oci-image-w-docker": [
-        BuildOciImageWDockerTemplate({}),
-    ],
-    "container-scanning": [
-        ContainerScanningTemplate({}),
-    ],
-    "push-oci-image": [
-        PushOciImageTemplate({}),
-    ],
-    "sign-oci-image": [
-        SignOciImageTemplate({}),
-    ],
-    "create-manifest-multi-arch": [
-        CreateManifestMultiArchTemplate({}),
-    ],
-    "sarif-upload": [
-        SarifUploadTemplate({}),
-    ],
-    "sbom-upload": [
-        SbomUploadTemplate({}),
-    ],
-    "vex-upload": [
-        VexUploadTemplate({}),
-    ],
-    "discover-baseimage-attestations": [
-        DiscoverBaseimageAttestationsTemplate({}),
-    ],
-    "release": [
-        ReleaseTemplate({}),
-    ],
+  attest: [AttestTemplate({})],
+  "secret-scanning": [SecretScanningTemplate({})],
+  "secret-scanning-poc": [SecretScanningTemplatePoc({})],
+  "static-application-security-testing": [
+    StaticApplicationSecurityTestingTemplate({}),
+  ],
+  "infrastructure-as-code-scanning": [InfrastructureAsCodeScanningTemplate({})],
+  "software-composition-analysis": [SoftwareCompositionAnalysisTemplate({})],
+  "generate-tag": [GenerateTagTemplate({})],
+  "build-oci-image": [BuildOciImageTemplate({})],
+  "build-oci-image-w-docker": [BuildOciImageWDockerTemplate({})],
+  "container-scanning": [ContainerScanningTemplate({})],
+  "push-oci-image": [PushOciImageTemplate({})],
+  "sign-oci-image": [SignOciImageTemplate({})],
+  "create-manifest-multi-arch": [CreateManifestMultiArchTemplate({})],
+  "sarif-upload": [SarifUploadTemplate({})],
+  "sbom-upload": [SbomUploadTemplate({})],
+  "vex-upload": [VexUploadTemplate({})],
+  "discover-baseimage-attestations": [
+    DiscoverBaseimageAttestationsTemplate({}),
+  ],
+  release: [ReleaseTemplate({})],
 
-    // ── Orchestration templates ───────────────────────────────────────────────
-    "full": [
-        fullSourceProvenanceAttestation,
-        SecretScanningTemplate({ git_strategy: SecretScanningJobInputs.git_strategy.default }),
-        StaticApplicationSecurityTestingTemplate({ git_strategy: SASTJobInputs.git_strategy.default }),
-        InfrastructureAsCodeScanningTemplate({ git_strategy: IaCJobInputs.git_strategy.default }),
-        SoftwareCompositionAnalysisTemplate({ git_strategy: SCAJobInputs.git_strategy.default }),
-        fullGenerateTag,
-        fullBuildOciImage,
-        fullContrainerScanning,
-        fullPushOciImage,
-        fullSignOciImage,
-        fullAttest,
-    ],
-    /*
-    "container-lifecycle": [
-        clGenerateTag, clBuildOciImage, clContainerScanning, clPushOciImage, clSignOciImage, clAttest,
-    ],
-    "container-lifecycle-nix": [
-        clnExtractScanner, clnGenerateTag, clnBuildOciImage, clnContainerScanning, clnPushOciImage, clnSignOciImage, clnAttest,
-    ],
-    "push-and-attest": [
-        paGenerateTag, paPushOciImage, paSignOciImage, paAttest,
-    ],
-    "container-scanning-and-attest": [
-        csaGenerateTag, csaContainerScanning, csaPushOciImage, csaSignOciImage, csaAttest,
-    ],
-    "container-lifecycle-with-base-image-inspection": [
-        clbiDiscoverAttestations,
-        clbiGenerateTag, clbiBuildOciImage, clbiContainerScanning, clbiPushOciImage, clbiSignOciImage, clbiAttest,
-        clbiSbomUpload, clbiVexUpload,
-    ],
-    "build-nix": [
-        BuildNixExtractScannerTemplate({}),
-        BuildNixGenerateTagTemplate({}),
-        BuildNixTemplate({}),
-    ],
-    "build-nix-multiarch": [
-        BuildNixMultiArchBuildImageTemplate({}),
-        BuildNixMultiArchCreateManifestTemplate({}),
-    ],
-    */
-}
+  // ── Orchestration templates ───────────────────────────────────────────────
+  full: [
+    fullSourceProvenanceAttestation,
+    SecretScanningTemplate({
+      git_strategy: SecretScanningJobInputs.git_strategy.default,
+    }),
+    StaticApplicationSecurityTestingTemplate({
+      git_strategy: SASTJobInputs.git_strategy.default,
+    }),
+    InfrastructureAsCodeScanningTemplate({
+      git_strategy: IaCJobInputs.git_strategy.default,
+    }),
+    SoftwareCompositionAnalysisTemplate({
+      git_strategy: SCAJobInputs.git_strategy.default,
+    }),
+    fullGenerateTag,
+    fullBuildOciImage,
+    fullContrainerScanning,
+    fullPushOciImage,
+    fullSignOciImage,
+    fullAttest,
+  ],
+
+  "container-lifecycle": [
+    clGenerateTag,
+    clBuildOciImage,
+    clContainerScanning,
+    clPushOciImage,
+    clSignOciImage,
+    clAttest,
+  ],
+  "container-lifecycle-nix": [
+    clnExtractScanner,
+    clnGenerateTag,
+    clnBuildOciImage,
+    clnContainerScanning,
+    clnPushOciImage,
+    clnSignOciImage,
+    clnAttest,
+  ],
+  "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
+  "container-scanning-and-attest": [
+    csaGenerateTag,
+    csaContainerScanning,
+    csaPushOciImage,
+    csaSignOciImage,
+    csaAttest,
+  ],
+  "container-lifecycle-with-base-image-inspection": [
+    clbiDiscoverAttestations,
+    clbiGenerateTag,
+    clbiBuildOciImage,
+    clbiContainerScanning,
+    clbiPushOciImage,
+    clbiSignOciImage,
+    clbiAttest,
+    clbiSbomUpload,
+    clbiVexUpload,
+  ],
+  "build-nix": [
+    BuildNixExtractScannerTemplate({}),
+    BuildNixGenerateTagTemplate({}),
+    BuildNixTemplate({}),
+  ],
+  "build-nix-multiarch": [
+    BuildNixMultiArchBuildImageTemplate({}),
+    BuildNixMultiArchCreateManifestTemplate({}),
+  ],
+};
 
 const header = `# Copyright 2025 l3montree GmbH.
 # SPDX-License-Identifier: AGPL-3.0
 
 # This file is automatically generated. Do not edit directly.
-`
+`;
 
 await ExportCIComponents(templates, header, {
-    full: {
-        devguard_artifact_name: Inputs.devguard_artifact_name,
-        small_artifact_registry: Inputs.small_artifact_registry,
-    },
-    "container-lifecycle-with-base-image-inspection": {
-        devguard_artifact_name: Inputs.devguard_artifact_name,
-    }
-}).then(() => {
-    // copy files over using fs
-    for (const templateName of Object.keys(templates)) {
-        fs.copyFileSync(`../programmatic-ci-components-test-gitlab/templates/${templateName}.yml`, `./templates/${templateName}.yml`)
-    }
-}).catch((err) => {
-    console.error("Error exporting CI components:", err);
-    process.exit(1);
+  full: {
+    devguard_artifact_name: Inputs.devguard_artifact_name,
+    small_artifact_registry: Inputs.small_artifact_registry,
+  },
+  "container-lifecycle-with-base-image-inspection": {
+    devguard_artifact_name: Inputs.devguard_artifact_name,
+  },
 });
-
 
 // console.log("Finished");

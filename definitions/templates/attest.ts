@@ -1,51 +1,51 @@
-import { defineInputs, defineJob, JobWithSpec } from "@l3montree/programmatic-ci-components"
-import { Inputs } from "./inputs"
+import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
+import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
 
 export const AttestJobInputs = defineInputs({
-devguard_api_url: Inputs.devguard_api_url,
-        devguard_asset_name: Inputs.devguard_asset_name,
-        devguard_token: Inputs.devguard_token,
-        devguard_artifact_name: Inputs.devguard_artifact_name,
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  devguard_token: Inputs.devguard_token,
+  devguard_artifact_name: Inputs.devguard_artifact_name,
 
-        runner_tags: Inputs.runner_tags,
-        stage: {
-            ...Inputs.stage,
-            default: 'attestation' as const,
-        },
-        job_suffix: Inputs.job_suffix,
-        git_strategy: Inputs.git_strategy,
-        pull_policy: Inputs.pull_policy,
-        allow_failure: Inputs.allow_failure,
-        needs: Inputs.needs,
-        
-        default_ref: Inputs.default_ref,
-        commit_ref: Inputs.commit_ref,
-        
-        registry: Inputs.registry,
-        registry_user: Inputs.registry_user,
-        registry_password: Inputs.registry_password,
+  runner_tags: Inputs.runner_tags,
+  stage: {
+    ...Inputs.stage,
+    default: "attestation" as const,
+  },
+  job_suffix: Inputs.job_suffix,
+  git_strategy: Inputs.git_strategy,
+  pull_policy: Inputs.pull_policy,
+  allow_failure: Inputs.allow_failure,
+  needs: Inputs.needs,
 
-        attestations: Inputs.attestations,
-        image: Inputs.image,
+  default_ref: Inputs.default_ref,
+  commit_ref: Inputs.commit_ref,
+
+  registry: Inputs.registry,
+  registry_user: Inputs.registry_user,
+  registry_password: Inputs.registry_password,
+
+  attestations: Inputs.attestations,
+  image: Inputs.image,
 });
 
 export const AttestTemplate = defineJob(AttestJobInputs, (inputValues) => ({
-    name: `devguard:attest${inputValues.job_suffix}`,
-    job: {
-        image: {
-            name: ContainerImages.DEVGUARD_SCANNER,
-            pull_policy: inputValues.pull_policy as any,
-            entrypoint: [""],
-        },
-        tags: inputValues.runner_tags as any,
-        stage: inputValues.stage,
-        allow_failure: inputValues.allow_failure as any,
-        needs: inputValues.needs as any,
-        variables: {
-            GIT_STRATEGY: inputValues.git_strategy as any,
-        },
-        script: `echo "Attesting artifacts for ${inputValues.image}"
+  name: `devguard:attest${inputValues.job_suffix}`,
+  job: {
+    image: {
+      name: ContainerImages.DEVGUARD_SCANNER,
+      pull_policy: inputValues.pull_policy,
+      entrypoint: [""],
+    },
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
+    },
+    script: `echo "Attesting artifacts for ${inputValues.image}"
 echo "Artifact Name: ${inputValues.devguard_artifact_name}"
 echo "Asset Name: ${inputValues.devguard_asset_name}"
 
@@ -129,6 +129,6 @@ done
 
 echo ""
 echo "All attestations completed"
-` as any,
-    }
+`,
+  },
 }));
