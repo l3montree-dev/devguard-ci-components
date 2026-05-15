@@ -29,9 +29,6 @@ import {
   SecretScanningTemplate,
 } from "./templates/secret-scanning";
 import {
-  SecretScanningTemplatePoc,
-} from "./templates/secret-scanning-poc";
-import {
   SignOciImageJobInputs,
   SignOciImageTemplate,
 } from "./templates/sign-oci-image";
@@ -398,108 +395,104 @@ const clbiVexUpload = VexUploadTemplate({
 });
 
 const templates: CIComponentGroupTemplate = {
-  "secret-scanning": [SecretScanningTemplate({})],
-  "secret-scanning-poc": [SecretScanningTemplatePoc({})],
-
   // ── Individual job templates ──────────────────────────────────────────────
   /*
     "source-provenance-attestation": [
         SourceProvenanceTemplate({}),
     ],
     */
+
+  attest: [AttestTemplate({})],
+  "secret-scanning": [SecretScanningTemplate({})],
+  "static-application-security-testing": [
+    StaticApplicationSecurityTestingTemplate({}),
+  ],
+  "infrastructure-as-code-scanning": [InfrastructureAsCodeScanningTemplate({})],
+  "software-composition-analysis": [SoftwareCompositionAnalysisTemplate({})],
+  "generate-tag": [GenerateTagTemplate({})],
+  "build-oci-image": [BuildOciImageTemplate({})],
+  "build-oci-image-w-docker": [BuildOciImageWDockerTemplate({})],
+  "container-scanning": [ContainerScanningTemplate({})],
+  "push-oci-image": [PushOciImageTemplate({})],
+  "sign-oci-image": [SignOciImageTemplate({})],
+  "create-manifest-multi-arch": [CreateManifestMultiArchTemplate({})],
+  "sarif-upload": [SarifUploadTemplate({})],
+  "sbom-upload": [SbomUploadTemplate({})],
+  "vex-upload": [VexUploadTemplate({})],
+  "discover-baseimage-attestations": [
+    DiscoverBaseimageAttestationsTemplate({}),
+  ],
+  release: [ReleaseTemplate({})],
+
+  // ── Orchestration templates ───────────────────────────────────────────────
+  full: [
+    fullSourceProvenanceAttestation,
+    SecretScanningTemplate({
+      git_strategy: SecretScanningJobInputs.git_strategy.default,
+    }),
+    StaticApplicationSecurityTestingTemplate({
+      git_strategy: SASTJobInputs.git_strategy.default,
+    }),
+    InfrastructureAsCodeScanningTemplate({
+      git_strategy: IaCJobInputs.git_strategy.default,
+    }),
+    SoftwareCompositionAnalysisTemplate({
+      git_strategy: SCAJobInputs.git_strategy.default,
+    }),
+    fullGenerateTag,
+    fullBuildOciImage,
+    fullContrainerScanning,
+    fullPushOciImage,
+    fullSignOciImage,
+    fullAttest,
+  ],
   /*
- attest: [AttestTemplate({})],
- //"secret-scanning": [SecretScanningTemplate({})],
- //"secret-scanning-poc": [SecretScanningTemplatePoc({})],
- "static-application-security-testing": [
-   StaticApplicationSecurityTestingTemplate({}),
- ],
- "infrastructure-as-code-scanning": [InfrastructureAsCodeScanningTemplate({})],
- "software-composition-analysis": [SoftwareCompositionAnalysisTemplate({})],
- "generate-tag": [GenerateTagTemplate({})],
- "build-oci-image": [BuildOciImageTemplate({})],
- "build-oci-image-w-docker": [BuildOciImageWDockerTemplate({})],
- "container-scanning": [ContainerScanningTemplate({})],
- "push-oci-image": [PushOciImageTemplate({})],
- "sign-oci-image": [SignOciImageTemplate({})],
- "create-manifest-multi-arch": [CreateManifestMultiArchTemplate({})],
- "sarif-upload": [SarifUploadTemplate({})],
- "sbom-upload": [SbomUploadTemplate({})],
- "vex-upload": [VexUploadTemplate({})],
- "discover-baseimage-attestations": [
-   DiscoverBaseimageAttestationsTemplate({}),
- ],
- release: [ReleaseTemplate({})],
-
- // ── Orchestration templates ───────────────────────────────────────────────
- full: [
-   fullSourceProvenanceAttestation,
-   SecretScanningTemplate({
-     git_strategy: SecretScanningJobInputs.git_strategy.default,
-   }),
-   StaticApplicationSecurityTestingTemplate({
-     git_strategy: SASTJobInputs.git_strategy.default,
-   }),
-   InfrastructureAsCodeScanningTemplate({
-     git_strategy: IaCJobInputs.git_strategy.default,
-   }),
-   SoftwareCompositionAnalysisTemplate({
-     git_strategy: SCAJobInputs.git_strategy.default,
-   }),
-   fullGenerateTag,
-   fullBuildOciImage,
-   fullContrainerScanning,
-   fullPushOciImage,
-   fullSignOciImage,
-   fullAttest,
- ],
-
- "container-lifecycle": [
-   clGenerateTag,
-   clBuildOciImage,
-   clContainerScanning,
-   clPushOciImage,
-   clSignOciImage,
-   clAttest,
- ],
- "container-lifecycle-nix": [
-   clnExtractScanner,
-   clnGenerateTag,
-   clnBuildOciImage,
-   clnContainerScanning,
-   clnPushOciImage,
-   clnSignOciImage,
-   clnAttest,
- ],
- "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
- "container-scanning-and-attest": [
-   csaGenerateTag,
-   csaContainerScanning,
-   csaPushOciImage,
-   csaSignOciImage,
-   csaAttest,
- ],
- "container-lifecycle-with-base-image-inspection": [
-   clbiDiscoverAttestations,
-   clbiGenerateTag,
-   clbiBuildOciImage,
-   clbiContainerScanning,
-   clbiPushOciImage,
-   clbiSignOciImage,
-   clbiAttest,
-   clbiSbomUpload,
-   clbiVexUpload,
- ],
- "build-nix": [
-   BuildNixExtractScannerTemplate({}),
-   BuildNixGenerateTagTemplate({}),
-   BuildNixTemplate({}),
- ],
- "build-nix-multiarch": [
-   BuildNixMultiArchBuildImageTemplate({}),
-   BuildNixMultiArchCreateManifestTemplate({}),
- ],
- */
+  "container-lifecycle": [
+    clGenerateTag,
+    clBuildOciImage,
+    clContainerScanning,
+    clPushOciImage,
+    clSignOciImage,
+    clAttest,
+  ],
+  "container-lifecycle-nix": [
+    clnExtractScanner,
+    clnGenerateTag,
+    clnBuildOciImage,
+    clnContainerScanning,
+    clnPushOciImage,
+    clnSignOciImage,
+    clnAttest,
+  ],
+  "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
+  "container-scanning-and-attest": [
+    csaGenerateTag,
+    csaContainerScanning,
+    csaPushOciImage,
+    csaSignOciImage,
+    csaAttest,
+  ],
+  "container-lifecycle-with-base-image-inspection": [
+    clbiDiscoverAttestations,
+    clbiGenerateTag,
+    clbiBuildOciImage,
+    clbiContainerScanning,
+    clbiPushOciImage,
+    clbiSignOciImage,
+    clbiAttest,
+    clbiSbomUpload,
+    clbiVexUpload,
+  ],
+  "build-nix": [
+    BuildNixExtractScannerTemplate({}),
+    BuildNixGenerateTagTemplate({}),
+    BuildNixTemplate({}),
+  ],
+  "build-nix-multiarch": [
+    BuildNixMultiArchBuildImageTemplate({}),
+    BuildNixMultiArchCreateManifestTemplate({}),
+  ],
+  */
 };
 
 const header = `# Copyright 2025 l3montree GmbH.
