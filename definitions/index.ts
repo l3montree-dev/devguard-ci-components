@@ -45,8 +45,6 @@ import {
   StaticApplicationSecurityTestingTemplate,
 } from "./templates/static-application-security-testing";
 // import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
-import { CIComponentGroupTemplate } from "./lib/types";
-import { ExportCIComponents } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
@@ -60,6 +58,7 @@ import {
   BuildNixMultiArchBuildImageTemplate,
   BuildNixMultiArchCreateManifestTemplate,
 } from "./templates/build-nix-multiarch";
+import { CIComponentGroupTemplate, ExportCIComponents } from "@l3montree/programmatic-ci-components";
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({

@@ -1,4 +1,5 @@
-import { ConfigInputs } from "../lib/ci";
+import { ConfigInputs } from "@l3montree/programmatic-ci-components";
+
 
 export const Inputs = {
   job_suffix: {

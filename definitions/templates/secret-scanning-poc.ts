@@ -6,14 +6,14 @@
  */
 
 import {
+  BaseWorkflowJob,
   defineInputs,
   InputValues,
+  JobWithSpec,
   resolveInputValue,
-} from "../lib/JobWithSpecBuilder";
+} from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { BaseWorkflowJob } from "../lib/workflow-job";
-import { JobWithSpec } from "../lib/types";
 
 export const SecretScanningJobInputsPoc = defineInputs({
   devguard_api_url: Inputs.devguard_api_url,

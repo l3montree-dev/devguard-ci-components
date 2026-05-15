@@ -1,4 +1,4 @@
-import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
+import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
@@ -47,7 +47,7 @@ export const VexUploadTemplate = defineJob(
       },
       image: {
         name: ContainerImages.DEVGUARD_SCANNER,
-        pull_policy: inputValues.pull_policy,
+        pull_policy: inputValues.pull_policy as "always" | "never" | "if-not-present",
       },
       script: [
         `echo "Running DevGuard VeX Upload..."`,

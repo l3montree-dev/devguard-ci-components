@@ -1,4 +1,4 @@
-import { defineInputs, defineJob } from "../lib/JobWithSpecBuilder";
+import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 export const ContainerScanningJobInputs = defineInputs({
