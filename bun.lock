@@ -4,7 +4,7 @@
     "": {
       "name": "devguard-ci-components",
       "dependencies": {
-        "@l3montree/programmatic-ci-components": "git+https://gitlab.opencode.de/l3montree/programmatic-ci-components.git#main",
+        "@l3montree/programmatic-ci-components": "0.0.1",
       },
       "devDependencies": {
         "@types/bun": "^1.3.9",
@@ -14,20 +14,22 @@
     },
   },
   "packages": {
-    "@l3montree/programmatic-ci-components": ["@l3montree/programmatic-ci-components@git+https://gitlab.opencode.de/l3montree/programmatic-ci-components.git#45ec41ebf74ad310001f93d9bfd37dc00830b463", { "dependencies": { "@sleeyax/gitlab-ci-ts": "file:../gitlab-ci-ts", "yaml": "3.0.0-0" } }, "45ec41ebf74ad310001f93d9bfd37dc00830b463"],
+    "@l3montree/programmatic-ci-components": ["@l3montree/programmatic-ci-components@0.0.1", "https://gitlab.opencode.de/api/v4/projects/9570/packages/npm/@l3montree/programmatic-ci-components/-/@l3montree/programmatic-ci-components-0.0.1.tgz", { "dependencies": { "@sleeyax/gitlab-ci-ts": "git+https://gitlab.com/l3montree/gitlab-ci-ts.git#support-for-spec", "yaml": "3.0.0-0" } }, "sha1-RpdBf8+QOUDn4SrKM2HCGoTb0+E="],
 
-    "@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
+    "@sleeyax/gitlab-ci-ts": ["@sleeyax/gitlab-ci-ts@git+https://gitlab.com/l3montree/gitlab-ci-ts.git#ade6c8b87c3ca945298521a1aa8bfa55d219cd60", { "dependencies": { "yaml": "^2.8.2" } }, "ade6c8b87c3ca945298521a1aa8bfa55d219cd60"],
 
-    "@types/node": ["@types/node@25.6.2", "", { "dependencies": { "undici-types": "~7.19.0" } }, "sha512-sokuT28dxf9JT5Kady1fsXOvI4HVpjZa95NKT5y9PNTIrs2AsobR4GFAA90ZG8M+nxVRLysCXsVj6eGC7Vbrlw=="],
+    "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
-    "bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
+    "@types/node": ["@types/node@25.8.0", "", { "dependencies": { "undici-types": ">=7.24.0 <7.24.7" } }, "sha512-TCFSk8IZh+iLX1xtksoBVtdmgL+1IX0fC9BeU4QqFSuNdN/K+HUlhqOzEmSYYpZUVsLYcPqc9KX+60iDuninSQ=="],
+
+    "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "typescript": ["typescript@6.0.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ=="],
 
-    "undici-types": ["undici-types@7.19.2", "", {}, "sha512-qYVnV5OEm2AW8cJMCpdV20CDyaN3g0AjDlOGf1OW4iaDEx8MwdtChUp4zu4H0VP3nDRF/8RKWH+IPp9uW0YGZg=="],
+    "undici-types": ["undici-types@7.24.6", "", {}, "sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg=="],
 
     "yaml": ["yaml@3.0.0-0", "", { "bin": { "yaml": "bin.js" } }, "sha512-PHPfns7F4FYUxfWzghNC/VYvFANsZkNSEZ7s7TbL9Aabf781lJ0wq88Hqx7+2gLBnBWUIy/YYaE+AIXJ0cs6Dg=="],
 
-    "@l3montree/programmatic-ci-components/@sleeyax/gitlab-ci-ts": ["@sleeyax/gitlab-ci-ts@file:../../../.bun/install/cache/gitlab-ci-ts", {}],
+    "@sleeyax/gitlab-ci-ts/yaml": ["yaml@2.9.0", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="],
   }
 }
