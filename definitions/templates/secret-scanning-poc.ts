@@ -72,7 +72,6 @@ export class SecretScanningJob extends BaseWorkflowJob {
       name: `devguard:secret_scanning${jobSuffix}`,
       description: "DevGuard Secret Scanning",
       image: ContainerImages.DEVGUARD_SCANNER,
-      tags: runnerTags,
       allowFailure,
       needs,
       scripts: [
@@ -80,6 +79,7 @@ export class SecretScanningJob extends BaseWorkflowJob {
         `devguard-scanner secret-scanning --assetName="${String(resolveInput(inputValues, "devguard_asset_name"))}" --apiUrl="${String(resolveInput(inputValues, "devguard_api_url"))}" --token="${String(resolveInput(inputValues, "devguard_token"))}" --path="${String(resolveInput(inputValues, "path"))}" --defaultRef="${String(resolveInput(inputValues, "default_ref"))}" --ref="${String(resolveInput(inputValues, "commit_ref"))}" --isTag="${String(resolveInput(inputValues, "is_tag"))}" --webUI=${String(resolveInput(inputValues, "devguard_web_ui"))}`,
       ],
       gitlab: {
+        tags: runnerTags,
         stage: String(resolveInput(inputValues, "stage")),
         pull_policy: String(resolveInput(inputValues, "pull_policy")),
         git_strategy: String(resolveInput(inputValues, "git_strategy")),
