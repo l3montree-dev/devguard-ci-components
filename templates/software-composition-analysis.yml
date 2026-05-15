@@ -73,6 +73,7 @@ spec:
       description: Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.
       default: "false"
 ---
+
 include: []
 devguard:software_composition_analysis$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

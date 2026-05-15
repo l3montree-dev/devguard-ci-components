@@ -91,6 +91,7 @@ spec:
       default: "false"
       description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
 ---
+
 include: []
 devguard:container_scanning$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

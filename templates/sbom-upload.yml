@@ -72,6 +72,7 @@ spec:
     sbom_file:
       description: The SBOM file to upload
 ---
+
 include: []
 devguard:sbom_upload$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

@@ -52,6 +52,7 @@ spec:
       default: []
       description: List of assets links to attach to the release. Each item should have (name) the name of the link and (url) the URL to download the asset from and could have (filepath) the The redirect link to the url. Must start with a slash (/) and (link_type) the content kind of what users can download with url.
 ---
+
 include: []
 devguard:release$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

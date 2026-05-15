@@ -55,6 +55,7 @@ spec:
       description: The container image to sign (e.g., registry.example.com/project/image:tag)
       default: $CI_REGISTRY_IMAGE:latest
 ---
+
 include: []
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

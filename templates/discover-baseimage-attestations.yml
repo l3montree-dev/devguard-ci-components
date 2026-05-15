@@ -44,6 +44,7 @@ spec:
     path:
       description: Path to the Containerfile/Dockerfile
 ---
+
 include: []
 devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]

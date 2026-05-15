@@ -52,6 +52,7 @@ spec:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
 ---
+
 include: []
 devguard:generate_tag$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

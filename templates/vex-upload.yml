@@ -64,6 +64,7 @@ spec:
       default: $CI_PROJECT_DIR/vex.json
       description: The VeX file to upload
 ---
+
 include: []
 devguard:vex_upload$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

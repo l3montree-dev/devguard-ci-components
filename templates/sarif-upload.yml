@@ -57,6 +57,7 @@ spec:
     sarif_file:
       description: The SARIF file to upload
 ---
+
 include: []
 devguard:sarif_upload$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

@@ -84,6 +84,7 @@ spec:
       default: ""
       description: S3 region for the cache bucket.
 ---
+
 include: []
 devguard:extract_scanner$[[ inputs.job_suffix ]]:
   stage: .pre

@@ -133,6 +133,7 @@ spec:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
 ---
+
 include: []
 devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   stage: oci-image

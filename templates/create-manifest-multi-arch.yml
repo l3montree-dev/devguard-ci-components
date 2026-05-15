@@ -29,6 +29,7 @@ spec:
       default: .
       description: Directory to store generated artifacts in (relative to project root).
 ---
+
 include: []
 devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]

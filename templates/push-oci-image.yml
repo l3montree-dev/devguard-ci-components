@@ -73,6 +73,7 @@ spec:
       default: "false"
       description: Whether to disable the job. This is useful when you want to conditionally disable this job in orchestration templates.
 ---
+
 include: []
 devguard:push_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

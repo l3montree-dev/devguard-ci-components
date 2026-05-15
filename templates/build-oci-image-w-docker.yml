@@ -79,6 +79,7 @@ spec:
       description: Is the current commit a tag
       default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
 ---
+
 include: []
 devguard:build_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

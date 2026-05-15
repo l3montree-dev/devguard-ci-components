@@ -75,6 +75,7 @@ spec:
       description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
       default: critical
 ---
+
 include: []
 build_image$[[ inputs.job_suffix ]]:
   stage: build

@@ -119,6 +119,7 @@ spec:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
 ---
+
 include: []
 devguard:generate_tag$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
