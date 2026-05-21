@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const ReleaseJobInputs = defineInputs({
+export const ReleaseJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
   stage: Inputs.stage,
   job_suffix: Inputs.job_suffix,
@@ -23,7 +23,7 @@ export const ReleaseJobInputs = defineInputs({
   },
 });
 
-export const ReleaseTemplate = defineJob(ReleaseJobInputs, (inputValues) => ({
+export const ReleaseTemplate = defineJobGitLab(ReleaseJobInputs, (inputValues) => ({
   name: `devguard:release${inputValues.job_suffix}`,
   job: {
     tags: inputValues.runner_tags,

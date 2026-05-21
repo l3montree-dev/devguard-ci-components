@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const DiscoverBaseimageAttestationsJobInputs = defineInputs({
+export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   stage: {
     ...Inputs.stage,
     default: "build" as const,
@@ -27,7 +27,7 @@ export const DiscoverBaseimageAttestationsJobInputs = defineInputs({
   },
 });
 
-export const DiscoverBaseimageAttestationsTemplate = defineJob(
+export const DiscoverBaseimageAttestationsTemplate = defineJobGitLab(
   DiscoverBaseimageAttestationsJobInputs,
   (inputValues) => ({
     name: `devguard:discover_baseimage_attestations${inputValues.job_suffix}`,

@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SbomUploadJobInputs = defineInputs({
+export const SbomUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -35,7 +35,7 @@ export const SbomUploadJobInputs = defineInputs({
   sbom_file: Inputs.sbom_file,
 });
 
-export const SbomUploadTemplate = defineJob(
+export const SbomUploadTemplate = defineJobGitLab(
   SbomUploadJobInputs,
   (inputValues) => ({
     name: `devguard:sbom_upload${inputValues.job_suffix}`,

@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SASTJobInputs = defineInputs({
+export const SASTJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_token: Inputs.devguard_token,
@@ -26,7 +26,7 @@ export const SASTJobInputs = defineInputs({
   is_tag: Inputs.is_tag,
 });
 
-export const StaticApplicationSecurityTestingTemplate = defineJob(
+export const StaticApplicationSecurityTestingTemplate = defineJobGitLab(
   SASTJobInputs,
   (inputValues) => ({
     name: `devguard:static-application-security-testing${inputValues.job_suffix}`,

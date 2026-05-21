@@ -1,12 +1,29 @@
 import { ConfigInputs, IncludeItem, JobTemplate } from "@sleeyax/gitlab-ci-ts";
+import { GitHubJob } from "./github/github-actions";
 export type { ConfigInputs } from "@sleeyax/gitlab-ci-ts";
 
 // Allow GitLab CI input placeholders ($[[ inputs.xxx ]]) for any field value
 export type JobTemplateLike = { [K in keyof JobTemplate]?: unknown };
 
-export type JobWithSpec = EntryWithSpec & {
+export type GitHubWorkflow = EntryWithSpec & {
+  job: GitHubJob;
+  secrets?: {
+    [k: string]: {
+      /**
+       * A string description of the secret parameter.
+       */
+      description?: string;
+      /**
+       * A boolean specifying whether the secret must be supplied.
+       */
+      required?: boolean;
+    };
+  };
+};
+
+export type GitLabJobWithSpec = EntryWithSpec & {
   job: JobTemplateLike;
-  secrets?: string[];
+  // secrets?: string[],
 };
 
 export type IncludeWithSpec = EntryWithSpec & {
@@ -20,5 +37,9 @@ export type EntryWithSpec = {
 };
 
 export type CIComponentGroupTemplate = {
-  [key: string]: (JobWithSpec | IncludeWithSpec)[];
+  [key: string]: (GitHubWorkflow | GitLabJobWithSpec | IncludeWithSpec)[];
 };
+
+export type ArrayInputItem =
+  | string // required for regular input array
+  | { [id: string]: string }[]; // required for input arrays with objects

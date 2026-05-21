@@ -41,6 +41,8 @@ import {
   StaticApplicationSecurityTestingTemplate,
 } from "./templates/static-application-security-testing";
 // import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
+import { CIComponentGroupTemplate } from "./lib/types";
+import { ExportCIComponents } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
@@ -51,11 +53,9 @@ import { SbomUploadTemplate } from "./templates/sbom-upload";
 import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 import { VexUploadTemplate } from "./templates/vex-upload";
 import {
-  BuildNixMultiArchBuildImageTemplate,
-  BuildNixMultiArchCreateManifestTemplate,
-} from "./templates/build-nix-multiarch";
-import { CIComponentGroupTemplate } from "./lib/types";
-import { ExportCIComponents } from "./lib/utils";
+  SecretScanningTemplateGitHub,
+  SecretScanningTemplateGitLab,
+} from "./templates/secret-scanning-multi";
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({
@@ -396,6 +396,9 @@ const clbiVexUpload = VexUploadTemplate({
 });
 
 const templates: CIComponentGroupTemplate = {
+  "secret-scanning-gitlab": [SecretScanningTemplateGitLab({})],
+  "secret-scanning-github": [SecretScanningTemplateGitHub({})],
+
   // ── Individual job templates ──────────────────────────────────────────────
   /*
     "source-provenance-attestation": [

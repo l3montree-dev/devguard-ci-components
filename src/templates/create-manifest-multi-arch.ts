@@ -1,8 +1,8 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const CreateManifestMultiArchJobInputs = defineInputs({
+export const CreateManifestMultiArchJobInputs = defineInputsGitLab({
   stage: {
     ...Inputs.stage,
     default: "oci-image" as const,
@@ -15,7 +15,7 @@ export const CreateManifestMultiArchJobInputs = defineInputs({
   artifacts_subdirectory: Inputs.artifacts_subdirectory,
 });
 
-export const CreateManifestMultiArchTemplate = defineJob(
+export const CreateManifestMultiArchTemplate = defineJobGitLab(
   CreateManifestMultiArchJobInputs,
   (inputValues) => ({
     name: `devguard:create_manifest_multi_arch${inputValues.job_suffix}`,

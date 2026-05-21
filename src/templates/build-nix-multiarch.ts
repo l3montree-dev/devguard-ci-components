@@ -1,7 +1,7 @@
-import { defineInputs, defineJob } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 
-export const BuildNixMultiArchJobInputs = defineInputs({
+export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
 
   devguard_asset_name: Inputs.devguard_asset_name,
@@ -58,7 +58,7 @@ export const BuildNixMultiArchJobInputs = defineInputs({
 });
 
 // Job 1: parallel matrix trigger — builds amd64 + arm64 images in child pipelines
-export const BuildNixMultiArchBuildImageTemplate = defineJob(
+export const BuildNixMultiArchBuildImageTemplate = defineJobGitLab(
   BuildNixMultiArchJobInputs,
   (inputValues) => ({
     name: `build_image${inputValues.job_suffix}`,
@@ -152,7 +152,7 @@ export const BuildNixMultiArchBuildImageTemplate = defineJob(
 );
 
 // Job 2: collect artifacts from child pipelines, create multi-arch manifest, sign image
-export const BuildNixMultiArchCreateManifestTemplate = defineJob(
+export const BuildNixMultiArchCreateManifestTemplate = defineJobGitLab(
   BuildNixMultiArchJobInputs,
   (inputValues) => ({
     name: `create_and_sign_manifest${inputValues.job_suffix}`,
