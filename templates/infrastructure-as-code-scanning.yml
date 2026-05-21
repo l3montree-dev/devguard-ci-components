@@ -68,7 +68,7 @@ devguard:infrastructure_as_code_scanning$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
 
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.4.2
     pull_policy: "$[[ inputs.pull_policy ]]"
 
   script:
