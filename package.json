@@ -7,17 +7,12 @@
     "test": "tests"
   },
   "scripts": {
-    "generate": "tsc --noEmit && bun run definitions/index.ts"
+    "generate": "tsc --noEmit && bun run src/index.ts",
+    "postinstall": "cd node_modules/@sleeyax/gitlab-ci-ts && bunx tsc --rootDir ./src"
   },
   "repository": {
     "type": "git",
     "url": "git@gitlab.opencode.de:l3montree/devguard-ci-components.git"
-  },
-  "dependencies": {
-    "@l3montree/programmatic-ci-components": "file:../programmatic-ci-components"
-  },
-  "use-the-following-for-local-debugging": {
-    "@l3montree/programmatic-ci-components": "0.0.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -33,5 +28,8 @@
     "typescript-eslint": "8.59.3"
   },
   "author": "L3montree GmbH",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@sleeyax/gitlab-ci-ts": "gitlab:l3montree/gitlab-ci-ts#30bae67e77136c2303c2e0dab52c46093e081881"
+  }
 }

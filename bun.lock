@@ -4,7 +4,7 @@
     "": {
       "name": "devguard-ci-components",
       "dependencies": {
-        "@l3montree/programmatic-ci-components": "0.0.1",
+        "@sleeyax/gitlab-ci-ts": "gitlab:l3montree/gitlab-ci-ts#30bae67e77136c2303c2e0dab52c46093e081881",
       },
       "devDependencies": {
         "@eslint/js": "10.0.1",
@@ -52,11 +52,9 @@
 
     "@jsdevtools/ono": ["@jsdevtools/ono@7.1.3", "", {}, "sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg=="],
 
-    "@l3montree/programmatic-ci-components": ["@l3montree/programmatic-ci-components@0.0.1", "https://gitlab.opencode.de/api/v4/projects/9570/packages/npm/@l3montree/programmatic-ci-components/-/@l3montree/programmatic-ci-components-0.0.1.tgz", { "dependencies": { "@sleeyax/gitlab-ci-ts": "git+https://gitlab.com/l3montree/gitlab-ci-ts.git#support-for-spec", "yaml": "3.0.0-0" } }, "sha1-RpdBf8+QOUDn4SrKM2HCGoTb0+E="],
-
     "@pkgr/core": ["@pkgr/core@0.2.9", "", {}, "sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA=="],
 
-    "@sleeyax/gitlab-ci-ts": ["@sleeyax/gitlab-ci-ts@git+https://gitlab.com/l3montree/gitlab-ci-ts.git#ade6c8b87c3ca945298521a1aa8bfa55d219cd60", { "dependencies": { "yaml": "^2.8.2" } }, "ade6c8b87c3ca945298521a1aa8bfa55d219cd60"],
+    "@sleeyax/gitlab-ci-ts": ["@sleeyax/gitlab-ci-ts@git+ssh://gitlab:l3montree/gitlab-ci-ts#30bae67e77136c2303c2e0dab52c46093e081881", { "dependencies": { "yaml": "^2.8.2" } }, "30bae67e77136c2303c2e0dab52c46093e081881"],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
@@ -236,13 +234,11 @@
 
     "word-wrap": ["word-wrap@1.2.5", "", {}, "sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA=="],
 
-    "yaml": ["yaml@3.0.0-0", "", { "bin": { "yaml": "bin.js" } }, "sha512-PHPfns7F4FYUxfWzghNC/VYvFANsZkNSEZ7s7TbL9Aabf781lJ0wq88Hqx7+2gLBnBWUIy/YYaE+AIXJ0cs6Dg=="],
+    "yaml": ["yaml@2.9.0", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="],
 
     "yocto-queue": ["yocto-queue@0.1.0", "", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
 
     "@eslint-community/eslint-utils/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
-
-    "@sleeyax/gitlab-ci-ts/yaml": ["yaml@2.9.0", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="],
 
     "@typescript-eslint/eslint-plugin/ignore": ["ignore@7.0.5", "", {}, "sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg=="],
   }

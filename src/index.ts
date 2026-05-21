@@ -54,7 +54,8 @@ import {
   BuildNixMultiArchBuildImageTemplate,
   BuildNixMultiArchCreateManifestTemplate,
 } from "./templates/build-nix-multiarch";
-import { CIComponentGroupTemplate, ExportCIComponents } from "@l3montree/programmatic-ci-components";
+import { CIComponentGroupTemplate } from "./lib/types";
+import { ExportCIComponents } from "./lib/utils";
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({
