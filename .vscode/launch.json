@@ -6,15 +6,23 @@
     "configurations": [
 
         {
-            "type": "node",
+            "type": "bun",
             "request": "launch",
             "name": "Generate CI Components",
-            "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "run",
                 "generate"
             ],
-            "console": "integratedTerminal",
+        },
+        {
+            "type": "bun",
+            "internalConsoleOptions": "neverOpen",
+            "request": "launch",
+            "name": "Debug File",
+            "program": "generate-diagram-v2.ts",
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "watchMode": false
         },
     ]
 }
