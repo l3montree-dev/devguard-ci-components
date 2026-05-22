@@ -1,35 +1,44 @@
-import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
-export const SecretScanningJobInputs = defineInputsGitLab({
+const config = {
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
-  devguard_token: Inputs.devguard_token,
   devguard_web_ui: Inputs.devguard_web_ui,
 
-  runner_tags: Inputs.runner_tags,
-  stage: Inputs.stage,
   job_suffix: Inputs.job_suffix,
   git_strategy: {
     ...Inputs.git_strategy,
     default: "clone" as const,
   },
-  pull_policy: Inputs.pull_policy,
-  allow_failure: Inputs.allow_failure,
-  needs: {
-    ...Inputs.needs,
-    description: "List of jobs this scan depends on" as const,
+
+  allow_failure: {
+    ...Inputs.allow_failure,
+    description: "Whether the job should be marked as failed or successful when open code risks are detected. (default: false, meaning the job will fail if any open code risk is found)" as const,
   },
-  dependencies: Inputs.dependencies,
 
   path: Inputs.path,
   default_ref: Inputs.default_ref,
   commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
-});
+};
 
-export const SecretScanningTemplate = defineJobGitLab(SecretScanningJobInputs, (inputValues) => ({
+export const SecretScanningJobInputsGitLab = defineInputsGitLab({
+  ...config,
+  devguard_token: Inputs.devguard_token,
+  stage: Inputs.stage,
+  runner_tags: Inputs.runner_tags,
+  pull_policy: Inputs.pull_policy,
+  needs: {
+    ...Inputs.needs,
+    description: "List of jobs this scan depends on" as const,
+  },
+  dependencies: Inputs.dependencies,
+});
+export const SecretScanningTemplateGitLab = defineJobGitLab(SecretScanningJobInputsGitLab, (inputValues) => ({
   name: `devguard:secret_scanning${inputValues.job_suffix}`,
   job: {
     tags: inputValues.runner_tags,
@@ -48,6 +57,35 @@ export const SecretScanningTemplate = defineJobGitLab(SecretScanningJobInputs, (
     script: [
       `echo "Running DevGuard Secret Scanning (using gitleaks git)..."`,
       `devguard-scanner secret-scanning --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --path="${inputValues.path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui}`,
+    ],
+  },
+}));
+
+export const SecretScanningJobInputsGitHub = defineInputsGitHub({
+  ...config,
+});
+
+export const SecretScanningTemplateGitHub = defineJobGitHub(SecretScanningJobInputsGitHub, (inputValues, needs) => ({
+  name: `devguard:secret-scanning${inputValues.job_suffix}`,
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+  },
+  job: {
+    needs,
+    "runs-on": "ubuntu-latest",
+    steps: [
+      GitHubReusableSteps.CheckoutCode,
+      {
+        name: "Run DevGuard Secret Scanning",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        "continue-on-error": inputValues["allow_failure"] as boolean,
+        with: {
+          args: `devguard-scanner secret-scanning --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --path="${inputValues.path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui}`,
+        },
+      },
     ],
   },
 }));
