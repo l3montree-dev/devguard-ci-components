@@ -12,7 +12,6 @@ import {
 import { stringify, parse } from "yaml";
 import { $ } from "bun";
 import { writeFile, rm, mkdir } from "fs/promises";
-import type { WorkflowJob } from "./workflow-job";
 import { GitHubWorkflowReusable, GitHubJob } from "./github/github-actions";
 import { transformInputsToGitHub } from "./transformer/input-transformers";
 
@@ -147,13 +146,13 @@ flowchart LR
   ${[...new Set(jobTemplates.map(([_, template]) => template.map((def) => templateSlug(def.name))))].join("\n  ")}
   end
 ${metaTemplates
-  .map(([templateName, template]) => {
-    const mapping = template
-      .map((def) => `\n  ${templateName} --> ${templateSlug(def.name)}`)
-      .join("");
-    return `  ${mapping}`;
-  })
-  .join("\n")}`;
+      .map(([templateName, template]) => {
+        const mapping = template
+          .map((def) => `\n  ${templateName} --> ${templateSlug(def.name)}`)
+          .join("");
+        return `  ${mapping}`;
+      })
+      .join("\n")}`;
   console.log("Mermaid diagram of templates and their jobs:");
   console.log(mermaid);
 }
