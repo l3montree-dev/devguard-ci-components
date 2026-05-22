@@ -10,10 +10,6 @@ const config = {
   devguard_web_ui: Inputs.devguard_web_ui,
 
   job_suffix: Inputs.job_suffix,
-  git_strategy: {
-    ...Inputs.git_strategy,
-    default: "clone" as const,
-  },
 
   allow_failure: {
     ...Inputs.allow_failure,
@@ -35,6 +31,10 @@ export const SecretScanningJobInputsGitLab = defineInputsGitLab({
   needs: {
     ...Inputs.needs,
     description: "List of jobs this scan depends on" as const,
+  },
+  git_strategy: {
+    ...Inputs.git_strategy,
+    default: "clone" as const,
   },
   dependencies: Inputs.dependencies,
 });
@@ -65,7 +65,7 @@ export const SecretScanningJobInputsGitHub = defineInputsGitHub({
   ...config,
 });
 
-export const SecretScanningTemplateGitHub = defineJobGitHub(SecretScanningJobInputsGitHub, (inputValues, needs) => ({
+export const SecretScanningTemplateGitHub = defineJobGitHub(SecretScanningJobInputsGitHub, (inputValues) => ({
   name: `devguard:secret-scanning${inputValues.job_suffix}`,
   secrets: {
     "devguard-token": {
@@ -74,7 +74,6 @@ export const SecretScanningTemplateGitHub = defineJobGitHub(SecretScanningJobInp
     },
   },
   job: {
-    needs,
     "runs-on": "ubuntu-latest",
     steps: [
       GitHubReusableSteps.CheckoutCode,
