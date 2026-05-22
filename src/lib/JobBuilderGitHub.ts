@@ -2,44 +2,45 @@ import { WorkflowInput } from "./github/github-actions";
 import { resolveInputValue } from "./JobWithSpecBuilder";
 import { ArrayInputItem, GitLabJobWithSpec, GitHubWorkflow } from "./types";
 
-const input = <T extends string>(
-  varName: T,
-  data: { [key: string]: ArrayInputItem | undefined },
-) => resolveInputValue(varName, data[varName]);
+const input = <T extends string>(varName: T, data: { [key: string]: ArrayInputItem | undefined }) =>
+  resolveInputValue(varName, data[varName]);
 
 export type InputDefinitionsGitHub = { [key: string]: WorkflowInput };
 
 export type InputValuesGitHub<TInputDefinitions extends InputDefinitionsGitHub> = {
   [K in keyof TInputDefinitions]: TInputDefinitions[K] extends { type: "array" }
-  ? ArrayInputItem | undefined
-  : TInputDefinitions[K] extends { type: "boolean" }
-  ? boolean | undefined
-  : string | undefined;
+    ? ArrayInputItem | undefined
+    : TInputDefinitions[K] extends { type: "boolean" }
+      ? boolean | undefined
+      : string | undefined;
 };
 export type ResolvedInputValuesGitHub<TInputDefinitions extends InputDefinitionsGitHub> = {
   [K in keyof TInputDefinitions]: TInputDefinitions[K] extends { type: "array" }
-  ? ArrayInputItem
-  : TInputDefinitions[K] extends { type: "boolean" }
-  ? boolean | string
-  : string;
+    ? ArrayInputItem
+    : TInputDefinitions[K] extends { type: "boolean" }
+      ? boolean | string
+      : string;
 };
 
-export const defineInputsGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(inputDefinitions: TInputDefinitions): TInputDefinitions => inputDefinitions;
+export const defineInputsGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(
+  inputDefinitions: TInputDefinitions,
+): TInputDefinitions => inputDefinitions;
 
 export class JobBuilderGitHub {
-
   static generate<TInputDefinitions extends InputDefinitionsGitHub>(
     inputDefinitions: TInputDefinitions,
     inputs: Partial<InputValuesGitHub<TInputDefinitions>>,
-    partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>
+    partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>,
   ) {
     const keys = Object.keys(inputDefinitions) as (keyof TInputDefinitions)[];
 
     const inputDefs = keys
       .filter((key) => inputs[key] === undefined)
       .reduce((acc, key) => ({ ...acc, [key]: inputDefinitions[key] }), {}) as WorkflowInput;
-    const inputValues = keys
-      .reduce((acc, key) => ({ ...acc, [key]: input(key as string, inputs as { [key: string]: ArrayInputItem | undefined }) }), {}) as ResolvedInputValuesGitHub<TInputDefinitions>;
+    const inputValues = keys.reduce(
+      (acc, key) => ({ ...acc, [key]: input(key as string, inputs as { [key: string]: ArrayInputItem | undefined }) }),
+      {},
+    ) as ResolvedInputValuesGitHub<TInputDefinitions>;
 
     return {
       inputs: inputDefs,
@@ -50,7 +51,7 @@ export class JobBuilderGitHub {
 
 export const defineJobGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(
   inputDefinitions: TInputDefinitions,
-  partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>
+  partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>,
 ) => {
   return (inputs: Partial<InputValuesGitHub<TInputDefinitions>>): GitHubWorkflow => {
     return JobBuilderGitHub.generate(inputDefinitions, inputs, partialJobGenerator);

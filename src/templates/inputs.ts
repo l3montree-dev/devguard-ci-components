@@ -1,6 +1,5 @@
 import { ConfigInputs } from "@l3montree/programmatic-ci-components";
 
-
 export const Inputs = {
   job_suffix: {
     type: "string" as const,
@@ -21,8 +20,7 @@ export const Inputs = {
   DevGuard specific inputs
   */
   devguard_api_url: {
-    description:
-      "The url of the API to send the scan request to (default 'https://api.devguard.org')" as const,
+    description: "The url of the API to send the scan request to (default 'https://api.devguard.org')" as const,
     default: "https://api.devguard.org" as const,
   },
   devguard_web_ui: {
@@ -30,18 +28,15 @@ export const Inputs = {
     default: "https://app.devguard.org" as const,
   },
   devguard_asset_name: {
-    description:
-      "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)" as const,
+    description: "DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)" as const,
     default: "$DEVGUARD_ASSET_NAME" as const,
   },
   devguard_token: {
-    description:
-      "The DevGuard API token (use CI/CD variable, your private key)" as const,
+    description: "The DevGuard API token (use CI/CD variable, your private key)" as const,
     default: "$DEVGUARD_TOKEN" as const,
   },
   devguard_artifact_name: {
-    description:
-      "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)" as const,
+    description: "The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)" as const,
     default: "" as const,
   },
   devguard_origin: {
@@ -63,13 +58,11 @@ export const Inputs = {
     default: "none" as const,
   },
   pull_policy: {
-    description:
-      "The pull policy for the container image (can be [always, if-not-present, never])" as const,
+    description: "The pull policy for the container image (can be [always, if-not-present, never])" as const,
     default: "always" as const,
   },
   allow_failure: {
-    description:
-      "Whether the job is allowed to fail without stopping the pipeline" as const,
+    description: "Whether the job is allowed to fail without stopping the pipeline" as const,
     type: "boolean" as const,
     default: false as const,
   },
@@ -105,17 +98,14 @@ export const Inputs = {
   },
   is_tag: {
     description: "Is the current commit a tag" as const,
-    default:
-      '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
+    default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
   },
   fail_on_risk: {
-    description:
-      "The risk level to fail the job on. Options are: none, low, medium, high, critical" as const,
+    description: "The risk level to fail the job on. Options are: none, low, medium, high, critical" as const,
     default: "critical" as const,
   },
   fail_on_cvss: {
-    description:
-      "The CVSS score to fail the job on. Options are: none, low, medium, high, critical" as const,
+    description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical" as const,
     default: "critical" as const,
   },
   ignore_external_references: {
@@ -125,8 +115,7 @@ export const Inputs = {
   },
   ignore_upstream_attestations: {
     default: "false" as const,
-    description:
-      "Whether to ignore upstream attestations when scanning the image." as const,
+    description: "Whether to ignore upstream attestations when scanning the image." as const,
   },
 
   /*
@@ -171,10 +160,8 @@ export const Inputs = {
       "The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty." as const,
   },
   build_args: {
-    default:
-      "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile" as const,
-    description:
-      "The build arguments to pass to the Kaniko build command" as const,
+    default: "--context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile" as const,
+    description: "The build arguments to pass to the Kaniko build command" as const,
   },
   push_image: {
     default: "false" as const,
@@ -183,19 +170,16 @@ export const Inputs = {
   },
   supplyChainId: {
     default: "$CI_COMMIT_SHA" as const,
-    description:
-      "The supply chain ID to use for the in-toto attestation" as const,
+    description: "The supply chain ID to use for the in-toto attestation" as const,
   },
 
   image_suffix: {
     default: "default" as const,
-    description:
-      "Suffix for the image name (e.g. 'web'). Leave empty for no suffix." as const,
+    description: "Suffix for the image name (e.g. 'web'). Leave empty for no suffix." as const,
   },
   image_variant: {
     default: "" as const,
-    description:
-      "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant." as const,
+    description: "Variant for the image name (e.g., 'slim' for 'image-slim'). Leave empty for no variant." as const,
   },
   architecture: {
     default: "amd64" as const,
@@ -239,8 +223,7 @@ export const Inputs = {
   },
   nix_cache_substituter: {
     default: "" as const,
-    description:
-      "Nix binary cache substituter URL. Set to empty string to disable." as const,
+    description: "Nix binary cache substituter URL. Set to empty string to disable." as const,
   },
   nix_cache_public_key: {
     default: "" as const,
@@ -279,13 +262,11 @@ export const Inputs = {
   */
   predicate_type: {
     default: "" as const,
-    description:
-      "The predicate type to discover. If empty, all attestations will be discovered." as const,
+    description: "The predicate type to discover. If empty, all attestations will be discovered." as const,
   },
   output: {
     default: "." as const,
-    description:
-      "Output directory for discovered attestations (relative to project root)." as const,
+    description: "Output directory for discovered attestations (relative to project root)." as const,
   },
 
   /*
@@ -309,8 +290,7 @@ export const Inputs = {
   },
   release_description: {
     default: "" as const,
-    description:
-      "Custom release description (optional, leave empty for auto-generated)" as const,
+    description: "Custom release description (optional, leave empty for auto-generated)" as const,
   },
   rules: {
     type: "array" as const,
@@ -335,14 +315,11 @@ export const Inputs = {
   Multi-arch manifest inputs
   */
   create_root_manifest: {
-    default:
-      '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
-    description:
-      "Whether to also create a manifest without the branch ref in the tag." as const,
+    default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
+    description: "Whether to also create a manifest without the branch ref in the tag." as const,
   },
   artifacts_subdirectory: {
     default: "." as const,
-    description:
-      "Directory to store generated artifacts in (relative to project root)." as const,
+    description: "Directory to store generated artifacts in (relative to project root)." as const,
   },
 } satisfies ConfigInputs;

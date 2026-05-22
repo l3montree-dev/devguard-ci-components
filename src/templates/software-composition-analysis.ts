@@ -38,27 +38,24 @@ export const SCAJobInputs = defineInputsGitLab({
   ignore_external_references: Inputs.ignore_external_references,
 });
 
-export const SoftwareCompositionAnalysisTemplate = defineJobGitLab(
-  SCAJobInputs,
-  (inputValues) => ({
-    name: `devguard:software_composition_analysis${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
-      },
-      image: {
-        name: ContainerImages.DEVGUARD_SCANNER,
-        pull_policy: inputValues.pull_policy,
-      },
-      script: [
-        `echo "Running DevGuard SCA (based on the Trivy Project)..."`,
-        `devguard-scanner sca --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --path="${inputValues.path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui} --artifactName=${inputValues.devguard_artifact_name} --failOnRisk=${inputValues.fail_on_risk} --failOnCVSS=${inputValues.fail_on_cvss} --ignoreExternalReferences=${inputValues.ignore_external_references}`,
-      ],
+export const SoftwareCompositionAnalysisTemplate = defineJobGitLab(SCAJobInputs, (inputValues) => ({
+  name: `devguard:software_composition_analysis${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
     },
-  }),
-);
+    image: {
+      name: ContainerImages.DEVGUARD_SCANNER,
+      pull_policy: inputValues.pull_policy,
+    },
+    script: [
+      `echo "Running DevGuard SCA (based on the Trivy Project)..."`,
+      `devguard-scanner sca --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --path="${inputValues.path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui} --artifactName=${inputValues.devguard_artifact_name} --failOnRisk=${inputValues.fail_on_risk} --failOnCVSS=${inputValues.fail_on_cvss} --ignoreExternalReferences=${inputValues.ignore_external_references}`,
+    ],
+  },
+}));

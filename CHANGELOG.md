@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+
 - `artifacts_subdirectory` input to allow saving scanner output to a subdirectory
 - Job prefix input for `build-oci-image` jobs
 - Nix-based multi-architecture build support (`build-nix-multiarch.yml`, `build-nix.yml`)
@@ -18,11 +19,13 @@ All notable changes to this project will be documented in this file.
 - `pre-cleanup` and `preserve context` flags to kaniko builds to prevent custom image bleeding
 
 ### Changed
+
 - devguard-scanner OCI image now provides `jq` and `gettext`, removing the need for a `before_script` section
 - Updated scanner and kaniko image versions
 - Dependencies in container lifecycle are now forwarded to `build-oci-image` and `push-image-config` jobs
 
 ### Fixed
+
 - Attestation file downloads now saved to `/tmp/` to avoid working directory conflicts
 - Undefined dependency `create_manifest_multi_arch` in `devguard:sign_oci_image` job
 - Duplicate `needs` entries for push and attest jobs
@@ -35,12 +38,15 @@ All notable changes to this project will be documented in this file.
 ## [v1.1.1] — 2026-04-23
 
 ### Added
+
 - `small_artifact_registry` input with conditional rules in `full.yml`
 
 ### Changed
+
 - Updated devguard scanner image to v1.2.3
 
 ### Fixed
+
 - Remote authentication for fetching attestations
 
 ---
@@ -48,14 +54,17 @@ All notable changes to this project will be documented in this file.
 ## [v1.1.0] — 2026-03-17
 
 ### Added
+
 - Source provenance attestation (openCode only)
 - Needs and dependencies wiring for the attestation job
 
 ### Changed
+
 - Source attestation flow simplified
 - Scanner updated to v1.1.0
 
 ### Fixed
+
 - Stage declaration missing from attestation job
 - Dependencies key removed from incorrect job
 - Needs relationships corrected across attestation jobs
@@ -65,10 +74,12 @@ All notable changes to this project will be documented in this file.
 ## [v1.0.1] — 2026-03-06
 
 ### Added
+
 - `push-and-attest.yml` template combining push and attestation into a single pipeline step
 - `devguard_origin` forwarding to downstream jobs
 
 ### Changed
+
 - kaniko image updated in `build-oci-image` and `push-oci-image`
 - devguard scanner updated to v1.0.1
 
@@ -77,6 +88,7 @@ All notable changes to this project will be documented in this file.
 ## [v1.0.0] — 2026-02-20
 
 ### Added
+
 - Docker-based build support via `build-with-docker` flag
 - `runner_tags` input (array) for all build jobs
 - `containerfile` for docker-crane setup
@@ -85,12 +97,14 @@ All notable changes to this project will be documented in this file.
 - SBOM and VEX report upload from artifacts
 
 ### Changed
+
 - Runner tags unified to array syntax across all templates
 - SBOM upload job reference updated in container lifecycle template
 - Removed unused `deploy_stage` input from container lifecycle template
 - Public pipelines no longer require public auth
 
 ### Fixed
+
 - Default `runner_tags` value corrected from string to array
 - Artifact name mismatch in `full.yml`
 - Broken syntax in several templates
@@ -101,6 +115,7 @@ All notable changes to this project will be documented in this file.
 ## [v1.0.0-rc.5] and earlier
 
 Initial release candidates establishing the core pipeline templates:
+
 - `container-lifecycle.yml` — full container build, scan, sign, and attest workflow
 - `container-scanning.yml` — standalone container image scanning
 - `build-oci-image.yml` — OCI image build via kaniko

@@ -4,8 +4,6 @@
 npm run generate
 ```
 
-
-
 # Check diff between generated version and latest main
 
 ```bash

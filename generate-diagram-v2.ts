@@ -27,19 +27,19 @@ import YAML from "yaml";
 type IncludeItem =
   | string
   | {
-    local?: string;
-    file?: string | string[];
-    remote?: string;
-    template?: string;
-    project?: string;
-    ref?: string;
-    inputs?: Record<string, unknown>;
-  };
+      local?: string;
+      file?: string | string[];
+      remote?: string;
+      template?: string;
+      project?: string;
+      ref?: string;
+      inputs?: Record<string, unknown>;
+    };
 
 type ParsedFile = {
-  filePath: string;      // absolute
-  relPath: string;       // relative to root
-  includes: string[];    // normalized include targets (local-ish keys)
+  filePath: string; // absolute
+  relPath: string; // relative to root
+  includes: string[]; // normalized include targets (local-ish keys)
   jobs: Record<string, JobInfo>;
 };
 
@@ -74,7 +74,7 @@ const RESERVED_TOPLEVEL = new Set([
 ]);
 
 // const root = "./"
-const root = "./templates/"
+const root = "./templates/";
 // const root = "./tests/"
 
 async function walk(dir: string): Promise<string[]> {
@@ -98,10 +98,7 @@ function asArray<T>(v: T | T[] | undefined | null): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
-function normalizeIncludeTarget(
-  inc: IncludeItem,
-  relDir: string,
-): string[] {
+function normalizeIncludeTarget(inc: IncludeItem, relDir: string): string[] {
   // Returns "keys" that we can try to resolve to local files later.
   if (typeof inc === "string") {
     // GitLab supports include: "path" (treated as local)
@@ -176,26 +173,30 @@ async function parseYamlFile(absPath: string, root: string): Promise<ParsedFile[
   }
 
   // filter out specs
-  const res = docs.filter((d) => d.spec === undefined).map((doc) => {
-    const relDir = path.dirname(relPath);
-    const includesRaw = doc?.include;
-    const includeItems = asArray<IncludeItem>(includesRaw);
-    let includes = includeItems
-      .flatMap((inc) => normalizeIncludeTarget(inc, relDir === "." ? "" : relDir))
-      .map((s) => s.replaceAll("\\", "/"))
-      .map((s) => s.replace("remote:https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/", ""));
+  const res = docs
+    .filter((d) => d.spec === undefined)
+    .map((doc) => {
+      const relDir = path.dirname(relPath);
+      const includesRaw = doc?.include;
+      const includeItems = asArray<IncludeItem>(includesRaw);
+      let includes = includeItems
+        .flatMap((inc) => normalizeIncludeTarget(inc, relDir === "." ? "" : relDir))
+        .map((s) => s.replaceAll("\\", "/"))
+        .map((s) =>
+          s.replace("remote:https://gitlab.com/l3montree/devguard/-/raw/$[[ inputs.version ]]/templates/", ""),
+        );
 
-    const jobs: Record<string, JobInfo> = {};
-    if (doc && typeof doc === "object") {
-      for (const [k, v] of Object.entries(doc)) {
-        if (isLikelyJob(k, v)) {
-          jobs[k] = parseJob(k, v);
-        } 
+      const jobs: Record<string, JobInfo> = {};
+      if (doc && typeof doc === "object") {
+        for (const [k, v] of Object.entries(doc)) {
+          if (isLikelyJob(k, v)) {
+            jobs[k] = parseJob(k, v);
+          }
+        }
       }
-    }
 
-    return { filePath: absPath, relPath, includes, jobs };
-  });
+      return { filePath: absPath, relPath, includes, jobs };
+    });
 
   return res;
 }
@@ -244,19 +245,19 @@ async function main() {
 
   // Create subgraph for single files
   lines.push("");
-  lines.push('  subgraph JobsLv1[Single Jobs]');
+  lines.push("  subgraph JobsLv1[Single Jobs]");
   for (const p of endNodes) {
     const fileId = mermaidEscapeId(`file:${p.relPath}`);
     lines.push(`    ${fileId}["${mermaidLabel(p.relPath)}"]`);
-  }  
-  lines.push(`  end`)
+  }
+  lines.push(`  end`);
 
   // Node declarations
   for (const p of middleNodes) {
     const fileId = mermaidEscapeId(`file:${p.relPath}`);
     lines.push(`  ${fileId}["${mermaidLabel(p.relPath)}"]`);
   }
-  
+
   /*
   for (const p of parsed) {
     const fileId = mermaidEscapeId(`file:${p.relPath}`);
@@ -274,7 +275,13 @@ async function main() {
     const fromId = mermaidEscapeId(`file:${p.relPath}`);
     for (const inc of p.includes) {
       // Try to resolve include to an existing local file node
-      const resolved = byRel.has(inc) ? inc : (byRel.has(`${inc}.yml`) ? `${inc}.yml` : (byRel.has(`${inc}.yaml`) ? `${inc}.yaml` : ""));
+      const resolved = byRel.has(inc)
+        ? inc
+        : byRel.has(`${inc}.yml`)
+          ? `${inc}.yml`
+          : byRel.has(`${inc}.yaml`)
+            ? `${inc}.yaml`
+            : "";
       const toKey = resolved || inc;
 
       const toId = mermaidEscapeId(`file:${toKey}`);

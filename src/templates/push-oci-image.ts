@@ -46,33 +46,31 @@ export const PushOciImageJobInputs = defineInputsGitLab({
   disable_job: Inputs.disable_job,
 });
 
-export const PushOciImageTemplate = defineJobGitLab(
-  PushOciImageJobInputs,
-  (inputValues) => ({
-    name: `devguard:push_oci_image${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
+export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inputValues) => ({
+  name: `devguard:push_oci_image${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
+    },
+    image: {
+      name: ContainerImages.KANIKO,
+      entrypoint: [""],
+    },
+    rules: [
+      {
+        if: `${inputValues.disable_job} == "true"`,
+        when: "never",
       },
-      image: {
-        name: ContainerImages.KANIKO,
-        entrypoint: [""],
+      {
+        when: "on_success",
       },
-      rules: [
-        {
-          if: `${inputValues.disable_job} == "true"`,
-          when: "never",
-        },
-        {
-          when: "on_success",
-        },
-      ],
-      script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+    ],
+    script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 echo "Image: ${inputValues.image}"
 echo "Image Tag: ${inputValues.image_tag}"
@@ -81,6 +79,5 @@ echo "Image Tag: ${inputValues.image_tag}"
 
 /devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"
 `,
-    },
-  }),
-);
+  },
+}));

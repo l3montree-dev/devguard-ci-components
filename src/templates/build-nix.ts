@@ -6,23 +6,20 @@ export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
 });
 
-export const BuildNixExtractScannerTemplate = defineJobGitLab(
-  BuildNixExtractScannerJobInputs,
-  (inputValues) => ({
-    name: `devguard:extract_scanner${inputValues.job_suffix}`,
-    job: {
-      stage: ".pre",
-      image: {
-        name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-        entrypoint: [""],
-      },
-      script: [`cp /sbin/devguard-scanner ./devguard-scanner`],
-      artifacts: {
-        paths: [`devguard-scanner`],
-      },
+export const BuildNixExtractScannerTemplate = defineJobGitLab(BuildNixExtractScannerJobInputs, (inputValues) => ({
+  name: `devguard:extract_scanner${inputValues.job_suffix}`,
+  job: {
+    stage: ".pre",
+    image: {
+      name: "ghcr.io/l3montree-dev/devguard/scanner:main",
+      entrypoint: [""],
     },
-  }),
-);
+    script: [`cp /sbin/devguard-scanner ./devguard-scanner`],
+    artifacts: {
+      paths: [`devguard-scanner`],
+    },
+  },
+}));
 
 // Job 2: generate image tag (Nix variant - uses scanner:main directly)
 export const BuildNixGenerateTagJobInputs = defineInputsGitLab({
@@ -48,40 +45,35 @@ export const BuildNixGenerateTagJobInputs = defineInputsGitLab({
   upstream_version: Inputs.upstream_version,
 });
 
-export const BuildNixGenerateTagTemplate = defineJobGitLab(
-  BuildNixGenerateTagJobInputs,
-  (inputValues) => ({
-    name: `devguard:generate_tag${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
-        IMAGE_SUFFIX: inputValues.image_suffix,
-        DEVGUARD_ARTIFACT_NAME: `${inputValues.devguard_artifact_name}`,
-      },
-      image: {
-        name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-        pull_policy: inputValues.pull_policy,
-      },
-      script: [
-        `devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "${inputValues.image_variant}" --architecture "${inputValues.architecture}" --imagePath "${inputValues.image_path}" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "${inputValues.upstream_version}" >> generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
-        `cat generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
-      ],
-      artifacts: {
-        reports: {
-          dotenv: `generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
-        },
-        paths: [
-          `generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
-        ],
-      },
+export const BuildNixGenerateTagTemplate = defineJobGitLab(BuildNixGenerateTagJobInputs, (inputValues) => ({
+  name: `devguard:generate_tag${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
+      IMAGE_SUFFIX: inputValues.image_suffix,
+      DEVGUARD_ARTIFACT_NAME: `${inputValues.devguard_artifact_name}`,
     },
-  }),
-);
+    image: {
+      name: "ghcr.io/l3montree-dev/devguard/scanner:main",
+      pull_policy: inputValues.pull_policy,
+    },
+    script: [
+      `devguard-scanner generate-tag --imageSuffix "$IMAGE_SUFFIX" --imageVariant "${inputValues.image_variant}" --architecture "${inputValues.architecture}" --imagePath "${inputValues.image_path}" --ref "$CI_COMMIT_REF_NAME" --upstreamVersion "${inputValues.upstream_version}" >> generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
+      `cat generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
+    ],
+    artifacts: {
+      reports: {
+        dotenv: `generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`,
+      },
+      paths: [`generate_tag_${inputValues.upstream_version}_${inputValues.architecture}.env`],
+    },
+  },
+}));
 
 // Job 3: build OCI image using Nix (dockerTools.buildLayeredImage)
 export const BuildNixJobInputs = defineInputsGitLab({
@@ -116,14 +108,8 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
     tags: inputValues.runner_tags,
     stage: inputValues.stage,
     allow_failure: inputValues.allow_failure,
-    needs: [
-      `devguard:extract_scanner${inputValues.job_suffix}`,
-      inputValues.needs,
-    ],
-    dependencies: [
-      `devguard:extract_scanner${inputValues.job_suffix}`,
-      inputValues.dependencies,
-    ],
+    needs: [`devguard:extract_scanner${inputValues.job_suffix}`, inputValues.needs],
+    dependencies: [`devguard:extract_scanner${inputValues.job_suffix}`, inputValues.dependencies],
     image: {
       name: "nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1",
       entrypoint: ["/bin/sh", "-c"],

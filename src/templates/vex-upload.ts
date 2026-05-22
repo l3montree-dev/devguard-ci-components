@@ -32,27 +32,24 @@ export const VexUploadJobInputs = defineInputsGitLab({
   vex_file: Inputs.vex_file,
 });
 
-export const VexUploadTemplate = defineJobGitLab(
-  VexUploadJobInputs,
-  (inputValues) => ({
-    name: `devguard:vex_upload${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
-      },
-      image: {
-        name: ContainerImages.DEVGUARD_SCANNER,
-        pull_policy: inputValues.pull_policy as "always" | "never" | "if-not-present",
-      },
-      script: [
-        `echo "Running DevGuard VeX Upload..."`,
-        `devguard-scanner vex ${inputValues.vex_file} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --ignoreExternalReferences=${inputValues.ignore_external_references}`,
-      ],
+export const VexUploadTemplate = defineJobGitLab(VexUploadJobInputs, (inputValues) => ({
+  name: `devguard:vex_upload${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
     },
-  }),
-);
+    image: {
+      name: ContainerImages.DEVGUARD_SCANNER,
+      pull_policy: inputValues.pull_policy as "always" | "never" | "if-not-present",
+    },
+    script: [
+      `echo "Running DevGuard VeX Upload..."`,
+      `devguard-scanner vex ${inputValues.vex_file} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --ignoreExternalReferences=${inputValues.ignore_external_references}`,
+    ],
+  },
+}));
