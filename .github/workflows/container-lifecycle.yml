@@ -1,0 +1,145 @@
+name: Container Lifecycle
+
+on:
+  workflow_call:
+    inputs:
+      asset-name:
+        description: 'Name of the asset'
+        type: string
+        required: true
+
+      api-url:
+        type: string
+        required: false
+        default: "https://api.devguard.org"
+
+      web-ui:
+        type: string
+        required: false
+        default: "https://app.devguard.org"
+        description: "The URL of the DevGuard Web UI. This is used to link the results in the DevGuard Web UI."
+
+      image-destination-path:
+        description: 'Path to the oci image to be scanned.'
+        type: string
+        required: false
+        default: "image.tar"
+
+      image:
+        description: 'OCI image tag'
+        type: string
+        required: false
+
+      disable-artifact-registry-as-image-store:
+        required: false
+        default: false
+        type: boolean
+        description: "If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact."
+
+      image-suffix:
+        description: 'Suffix for the image name. You probably need this if you are building multiple images.'
+        type: string
+        required: false
+        default: ''
+
+      artifact-name:
+        type: string
+        required: false
+        default: ''
+        description: "The name of the artifact you are building. Leave empty if building a single artifact."
+
+      should-deploy:
+        description: 'Should the deploy job run'
+        type: boolean
+        required: false
+        default: true
+
+      fail-on-risk:
+        description: 'Fail the job if a risk is higher than the configured threshold, e.g. critical, high, medium, low'
+        type: string
+        required: false
+
+      fail-on-cvss:
+        description: 'Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low'
+        type: string
+        required: false
+
+    secrets:
+      devguard-token:
+        description: 'DevGuard API token'
+        required: true
+      build-args:
+        description: 'Build arguments. Useful to overwrite context and dockerfile.'
+        required: false
+
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  call-build-image:
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image-destination-path: ${{ inputs.image-destination-path }}
+      image: ${{ inputs.image }}
+      asset-name: ${{ inputs.asset-name }}
+      api-url: ${{ inputs.api-url }}
+      disable-artifact-registry-as-image-store: ${{ inputs.disable-artifact-registry-as-image-store }}
+      artifact-name: ${{ inputs.artifact-name }}
+      image-suffix: ${{ inputs.image-suffix }}
+    secrets:
+      devguard-token: ${{ secrets.devguard-token }}
+      build-args: ${{ secrets.build-args }}
+
+  call-container-scanning:
+    needs: call-build-image
+    uses: ./.github/workflows/container-scanning.yml
+    with:
+      asset-name: ${{ inputs.asset-name }}
+      api-url: ${{ inputs.api-url }}
+      image-path: ${{ inputs.image-destination-path }}
+      fetch-image-from-registry: ${{ inputs.disable-artifact-registry-as-image-store }}
+      fail-on-risk: ${{ inputs.fail-on-risk }}
+      fail-on-cvss: ${{ inputs.fail-on-cvss }}
+      web-ui: ${{ inputs.web-ui }}
+      artifact-name: ${{ inputs.artifact-name }}
+      image-suffix: ${{ inputs.image-suffix }}
+    secrets:
+      devguard-token: ${{ secrets.devguard-token }}
+
+  call-deploy:
+    needs: [call-build-image, call-container-scanning]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      should-deploy: ${{ inputs.should-deploy }}
+      asset-name: ${{ inputs.asset-name }}
+      api-url: ${{ inputs.api-url }}
+      image-already-in-registry: ${{ inputs.disable-artifact-registry-as-image-store }}
+      image-suffix: ${{ inputs.image-suffix }}
+    secrets:
+      devguard-token: ${{ secrets.devguard-token }}
+
+  call-sign:
+    needs: [call-build-image, call-container-scanning, call-deploy]
+    uses: ./.github/workflows/sign.yml
+    with:
+      should-deploy: ${{ inputs.should-deploy }}
+      api-url: ${{ inputs.api-url }}
+      asset-name: ${{ inputs.asset-name }}
+      artifact-name: ${{ inputs.artifact-name }}
+      image-suffix: ${{ inputs.image-suffix }}
+    secrets:
+      devguard-token: ${{ secrets.devguard-token }}
+
+  call-attest:
+    needs: [call-build-image, call-container-scanning, call-deploy]
+    uses: ./.github/workflows/attest.yml
+    with:
+      should-deploy: ${{ inputs.should-deploy }}
+      api-url: ${{ inputs.api-url }}
+      asset-name: ${{ inputs.asset-name }}
+      artifact-name: ${{ inputs.artifact-name }}
+      image-suffix: ${{ inputs.image-suffix }}
+    secrets:
+      devguard-token: ${{ secrets.devguard-token }}

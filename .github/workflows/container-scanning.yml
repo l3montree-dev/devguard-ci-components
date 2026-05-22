@@ -1,0 +1,104 @@
+on:
+  workflow_call:
+    inputs:
+      asset-name:
+        description: 'Name of the asset to be scanned'
+        type: string
+        required: true
+      api-url:
+        type: string
+        required: false
+        default: "https://api.devguard.org"
+      image-path:
+        description: 'Path to the Docker image to be scanned'
+        type: string
+        required: false
+        default: "image.tar"
+      fetch-image-from-registry:
+        description: 'If set to true, the image will be pulled from the registry instead of using the artifact.'
+        type: boolean
+        required: false
+        default: false
+      fail-on-risk:
+        description: 'Fail the job if a risk is higher than the configured threshold, e.g. critical, high, medium, low, none'
+        type: string
+        required: false
+      fail-on-cvss:
+        description: 'Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low, none'
+        type: string
+        required: false  
+      artifact-name:
+        type: string
+        required: false
+        default: ""
+        description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."
+      web-ui:
+        type: string
+        required: false
+        default: "https://app.devguard.org"
+        description: "The URL of the DevGuard Web UI. This is used to link the results in the DevGuard Web UI."
+      image-suffix:
+        # Suffix for the image name
+        description: 'Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image.'
+        type: string
+        required: false
+        default: ''
+    secrets:
+      devguard-token:
+        description: 'DevGuard API token'
+        required: true
+
+jobs:
+  container-scanning:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        persist-credentials: true
+    - name: Download Docker image - if exists (gets created by build-image).If running this workflow independently, the image must be built first and provided as an artifact with the name 'oci-image'. See build-image.yml for more details.
+      uses: actions/download-artifact@v4
+      with:
+        name: oci-image${{ inputs.image-suffix }}
+        path: .
+      if: inputs.fetch-image-from-registry == false
+
+    - name: Download image-tag artifact (can be created by build-image)
+      uses: actions/download-artifact@v4
+      with:
+        name: image-tag${{ inputs.image-suffix }}
+        path: .
+    
+    - name: Download artifact purl (can be created by build-image)
+      uses: actions/download-artifact@v4
+      with:
+        name: artifact-purl${{ inputs.image-suffix }}  
+      if: inputs.artifact-name == ''  
+
+    - name: set artifact-name variable if it is empty
+      run: |
+        if [ -z "${{ inputs.artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+          echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+          echo "Using artifact name from file: $ARTIFACT_NAME"
+        else
+          echo "ARTIFACT_NAME=${{ inputs.artifact-name }}" >> $GITHUB_ENV
+          echo "Using provided artifact name: ${{ inputs.artifact-name }}"
+        fi    
+          
+
+    - name: Setup crane
+      uses: imjasonh/setup-crane@v0.1
+
+    - name: Download OCI Image from registry
+      run: |
+        crane pull $(cat image-tag.txt) image.tar
+      if: inputs.fetch-image-from-registry == true
+
+    - name: DevGuard Container-Scanning
+      uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.4.2
+      with:
+        args: devguard-scanner container-scanning --assetName=${{ inputs.asset-name }}   --apiUrl=${{ inputs.api-url }} --token="${{ secrets.devguard-token }}" --path=${{ inputs.image-path }} --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }} --failOnRisk=${{ inputs.fail-on-risk }} --failOnCVSS=${{ inputs.fail-on-cvss }} --artifactName=${{ env.ARTIFACT_NAME }} --webUI=${{ inputs.web-ui }}
+      env:
+        ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
