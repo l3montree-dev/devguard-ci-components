@@ -56,7 +56,7 @@ jobs:
       devguard_web_ui: ${{ inputs.web-ui }}
       allow_failure: ${{ inputs.continue-on-open-code-risk }}
     secrets:
-      devguard_token: ${{ secrets.devguard-token }}
+      devguard-token: ${{ secrets.devguard-token }}
 
   call-sast:
     uses: ./.github/workflows/static-application-security-testing.yml
