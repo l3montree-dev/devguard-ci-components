@@ -10,6 +10,7 @@ import { stringify } from "yaml";
 import { writeFile, mkdir } from "fs/promises";
 import { GitHubWorkflowReusable, GitHubJob } from "./github/github-actions";
 import {
+  githubJobId,
   transformInputsToGitHub,
   transformObjectVariableSyntax,
   transformVariableSyntax,
@@ -207,7 +208,13 @@ export async function ExportCIComponentsGitHub(
         },
       },
       jobs: jobDefs.reduce(
-        (acc, def) => ({ ...acc, [transformVariableSyntax(def.name)]: transformObjectVariableSyntax(def.job) }),
+        (acc, def) => ({
+          ...acc,
+          [githubJobId(transformVariableSyntax(def.name))]: transformObjectVariableSyntax({
+            ...def.job,
+            name: transformVariableSyntax(def.name),
+          }),
+        }),
         {},
       ),
     };

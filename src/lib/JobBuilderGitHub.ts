@@ -46,19 +46,26 @@ export class JobBuilderGitHub {
       {},
     ) as ResolvedInputValuesGitHub<TInputDefinitions>;
 
-    return {
+    const workflow = {
       inputs: inputDefs,
       ...partialJobGenerator(inputValues, needs),
     } as GitHubWorkflow;
+
+    // add needs section if it's available
+    if (needs && needs.length > 0) {
+      workflow.job = {
+        ...workflow.job,
+        needs,
+      };
+    }
+
+    return workflow;
   }
 }
 
 export const defineJobGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(
   inputDefinitionsDefault: TInputDefinitions,
-  partialJobGenerator: (
-    inputValues: ResolvedInputValuesGitHub<TInputDefinitions>,
-    needs: string[],
-  ) => Partial<GitHubWorkflow>,
+  partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>,
 ) => {
   return (inputs: Partial<InputValuesGitHub<TInputDefinitions>>, needs: string[] = []): GitHubWorkflow => {
     return JobBuilderGitHub.generate(inputDefinitionsDefault, inputs, needs, partialJobGenerator);

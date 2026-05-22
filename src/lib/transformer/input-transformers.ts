@@ -10,18 +10,6 @@ import { WorkflowInput } from "../github/github-actions";
 import { mapVariableToGitHub } from "../github/platform-variables";
 
 /**
- * List of GitLab-specific input keys that should not be exported to GitHub Actions
- */
-const GITLAB_ONLY_INPUTS = new Set([
-  "runner_tags",
-  "stage",
-  "git_strategy",
-  "pull_policy",
-  "dependencies",
-  "job_suffix", // Not needed in GitHub Actions
-]);
-
-/**
  * Convert GitLab CI input definitions to GitHub Actions format
  * GitHub Actions requires a 'type' field for all inputs
  * Filters out GitLab-specific inputs
@@ -32,7 +20,7 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
 
   for (const [key, inputDef] of Object.entries(inputs)) {
     // Skip null inputs and GitLab-specific inputs
-    if (!inputDef || GITLAB_ONLY_INPUTS.has(key)) continue;
+    if (!inputDef) continue;
 
     // Determine the type based on the input definition
     let type: "string" | "choice" | "boolean" | "environment" | "number" = "string";
@@ -64,6 +52,15 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
   }
 
   return gitHubInputs;
+}
+
+/**
+ * Remove all variables from string
+ */
+export function githubJobId(jobId: string): string {
+  return jobId
+    .replace(/\$\{\{\s*([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\s*\}\}/g, "") // remove any GitHub Action Variables that are not allowed
+    .replace(/[^a-zA-Z0-9_]/g, "_"); // replace any character except _ and alphanumeric with _
 }
 
 /**
