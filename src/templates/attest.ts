@@ -63,6 +63,9 @@ devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry
 ATT_JSON_STR='${Array.isArray(inputValues.attestations) ? JSON.stringify(inputValues.attestations) : inputValues.attestations}'
 echo "Attestations: $ATT_JSON_STR"
 
+# Strip outer double quotes if present (GitLab CI wraps array inputs in quotes)
+ATT_JSON_STR=$(echo "$ATT_JSON_STR" | sed 's/^"//;s/"$//')
+
 ATT_JSON_CLEAN=$(echo "$ATT_JSON_STR" \\
 | sed 's/:\\([a-z_]\\+\\)=>/"\\1":/g' \\
 | sed 's/=>/:/g' \\
