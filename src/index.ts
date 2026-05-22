@@ -319,11 +319,9 @@ const clbiVexUpload = VexUploadTemplate({
 
 const templates: CIComponentGroupTemplateGitLab = {
   // ── Individual job templates ──────────────────────────────────────────────
-  /*
-    "source-provenance-attestation": [
-        SourceProvenanceTemplate({}),
-    ],
-    */
+  // "source-provenance-attestation": [
+  //     SourceProvenanceTemplate({}),
+  // ],
 
   attest: [AttestTemplate({})],
   "secret-scanning": [SecretScanningTemplateGitLab({})],
@@ -365,53 +363,51 @@ const templates: CIComponentGroupTemplateGitLab = {
     fullSignOciImage,
     fullAttest,
   ],
-  /*
-  "container-lifecycle": [
-    clGenerateTag,
-    clBuildOciImage,
-    clContainerScanning,
-    clPushOciImage,
-    clSignOciImage,
-    clAttest,
-  ],
-  "container-lifecycle-nix": [
-    clnExtractScanner,
-    clnGenerateTag,
-    clnBuildOciImage,
-    clnContainerScanning,
-    clnPushOciImage,
-    clnSignOciImage,
-    clnAttest,
-  ],
-  "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
-  "container-scanning-and-attest": [
-    csaGenerateTag,
-    csaContainerScanning,
-    csaPushOciImage,
-    csaSignOciImage,
-    csaAttest,
-  ],
-  "container-lifecycle-with-base-image-inspection": [
-    clbiDiscoverAttestations,
-    clbiGenerateTag,
-    clbiBuildOciImage,
-    clbiContainerScanning,
-    clbiPushOciImage,
-    clbiSignOciImage,
-    clbiAttest,
-    clbiSbomUpload,
-    clbiVexUpload,
-  ],
-  "build-nix": [
-    BuildNixExtractScannerTemplate({}),
-    BuildNixGenerateTagTemplate({}),
-    BuildNixTemplate({}),
-  ],
-  "build-nix-multiarch": [
-    BuildNixMultiArchBuildImageTemplate({}),
-    BuildNixMultiArchCreateManifestTemplate({}),
-  ],
-  */
+  // "container-lifecycle": [
+  //   clGenerateTag,
+  //   clBuildOciImage,
+  //   clContainerScanning,
+  //   clPushOciImage,
+  //   clSignOciImage,
+  //   clAttest,
+  // ],
+  // "container-lifecycle-nix": [
+  //   clnExtractScanner,
+  //   clnGenerateTag,
+  //   clnBuildOciImage,
+  //   clnContainerScanning,
+  //   clnPushOciImage,
+  //   clnSignOciImage,
+  //   clnAttest,
+  // ],
+  // "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
+  // "container-scanning-and-attest": [
+  //   csaGenerateTag,
+  //   csaContainerScanning,
+  //   csaPushOciImage,
+  //   csaSignOciImage,
+  //   csaAttest,
+  // ],
+  // "container-lifecycle-with-base-image-inspection": [
+  //   clbiDiscoverAttestations,
+  //   clbiGenerateTag,
+  //   clbiBuildOciImage,
+  //   clbiContainerScanning,
+  //   clbiPushOciImage,
+  //   clbiSignOciImage,
+  //   clbiAttest,
+  //   clbiSbomUpload,
+  //   clbiVexUpload,
+  // ],
+  // "build-nix": [
+  //   BuildNixExtractScannerTemplate({}),
+  //   BuildNixGenerateTagTemplate({}),
+  //   BuildNixTemplate({}),
+  // ],
+  // "build-nix-multiarch": [
+  //   BuildNixMultiArchBuildImageTemplate({}),
+  //   BuildNixMultiArchCreateManifestTemplate({}),
+  // ],
 };
 
 await ExportCIComponentsGitLab(templates, fileHeader, {
