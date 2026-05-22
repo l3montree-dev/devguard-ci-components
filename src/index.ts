@@ -12,8 +12,8 @@ import {
   StaticApplicationSecurityTestingTemplate,
 } from "./templates/static-application-security-testing";
 // import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
-import { CIComponentGroupTemplate } from "./lib/types";
-import { ExportCIComponents } from "./lib/utils";
+import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab } from "./lib/types";
+import { ExportCIComponentsGitHub, ExportCIComponentsGitLab } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
@@ -317,7 +317,7 @@ const clbiVexUpload = VexUploadTemplate({
   dependencies: [clbiDiscoverAttestations.name, clbiSbomUpload.name],
 });
 
-const templates: CIComponentGroupTemplate = {
+const templates: CIComponentGroupTemplateGitLab = {
   // ── Individual job templates ──────────────────────────────────────────────
   /*
     "source-provenance-attestation": [
@@ -414,7 +414,7 @@ const templates: CIComponentGroupTemplate = {
   */
 };
 
-await ExportCIComponents(templates, fileHeader, {
+await ExportCIComponentsGitLab(templates, fileHeader, {
   full: {
     devguard_artifact_name: Inputs.devguard_artifact_name,
     small_artifact_registry: Inputs.small_artifact_registry,
@@ -428,10 +428,10 @@ await ExportCIComponents(templates, fileHeader, {
 
 /** GitHub */
 
-const templatesGitHub: CIComponentGroupTemplate = {
+const templatesGitHub: CIComponentGroupTemplateGitHub = {
   "secret-scanning": [SecretScanningTemplateGitHub({})],
 };
 
-await ExportCIComponents(templatesGitHub, fileHeader);
+await ExportCIComponentsGitHub(templatesGitHub, fileHeader);
 
 // console.log("Finished");

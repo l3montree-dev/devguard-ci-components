@@ -1,5 +1,11 @@
 import { ConfigInputs, GitLabCI, transform as transformToGitLab } from "@sleeyax/gitlab-ci-ts";
-import { CIComponentGroupTemplate, GitLabJobWithSpec, IncludeWithSpec, GitHubWorkflow } from "./types";
+import {
+  GitLabJobWithSpec,
+  IncludeWithSpec,
+  GitHubWorkflow,
+  CIComponentGroupTemplateGitLab,
+  CIComponentGroupTemplateGitHub,
+} from "./types";
 import { stringify } from "yaml";
 import { writeFile, mkdir } from "fs/promises";
 import { GitHubWorkflowReusable, GitHubJob } from "./github/github-actions";
@@ -48,7 +54,7 @@ async function ExportGitLabCI(pipeline: GitLabCI, filePath: string, header: stri
  * OTHER
  */
 
-async function GenerateMermaidDiagram(templates: CIComponentGroupTemplate): Promise<void> {
+async function GenerateMermaidDiagram(templates: CIComponentGroupTemplateGitLab): Promise<void> {
   const metaTemplates = Object.entries(templates).filter(([templateName, template]) => template.length > 1);
   const jobTemplates = Object.entries(templates).filter(([templateName, template]) => template.length === 1);
 
@@ -132,17 +138,15 @@ function checkForInputConflicts(
   }
 }
 
-export async function ExportCIComponents(
-  templates: CIComponentGroupTemplate,
+export async function ExportCIComponentsGitLab(
+  templates: CIComponentGroupTemplateGitLab,
   header: string,
   inputOverrides: { [key: string]: ConfigInputs } = {},
 ): Promise<void> {
   GenerateMermaidDiagram(templates);
 
   // Ensure output directories exist
-  await mkdir("./github/", { recursive: true });
   await mkdir("./templates/", { recursive: true });
-  await mkdir("./.github/workflows/", { recursive: true });
 
   for (const [templateName, template] of Object.entries(templates)) {
     // Check for conflicting input defaults before merging
@@ -156,17 +160,13 @@ export async function ExportCIComponents(
     const isWorkflowJob = (job: any): job is GitHubJob =>
       typeof job === "object" && job !== null && ("toGitHub" in job || "runs-on" in job); // TODO.. rework this logic once Tims PoC is fully removed
 
-    // Separate WorkflowJob instances from legacy (GitLab only) jobs
-    const githubJobs = jobDefs.filter((def): def is GitHubWorkflow => isWorkflowJob(def.job));
-    const gitlabJobs = jobDefs.filter((def): def is GitLabJobWithSpec => !isWorkflowJob(def.job));
-
     // ─── GITLAB CI EXPORT ───────────────────────────────────
 
     const pipeline: GitLabCI = {
       spec: {
         inputs: mergedInputs,
       },
-      jobs: gitlabJobs.reduce((acc, def) => ({ ...acc, [def.name]: def.job }), {}),
+      jobs: jobDefs.reduce((acc, def) => ({ ...acc, [def.name]: def.job }), {}),
       include: template
         .filter((t): t is IncludeWithSpec => "include" in t)
         .reduce((acc, curr) => [...acc, curr.include], [] as IncludeWithSpec["include"][]),
@@ -174,27 +174,46 @@ export async function ExportCIComponents(
 
     const filenameGitLab = `./templates/${templateName}.yml`;
     await ExportGitLabCI(pipeline, filenameGitLab, header);
+  }
+}
+
+export async function ExportCIComponentsGitHub(
+  templates: CIComponentGroupTemplateGitHub,
+  header: string,
+  inputOverrides: { [key: string]: ConfigInputs } = {},
+): Promise<void> {
+  // GenerateMermaidDiagram(templates);
+
+  // Ensure output directories exist
+  await mkdir("./github/", { recursive: true });
+  await mkdir("./.github/workflows/", { recursive: true });
+
+  for (const [templateName, template] of Object.entries(templates)) {
+    // Check for conflicting input defaults before merging
+    checkForInputConflicts(template, Object.keys(inputOverrides[templateName] ?? {}));
+
+    const mergedInputs = Object.assign({}, ...template.map((t) => t.inputs), inputOverrides[templateName] ?? {});
+
+    // find all entries with Jobs
+    const jobDefs = template.filter((t): t is GitHubWorkflow => "job" in t);
 
     // ─── GITHUB ACTIONS EXPORT ──────────────────────────────
-    // Only export if there are WorkflowJob instances
-    if (githubJobs.length > 0) {
-      const githubWorkflow: GitHubWorkflowReusable = {
-        on: {
-          workflow_call: {
-            inputs: transformInputsToGitHub(mergedInputs),
-            secrets: githubJobs.filter((job) => job.secrets).reduce((acc, def) => ({ ...acc, ...def.secrets }), {}),
-          },
-        },
-        jobs: githubJobs.reduce(
-          (acc, def) => ({ ...acc, [transformVariableSyntax(def.name)]: transformObjectVariableSyntax(def.job) }),
-          {},
-        ),
-      };
 
-      const filenameGitHub = `./.github/workflows/${templateName}.yml`;
-      await ExportGitHubActionsWorkflow(githubWorkflow, filenameGitHub, header);
-      console.log(`Exported template "${templateName}" to GitHub Actions: ${filenameGitHub}`);
-    }
+    const githubWorkflow: GitHubWorkflowReusable = {
+      on: {
+        workflow_call: {
+          inputs: transformInputsToGitHub(mergedInputs),
+          secrets: jobDefs.filter((job) => job.secrets).reduce((acc, def) => ({ ...acc, ...def.secrets }), {}),
+        },
+      },
+      jobs: jobDefs.reduce(
+        (acc, def) => ({ ...acc, [transformVariableSyntax(def.name)]: transformObjectVariableSyntax(def.job) }),
+        {},
+      ),
+    };
+
+    const filenameGitHub = `./.github/workflows/${templateName}.yml`;
+    await ExportGitHubActionsWorkflow(githubWorkflow, filenameGitHub, header);
+    console.log(`Exported template "${templateName}" to GitHub Actions: ${filenameGitHub}`);
   }
-  // await rm("./github/", { recursive: true, force: true });
 }
