@@ -188,11 +188,6 @@ include:
         - $[[ inputs.build_job_name ]]
         - devguard:push_oci_image$[[ inputs.job_suffix ]]
         - $[[ inputs.needs ]]
-      dependencies:
-        - devguard:generate_tag$[[ inputs.job_suffix ]]
-        - $[[ inputs.build_job_name ]]
-        - devguard:push_oci_image$[[ inputs.job_suffix ]]
-        - $[[ inputs.dependencies ]]
       attestations:
         - source: "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/"
           predicate_type: "https://cyclonedx.org/bom"
