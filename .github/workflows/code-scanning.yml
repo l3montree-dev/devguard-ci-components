@@ -50,13 +50,13 @@ jobs:
   call-secret-scanning:
     uses: ./.github/workflows/secret-scanning.yml
     with:
-      asset-name: ${{ inputs.asset-name }}
-      api-url: ${{ inputs.api-url }}
+      devguard_asset_name: ${{ inputs.asset-name }}
+      devguard_api_url: ${{ inputs.api-url }}
       path: ${{ inputs.path }}
-      web-ui: ${{ inputs.web-ui }}
-      continue-on-open-code-risk: ${{ inputs.continue-on-open-code-risk }}
+      devguard_web_ui: ${{ inputs.web-ui }}
+      allow_failure: ${{ inputs.continue-on-open-code-risk }}
     secrets:
-      devguard-token: ${{ secrets.devguard-token }}
+      devguard_token: ${{ secrets.devguard-token }}
 
   call-sast:
     uses: ./.github/workflows/static-application-security-testing.yml
