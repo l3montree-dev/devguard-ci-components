@@ -144,8 +144,6 @@ build_image$[[ inputs.job_suffix ]]:
           architecture: ${ARCHITECTURE}
           needs:
             - devguard:container_scanning$[[ inputs.job_suffix ]]
-          dependencies:
-            - devguard:container_scanning$[[ inputs.job_suffix ]]
 
 
 create_and_sign_manifest$[[ inputs.job_suffix ]]:
