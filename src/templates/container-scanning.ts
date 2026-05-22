@@ -48,41 +48,39 @@ export const ContainerScanningJobInputs = defineInputsGitLab({
   fetch_image_from_registry: Inputs.fetch_image_from_registry,
 });
 
-export const ContainerScanningTemplate = defineJobGitLab(
-  ContainerScanningJobInputs,
-  (inputValues) => ({
-    name: `devguard:container_scanning${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
-      },
-      image: {
-        name: ContainerImages.DEVGUARD_SCANNER,
-        pull_policy: inputValues.pull_policy,
-      },
-      script: [
-        `echo "Running DevGuard Container Scanning..."`,
-        `echo "Image Tag: ${inputValues.image_tag}"`,
-        `echo "Image Tar Path: ${inputValues.image_tar_path}"`,
-        `echo "Fetch Image From Registry: ${inputValues.fetch_image_from_registry}"`,
-        `echo "Origin: ${inputValues.devguard_origin}"`,
-        `echo "Asset Name: ${inputValues.devguard_asset_name}"`,
-        `echo "API URL: ${inputValues.devguard_api_url}"`,
-        `echo "Path: ${inputValues.image_tar_path}"`,
-        `echo "Default Ref: ${inputValues.default_ref}"`,
-        `echo "Commit Ref: ${inputValues.commit_ref}"`,
-        `echo "Is Tag: ${inputValues.is_tag}"`,
-        `echo "Artifact Name: ${inputValues.devguard_artifact_name}"`,
-        `echo "Web UI: ${inputValues.devguard_web_ui}"`,
-        `echo "Fail on Risk: ${inputValues.fail_on_risk}"`,
-        `echo "Fail on CVSS: ${inputValues.fail_on_cvss}"`,
+export const ContainerScanningTemplate = defineJobGitLab(ContainerScanningJobInputs, (inputValues) => ({
+  name: `devguard:container_scanning${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
+    },
+    image: {
+      name: ContainerImages.DEVGUARD_SCANNER,
+      pull_policy: inputValues.pull_policy,
+    },
+    script: [
+      `echo "Running DevGuard Container Scanning..."`,
+      `echo "Image Tag: ${inputValues.image_tag}"`,
+      `echo "Image Tar Path: ${inputValues.image_tar_path}"`,
+      `echo "Fetch Image From Registry: ${inputValues.fetch_image_from_registry}"`,
+      `echo "Origin: ${inputValues.devguard_origin}"`,
+      `echo "Asset Name: ${inputValues.devguard_asset_name}"`,
+      `echo "API URL: ${inputValues.devguard_api_url}"`,
+      `echo "Path: ${inputValues.image_tar_path}"`,
+      `echo "Default Ref: ${inputValues.default_ref}"`,
+      `echo "Commit Ref: ${inputValues.commit_ref}"`,
+      `echo "Is Tag: ${inputValues.is_tag}"`,
+      `echo "Artifact Name: ${inputValues.devguard_artifact_name}"`,
+      `echo "Web UI: ${inputValues.devguard_web_ui}"`,
+      `echo "Fail on Risk: ${inputValues.fail_on_risk}"`,
+      `echo "Fail on CVSS: ${inputValues.fail_on_cvss}"`,
 
-        `echo "---"
+      `echo "---"
 if [ "${inputValues.fetch_image_from_registry}" = "true" ]; then
     echo "Scanning remote image from registry: $IMAGE_TAG"
     devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
@@ -135,7 +133,6 @@ else
     --failOnRisk="${inputValues.fail_on_risk}" \\
     --failOnCVSS="${inputValues.fail_on_cvss}"
 fi`,
-      ],
-    },
-  }),
-);
+    ],
+  },
+}));

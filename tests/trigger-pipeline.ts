@@ -51,9 +51,7 @@ async function gitlabJson<T>(url: string, init?: RequestInit): Promise<T> {
   const text = await res.text();
 
   if (!res.ok) {
-    throw new Error(
-      `GitLab API request failed: ${res.status} ${res.statusText}\n${text}`,
-    );
+    throw new Error(`GitLab API request failed: ${res.status} ${res.statusText}\n${text}`);
   }
 
   try {

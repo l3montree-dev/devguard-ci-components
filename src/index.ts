@@ -1,41 +1,13 @@
 import { AttestJobInputs, AttestTemplate } from "./templates/attest";
-import {
-  BuildNixExtractScannerTemplate,
-  BuildNixGenerateTagTemplate,
-  BuildNixTemplate,
-} from "./templates/build-nix";
-import {
-  BuildOciImageJobInputs,
-  BuildOciImageTemplate,
-} from "./templates/build-oci-image";
-import {
-  ContainerScanningJobInputs,
-  ContainerScanningTemplate,
-} from "./templates/container-scanning";
-import {
-  GenerateTagJobInputs,
-  GenerateTagTemplate,
-} from "./templates/generate-tag";
-import {
-  IaCJobInputs,
-  InfrastructureAsCodeScanningTemplate,
-} from "./templates/infrastructure-as-code-scanning";
-import {
-  PushOciImageJobInputs,
-  PushOciImageTemplate,
-} from "./templates/push-oci-image";
-import {
-  SecretScanningJobInputs,
-  SecretScanningTemplate,
-} from "./templates/secret-scanning";
-import {
-  SignOciImageJobInputs,
-  SignOciImageTemplate,
-} from "./templates/sign-oci-image";
-import {
-  SCAJobInputs,
-  SoftwareCompositionAnalysisTemplate,
-} from "./templates/software-composition-analysis";
+import { BuildNixExtractScannerTemplate, BuildNixGenerateTagTemplate, BuildNixTemplate } from "./templates/build-nix";
+import { BuildOciImageJobInputs, BuildOciImageTemplate } from "./templates/build-oci-image";
+import { ContainerScanningJobInputs, ContainerScanningTemplate } from "./templates/container-scanning";
+import { GenerateTagJobInputs, GenerateTagTemplate } from "./templates/generate-tag";
+import { IaCJobInputs, InfrastructureAsCodeScanningTemplate } from "./templates/infrastructure-as-code-scanning";
+import { PushOciImageJobInputs, PushOciImageTemplate } from "./templates/push-oci-image";
+import { SecretScanningJobInputs, SecretScanningTemplate } from "./templates/secret-scanning";
+import { SignOciImageJobInputs, SignOciImageTemplate } from "./templates/sign-oci-image";
+import { SCAJobInputs, SoftwareCompositionAnalysisTemplate } from "./templates/software-composition-analysis";
 import {
   SASTJobInputs,
   StaticApplicationSecurityTestingTemplate,
@@ -52,10 +24,7 @@ import { SarifUploadTemplate } from "./templates/sarif-upload";
 import { SbomUploadTemplate } from "./templates/sbom-upload";
 import { SourceProvenanceTemplate } from "./templates/source-provenance-attestation";
 import { VexUploadTemplate } from "./templates/vex-upload";
-import {
-  SecretScanningTemplateGitHub,
-  SecretScanningTemplateGitLab,
-} from "./templates/secret-scanning-multi";
+import { SecretScanningTemplateGitHub, SecretScanningTemplateGitLab } from "./templates/secret-scanning-multi";
 
 // ── full ──────────────────────────────────────────────────────────────────────
 const fullGenerateTag = GenerateTagTemplate({
@@ -83,32 +52,16 @@ const fullPushOciImage = PushOciImageTemplate({
   stage: "oci-image",
   image: PushOciImageJobInputs.image.default,
   image_tag: "$IMAGE_TAG",
-  needs: [
-    fullGenerateTag.name,
-    fullBuildOciImage.name,
-    fullContrainerScanning.name,
-  ],
-  dependencies: [
-    fullGenerateTag.name,
-    fullBuildOciImage.name,
-    fullContrainerScanning.name,
-  ],
+  needs: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScanning.name],
+  dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullContrainerScanning.name],
   disable_job: "$[[ inputs.small_artifact_registry ]]",
 });
 const fullSignOciImage = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: SignOciImageJobInputs.git_strategy.default,
   image: "$IMAGE_TAG",
-  needs: [
-    fullGenerateTag.name,
-    fullBuildOciImage.name,
-    { job: fullPushOciImage.name, optional: true },
-  ],
-  dependencies: [
-    fullGenerateTag.name,
-    fullBuildOciImage.name,
-    fullPushOciImage.name,
-  ],
+  needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
+  dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name],
 });
 const fullSourceProvenanceAttestation = SourceProvenanceTemplate({
   stage: AttestJobInputs.stage.default,
@@ -137,8 +90,7 @@ const fullAttest = AttestTemplate({
     {
       source:
         "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
-      predicate_type:
-        "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
+      predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
     },
     {
       source: "build.provenance.json",
@@ -190,12 +142,7 @@ const clSignOciImage = SignOciImageTemplate({
 const clAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  needs: [
-    clGenerateTag.name,
-    clPushOciImage.name,
-    clBuildOciImage.name,
-    clContainerScanning.name,
-  ],
+  needs: [clGenerateTag.name, clPushOciImage.name, clBuildOciImage.name, clContainerScanning.name],
 });
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
@@ -222,16 +169,8 @@ const clnPushOciImage = PushOciImageTemplate({
   git_strategy: "none",
   image: "image.tar",
   image_tag: "$IMAGE_TAG",
-  needs: [
-    clnGenerateTag.name,
-    clnBuildOciImage.name,
-    clnContainerScanning.name,
-  ],
-  dependencies: [
-    clnGenerateTag.name,
-    clnBuildOciImage.name,
-    clnContainerScanning.name,
-  ],
+  needs: [clnGenerateTag.name, clnBuildOciImage.name, clnContainerScanning.name],
+  dependencies: [clnGenerateTag.name, clnBuildOciImage.name, clnContainerScanning.name],
 });
 const clnSignOciImage = SignOciImageTemplate({
   stage: "attestation",
@@ -243,12 +182,7 @@ const clnSignOciImage = SignOciImageTemplate({
 const clnAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  needs: [
-    clnGenerateTag.name,
-    clnPushOciImage.name,
-    clnBuildOciImage.name,
-    clnContainerScanning.name,
-  ],
+  needs: [clnGenerateTag.name, clnPushOciImage.name, clnBuildOciImage.name, clnContainerScanning.name],
 });
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
@@ -274,11 +208,7 @@ const paSignOciImage = SignOciImageTemplate({
 const paAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  needs: [
-    paGenerateTag.name,
-    "$[[ inputs.build_job_name ]]",
-    paPushOciImage.name,
-  ],
+  needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", paPushOciImage.name],
 });
 
 // ── container-scanning-and-attest ─────────────────────────────────────────────
@@ -297,16 +227,8 @@ const csaPushOciImage = PushOciImageTemplate({
   git_strategy: "none",
   image: "image.tar",
   image_tag: "$IMAGE_TAG",
-  needs: [
-    csaGenerateTag.name,
-    csaContainerScanning.name,
-    "$[[ inputs.build_job_name ]]",
-  ],
-  dependencies: [
-    csaGenerateTag.name,
-    csaContainerScanning.name,
-    "$[[ inputs.build_job_name ]]",
-  ],
+  needs: [csaGenerateTag.name, csaContainerScanning.name, "$[[ inputs.build_job_name ]]"],
+  dependencies: [csaGenerateTag.name, csaContainerScanning.name, "$[[ inputs.build_job_name ]]"],
 });
 const csaSignOciImage = SignOciImageTemplate({
   stage: "attestation",
@@ -318,12 +240,7 @@ const csaSignOciImage = SignOciImageTemplate({
 const csaAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  needs: [
-    csaGenerateTag.name,
-    "$[[ inputs.build_job_name ]]",
-    csaContainerScanning.name,
-    csaPushOciImage.name,
-  ],
+  needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]", csaContainerScanning.name, csaPushOciImage.name],
 });
 
 // ── container-lifecycle-with-base-image-inspection ────────────────────────────
@@ -368,12 +285,7 @@ const clbiSignOciImage = SignOciImageTemplate({
 const clbiAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  needs: [
-    clbiGenerateTag.name,
-    clbiPushOciImage.name,
-    clbiBuildOciImage.name,
-    clbiContainerScanning.name,
-  ],
+  needs: [clbiGenerateTag.name, clbiPushOciImage.name, clbiBuildOciImage.name, clbiContainerScanning.name],
 });
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
 const clbiSbomUpload = SbomUploadTemplate({
@@ -408,9 +320,7 @@ const templates: CIComponentGroupTemplate = {
 
   attest: [AttestTemplate({})],
   "secret-scanning": [SecretScanningTemplate({})],
-  "static-application-security-testing": [
-    StaticApplicationSecurityTestingTemplate({}),
-  ],
+  "static-application-security-testing": [StaticApplicationSecurityTestingTemplate({})],
   "infrastructure-as-code-scanning": [InfrastructureAsCodeScanningTemplate({})],
   "software-composition-analysis": [SoftwareCompositionAnalysisTemplate({})],
   "generate-tag": [GenerateTagTemplate({})],
@@ -423,9 +333,7 @@ const templates: CIComponentGroupTemplate = {
   "sarif-upload": [SarifUploadTemplate({})],
   "sbom-upload": [SbomUploadTemplate({})],
   "vex-upload": [VexUploadTemplate({})],
-  "discover-baseimage-attestations": [
-    DiscoverBaseimageAttestationsTemplate({}),
-  ],
+  "discover-baseimage-attestations": [DiscoverBaseimageAttestationsTemplate({})],
   release: [ReleaseTemplate({})],
 
   // ── Orchestration templates ───────────────────────────────────────────────

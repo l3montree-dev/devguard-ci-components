@@ -31,34 +31,30 @@ export const SignOciImageJobInputs = defineInputsGitLab({
 
   image: {
     ...Inputs.image,
-    description:
-      "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
+    description: "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
     default: "$CI_REGISTRY_IMAGE:latest" as const,
   },
 });
 
-export const SignOciImageTemplate = defineJobGitLab(
-  SignOciImageJobInputs,
-  (inputValues) => ({
-    name: `devguard:sign_oci_image${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
-      },
-      image: {
-        name: ContainerImages.DEVGUARD_SCANNER,
-        pull_policy: inputValues.pull_policy,
-        entrypoint: [""],
-      },
-      script: [
-        `devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-        `devguard-scanner sign --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" "${inputValues.image}"`,
-      ],
+export const SignOciImageTemplate = defineJobGitLab(SignOciImageJobInputs, (inputValues) => ({
+  name: `devguard:sign_oci_image${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
     },
-  }),
-);
+    image: {
+      name: ContainerImages.DEVGUARD_SCANNER,
+      pull_policy: inputValues.pull_policy,
+      entrypoint: [""],
+    },
+    script: [
+      `devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
+      `devguard-scanner sign --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" "${inputValues.image}"`,
+    ],
+  },
+}));

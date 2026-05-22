@@ -3,21 +3,12 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ESNext"
-    ],
-    "types": [
-      "bun-types",
-      "node"
-    ],
+    "lib": ["ESNext"],
+    "types": ["bun-types", "node"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": false
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
 }

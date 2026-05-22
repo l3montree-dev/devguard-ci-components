@@ -38,9 +38,9 @@ type IncludeItem =
     };
 
 type ParsedFile = {
-  filePath: string;      // absolute
-  relPath: string;       // relative to root
-  includes: string[];    // normalized include targets (local-ish keys)
+  filePath: string; // absolute
+  relPath: string; // relative to root
+  includes: string[]; // normalized include targets (local-ish keys)
   jobs: Record<string, JobInfo>;
 };
 
@@ -75,7 +75,7 @@ const RESERVED_TOPLEVEL = new Set([
 ]);
 
 //const root = "./"
-const root = "./templates/"
+const root = "./templates/";
 
 async function walk(dir: string): Promise<string[]> {
   const out: string[] = [];
@@ -98,10 +98,7 @@ function asArray<T>(v: T | T[] | undefined | null): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
-function normalizeIncludeTarget(
-  inc: IncludeItem,
-  relDir: string,
-): string[] {
+function normalizeIncludeTarget(inc: IncludeItem, relDir: string): string[] {
   // Returns "keys" that we can try to resolve to local files later.
   if (typeof inc === "string") {
     // GitLab supports include: "path" (treated as local)
@@ -169,7 +166,8 @@ async function parseYamlFile(absPath: string, root: string): Promise<ParsedFile>
   const relDir = path.dirname(relPath);
   const includesRaw = doc?.include;
   const includeItems = asArray<IncludeItem>(includesRaw);
-  const includes = includeItems.flatMap((inc) => normalizeIncludeTarget(inc, relDir === "." ? "" : relDir))
+  const includes = includeItems
+    .flatMap((inc) => normalizeIncludeTarget(inc, relDir === "." ? "" : relDir))
     .map((s) => s.replaceAll("\\", "/"));
 
   const jobs: Record<string, JobInfo> = {};
@@ -232,7 +230,13 @@ async function main() {
     const fromId = mermaidEscapeId(`file:${p.relPath}`);
     for (const inc of p.includes) {
       // Try to resolve include to an existing local file node
-      const resolved = byRel.has(inc) ? inc : (byRel.has(`${inc}.yml`) ? `${inc}.yml` : (byRel.has(`${inc}.yaml`) ? `${inc}.yaml` : ""));
+      const resolved = byRel.has(inc)
+        ? inc
+        : byRel.has(`${inc}.yml`)
+          ? `${inc}.yml`
+          : byRel.has(`${inc}.yaml`)
+            ? `${inc}.yaml`
+            : "";
       const toKey = resolved || inc;
 
       const toId = mermaidEscapeId(`file:${toKey}`);
@@ -289,7 +293,7 @@ async function main() {
 
   const mermaid = lines.join("\n");
 
-    await Bun.write("diagram.md", "```mermaid\n" + mermaid + "```");
+  await Bun.write("diagram.md", "```mermaid\n" + mermaid + "```");
 }
 
 main().catch((e) => {

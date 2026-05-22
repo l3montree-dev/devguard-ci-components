@@ -27,9 +27,7 @@ const GITLAB_ONLY_INPUTS = new Set([
  * Filters out GitLab-specific inputs
  * Transforms platform-agnostic defaults to GitHub-specific values
  */
-export function transformInputsToGitHub(
-  inputs: ConfigInputs,
-): Record<string, WorkflowInput> {
+export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, WorkflowInput> {
   const gitHubInputs: Record<string, WorkflowInput> = {};
 
   for (const [key, inputDef] of Object.entries(inputs)) {
@@ -37,8 +35,7 @@ export function transformInputsToGitHub(
     if (!inputDef || GITLAB_ONLY_INPUTS.has(key)) continue;
 
     // Determine the type based on the input definition
-    let type: "string" | "choice" | "boolean" | "environment" | "number" =
-      "string";
+    let type: "string" | "choice" | "boolean" | "environment" | "number" = "string";
 
     if (inputDef.type === "boolean") {
       type = "boolean";

@@ -44,10 +44,7 @@ export interface GitHubJob {
       options?: string;
     }
   >;
-  permissions?:
-    | Record<string, "read" | "write" | "none">
-    | "read-all"
-    | "write-all";
+  permissions?: Record<string, "read" | "write" | "none"> | "read-all" | "write-all";
   environment_variables?: Record<string, string>;
   env?: Record<string, string>;
   concurrency?:
@@ -145,9 +142,6 @@ export interface GitHubWorkflowReusable {
       "working-directory"?: string;
     };
   };
-  permissions?:
-    | Record<string, "read" | "write" | "none">
-    | "read-all"
-    | "write-all";
+  permissions?: Record<string, "read" | "write" | "none"> | "read-all" | "write-all";
   jobs: Record<string, GitHubJob>;
 }

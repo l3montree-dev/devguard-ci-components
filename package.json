@@ -8,6 +8,8 @@
   },
   "scripts": {
     "generate": "tsc --noEmit && bun run src/index.ts",
+    "format": "bunx prettier --write .",
+    "format:check": "bunx prettier --check .",
     "postinstall": "cd node_modules/@sleeyax/gitlab-ci-ts && bunx tsc --rootDir ./src"
   },
   "repository": {

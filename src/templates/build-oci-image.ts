@@ -43,53 +43,45 @@ export const BuildOciImageJobInputs = defineInputsGitLab({
   is_tag: Inputs.is_tag,
 });
 
-export const BuildOciImageTemplate = defineJobGitLab(
-  BuildOciImageJobInputs,
-  (inputValues) => ({
-    name: `${inputValues.job_prefix}devguard:build_oci_image${inputValues.job_suffix}`,
-    job: {
-      tags: inputValues.runner_tags,
-      stage: inputValues.stage,
-      allow_failure: inputValues.allow_failure,
-      needs: inputValues.needs,
-      dependencies: inputValues.dependencies,
-      variables: {
-        GIT_STRATEGY: inputValues.git_strategy,
-      },
-      image: {
-        name: ContainerImages.KANIKO,
-        pull_policy: inputValues.pull_policy,
-        entrypoint: [""],
-      },
-      before_script: [
-        `echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
-        `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}"`,
-      ],
-      script: [
-        `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-        `/kaniko/executor ${inputValues.build_args} --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --tarPath ${inputValues.image}" )`,
-
-        // kaniko might remove all files after building - thus a second login is necessary.
-        `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-        `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
-
-        `echo "Running DevGuard Intoto Build...stopping..."`,
-        `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
-
-        `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
-      ],
-      artifacts: {
-        paths: [
-          inputValues.image,
-          "image-digest.txt",
-          "build.provenance.json",
-          "variables.env",
-        ],
-        reports: {
-          dotenv: "variables.env",
-        },
-        when: "on_success",
-      },
+export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (inputValues) => ({
+  name: `${inputValues.job_prefix}devguard:build_oci_image${inputValues.job_suffix}`,
+  job: {
+    tags: inputValues.runner_tags,
+    stage: inputValues.stage,
+    allow_failure: inputValues.allow_failure,
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
+    variables: {
+      GIT_STRATEGY: inputValues.git_strategy,
     },
-  }),
-);
+    image: {
+      name: ContainerImages.KANIKO,
+      pull_policy: inputValues.pull_policy,
+      entrypoint: [""],
+    },
+    before_script: [
+      `echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
+      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}"`,
+    ],
+    script: [
+      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
+      `/kaniko/executor ${inputValues.build_args} --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --tarPath ${inputValues.image}" )`,
+
+      // kaniko might remove all files after building - thus a second login is necessary.
+      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
+      `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
+
+      `echo "Running DevGuard Intoto Build...stopping..."`,
+      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
+
+      `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
+    ],
+    artifacts: {
+      paths: [inputValues.image, "image-digest.txt", "build.provenance.json", "variables.env"],
+      reports: {
+        dotenv: "variables.env",
+      },
+      when: "on_success",
+    },
+  },
+}));
