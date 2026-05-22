@@ -194,11 +194,6 @@ export async function ExportCIComponents(
       const filenameGitHub = `./.github/workflows/${templateName}.yml`;
       await ExportGitHubActionsWorkflow(githubWorkflow, filenameGitHub, header);
       console.log(`Exported template "${templateName}" to GitHub Actions: ${filenameGitHub}`);
-
-      // Marked for deletion...
-      // const filenameGitHub2 = `./.github/workflows/${templateName}-2.yml`;
-      // await ExportGitHubActionsWorkflows(pipeline, filenameGitHub2, header);
-      // console.log(`Exported template "${templateName}" to GitHub Actions: ${filenameGitHub2}`);
     }
   }
   // await rm("./github/", { recursive: true, force: true });
