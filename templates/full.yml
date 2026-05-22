@@ -424,17 +424,12 @@ devguard:attest$[[ inputs.job_suffix ]]:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    ATT_JSON_STR='[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]'
-    echo "Attestations: $ATT_JSON_STR"
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]'
 
-    # Strip outer double quotes if present (GitLab CI wraps array inputs in quotes)
-    ATT_JSON_STR=$(echo "$ATT_JSON_STR" | sed 's/^"//;s/"$//')
-
-    ATT_JSON_CLEAN=$(echo "$ATT_JSON_STR" \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"},{"source":"artifacts/attestation-report.json","predicate_type":"https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
-    # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
 
     ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
 

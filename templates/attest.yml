@@ -97,17 +97,12 @@ devguard:attest$[[ inputs.job_suffix ]]:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    ATT_JSON_STR='$[[ inputs.attestations ]]'
-    echo "Attestations: $ATT_JSON_STR"
+    echo 'Attestations: $[[ inputs.attestations ]]'
 
-    # Strip outer double quotes if present (GitLab CI wraps array inputs in quotes)
-    ATT_JSON_STR=$(echo "$ATT_JSON_STR" | sed 's/^"//;s/"$//')
-
-    ATT_JSON_CLEAN=$(echo "$ATT_JSON_STR" \
+    ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
-    # Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
 
     ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
 

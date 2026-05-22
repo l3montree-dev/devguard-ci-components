@@ -60,17 +60,12 @@ echo "Slugified Commit Ref: $API_COMMIT_REF"
 # Login to registry
 devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
-ATT_JSON_STR='${Array.isArray(inputValues.attestations) ? JSON.stringify(inputValues.attestations) : inputValues.attestations}'
-echo "Attestations: $ATT_JSON_STR"
+echo 'Attestations: ${Array.isArray(inputValues.attestations) ? JSON.stringify(inputValues.attestations) : inputValues.attestations}'
 
-# Strip outer double quotes if present (GitLab CI wraps array inputs in quotes)
-ATT_JSON_STR=$(echo "$ATT_JSON_STR" | sed 's/^"//;s/"$//')
-
-ATT_JSON_CLEAN=$(echo "$ATT_JSON_STR" \\
+ATT_JSON_CLEAN=$(echo '${Array.isArray(inputValues.attestations) ? JSON.stringify(inputValues.attestations) : inputValues.attestations}' \\
 | sed 's/:\\([a-z_]\\+\\)=>/"\\1":/g' \\
 | sed 's/=>/:/g' \\
 | sed "s/'/\\"/g")
-# Convert inputs.attestations to a valid JSON array if it's an array of JSON strings
 
 ATTESTATIONS_JSON=$(echo "$ATT_JSON_CLEAN" | jq . )
 
