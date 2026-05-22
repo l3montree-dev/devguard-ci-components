@@ -1,3 +1,5 @@
+export const GitLabIsTag = '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)';
+
 /**
  * Map GitLab-style variable values to GitHub Actions syntax.
  *
@@ -16,6 +18,7 @@ const GITLAB_TO_GITHUB_VARIABLES: Record<string, string> = {
   $CI_PROJECT_DIR: "/github/workspace",
   $CI_REGISTRY: "${{ secrets.REGISTRY_URL }}",
   $CI_REGISTRY_USER: "${{ secrets.REGISTRY_USER }}",
+  [GitLabIsTag]: "${{ github.ref_type == 'tag' }}",
 };
 
 /**

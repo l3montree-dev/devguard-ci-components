@@ -45,11 +45,14 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
       type = "number";
     }
 
-    let defaultValue: string | undefined = undefined;
+    let defaultValue: string | boolean | undefined = undefined;
     if (inputDef.default !== undefined && inputDef.default !== null) {
-      const stringValue = String(inputDef.default);
-      // Map platform-agnostic variables to GitHub syntax
-      defaultValue = mapVariableToGitHub(stringValue);
+      if (typeof inputDef.default === "boolean") {
+        defaultValue = inputDef.default;
+      } else {
+        // Map platform-agnostic variables to GitHub syntax
+        defaultValue = mapVariableToGitHub(String(inputDef.default));
+      }
     }
 
     gitHubInputs[key] = {
@@ -65,8 +68,32 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
 
 /**
  * Transform variable syntax from GitLab CI to GitHub Actions
- * Converts $[[ inputs.xxx ]] to ${{ inputs.xxx }}
+ * Converts $[[ abc.xyz ]] to ${{ abc.xyz }}
  */
 export function transformVariableSyntax(script: string): string {
-  return script.replace(/\$\[\[\s*inputs\.(\w+)\s*\]\]/g, "${{ inputs.$1 }}");
+  return script.replace(/\$\[\[\s*([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\s*\]\]/g, "${{ $1.$2 }}");
+}
+
+/**
+ * Recursively transform all string values in an object/array/tree from
+ * GitLab-style placeholders to GitHub Actions expression syntax.
+ */
+export function transformObjectVariableSyntax<T>(value: T): T {
+  if (typeof value === "string") {
+    return transformVariableSyntax(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => transformObjectVariableSyntax(item)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      transformObjectVariableSyntax(item),
+    ]);
+    return Object.fromEntries(entries) as T;
+  }
+
+  return value;
 }

@@ -30,7 +30,11 @@ export class JobBuilderGitHub {
   static generate<TInputDefinitions extends InputDefinitionsGitHub>(
     inputDefinitions: TInputDefinitions,
     inputs: Partial<InputValuesGitHub<TInputDefinitions>>,
-    partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>,
+    needs: string[] = [],
+    partialJobGenerator: (
+      inputValues: ResolvedInputValuesGitHub<TInputDefinitions>,
+      needs: string[],
+    ) => Partial<GitHubWorkflow>,
   ) {
     const keys = Object.keys(inputDefinitions) as (keyof TInputDefinitions)[];
 
@@ -44,16 +48,19 @@ export class JobBuilderGitHub {
 
     return {
       inputs: inputDefs,
-      ...partialJobGenerator(inputValues),
+      ...partialJobGenerator(inputValues, needs),
     } as GitHubWorkflow;
   }
 }
 
 export const defineJobGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(
-  inputDefinitions: TInputDefinitions,
-  partialJobGenerator: (inputValues: ResolvedInputValuesGitHub<TInputDefinitions>) => Partial<GitHubWorkflow>,
+  inputDefinitionsDefault: TInputDefinitions,
+  partialJobGenerator: (
+    inputValues: ResolvedInputValuesGitHub<TInputDefinitions>,
+    needs: string[],
+  ) => Partial<GitHubWorkflow>,
 ) => {
-  return (inputs: Partial<InputValuesGitHub<TInputDefinitions>>): GitHubWorkflow => {
-    return JobBuilderGitHub.generate(inputDefinitions, inputs, partialJobGenerator);
+  return (inputs: Partial<InputValuesGitHub<TInputDefinitions>>, needs: string[] = []): GitHubWorkflow => {
+    return JobBuilderGitHub.generate(inputDefinitionsDefault, inputs, needs, partialJobGenerator);
   };
 };
