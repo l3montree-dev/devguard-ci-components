@@ -60,7 +60,7 @@ echo "Slugified Commit Ref: $API_COMMIT_REF"
 # Login to registry
 devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
-ATT_JSON_STR='${JSON.stringify(inputValues.attestations)}'
+ATT_JSON_STR='${Array.isArray(inputValues.attestations) ? JSON.stringify(inputValues.attestations) : inputValues.attestations}'
 echo "Attestations: $ATT_JSON_STR"
 
 ATT_JSON_CLEAN=$(echo "$ATT_JSON_STR" \\

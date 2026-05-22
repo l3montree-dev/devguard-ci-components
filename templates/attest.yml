@@ -97,7 +97,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    ATT_JSON_STR='"$[[ inputs.attestations ]]"'
+    ATT_JSON_STR='$[[ inputs.attestations ]]'
     echo "Attestations: $ATT_JSON_STR"
 
     ATT_JSON_CLEAN=$(echo "$ATT_JSON_STR" \
