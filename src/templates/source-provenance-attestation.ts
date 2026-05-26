@@ -1,4 +1,5 @@
-import { defineInputsGitLab, defineJobGitLab, IncludeWithSpec } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { IncludeWithSpec } from "../lib/types";
 import { Inputs } from "./inputs";
 
 const JobInputs = defineInputsGitLab({

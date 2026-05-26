@@ -1,4 +1,4 @@
-import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 

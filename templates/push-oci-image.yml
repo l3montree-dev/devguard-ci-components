@@ -88,6 +88,8 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     entrypoint:
       - ""
   rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
     - if: $[[ inputs.disable_job ]] == "true"
       when: never
     - when: on_success

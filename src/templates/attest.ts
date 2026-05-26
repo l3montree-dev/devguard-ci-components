@@ -1,6 +1,7 @@
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+
 
 export const AttestJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,

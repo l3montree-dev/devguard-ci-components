@@ -1,6 +1,7 @@
-import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
+
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 
 export const PushOciImageJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -62,6 +63,10 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
       entrypoint: [""],
     },
     rules: [
+      {
+        if: `$CI_PIPELINE_SOURCE == "merge_request_event"`,
+        when: "never",
+      },
       {
         if: `${inputValues.disable_job} == "true"`,
         when: "never",

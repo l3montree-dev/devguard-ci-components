@@ -1,4 +1,5 @@
-import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
+
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { Inputs } from "./inputs";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({

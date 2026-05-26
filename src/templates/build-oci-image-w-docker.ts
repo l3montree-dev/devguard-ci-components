@@ -1,6 +1,7 @@
-import { defineInputsGitLab, defineJobGitLab } from "@l3montree/programmatic-ci-components";
+
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
