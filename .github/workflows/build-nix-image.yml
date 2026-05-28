@@ -1,0 +1,217 @@
+name: Build Nix OCI Image
+
+on:
+  workflow_call:
+    inputs:
+      nix-target:
+        description: 'Nix flake build target (e.g. devguardOCI)'
+        required: true
+        type: string
+      image-name:
+        description: 'Full OCI image name without tag (e.g. ghcr.io/l3montree-dev/devguard/scanner)'
+        required: true
+        type: string
+      artifact-name-suffix:
+        description: 'Suffix appended to artifact names to avoid conflicts when building multiple images in the same workflow'
+        required: false
+        type: string
+        default: ''
+      asset-name:
+        description: 'DevGuard asset name for supply chain tracking'
+        required: true
+        type: string
+      api-url:
+        description: 'DevGuard API URL'
+        required: false
+        type: string
+        default: 'https://api.devguard.org'
+      nix-cache-substituter:
+        description: 'Nix binary cache substituter URL (e.g. https://nix.garage.l3montree.cloud)'
+        required: false
+        type: string
+        default: ''
+      nix-cache-public-key:
+        description: 'Trusted public key for the Nix binary cache'
+        required: false
+        type: string
+        default: ''
+      nix-cache-s3-endpoint:
+        description: 'S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud)'
+        required: false
+        type: string
+        default: ''
+      nix-cache-s3-bucket:
+        description: 'S3 bucket name for pushing to the cache'
+        required: false
+        type: string
+        default: 'nix'
+      nix-cache-region:
+        description: 'S3 region for the cache bucket'
+        required: false
+        type: string
+        default: 'garage'
+      nix-version:
+        description: 'Pinned Nix version used for deterministic builds (must match other CI systems)'
+        required: false
+        type: string
+        default: '2.34.4'
+      arch:
+        description: 'Target architecture suffix appended to the generated image tag (e.g. amd64, arm64). Leave empty for single-arch builds.'
+        required: false
+        type: string
+        default: ''
+      runner:
+        description: 'GitHub Actions runner label to use (e.g. ubuntu-latest, ubuntu-24.04-arm)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+    secrets:
+      devguard-token:
+        required: false
+      nix-cache-secret-key:
+        required: false
+      nix-cache-aws-access-key-id:
+        required: false
+      nix-cache-aws-secret-access-key:
+        required: false
+    outputs:
+      image-tag:
+        description: 'Full image tag of the built image'
+        value: ${{ jobs.build.outputs.image-tag }}
+      image-digest:
+        description: 'Digest of the built image'
+        value: ${{ jobs.build.outputs.image-digest }}
+      artifact-purl:
+        description: 'Package URL (PURL) of the built artifact'
+        value: ${{ jobs.build.outputs.artifact-purl }}
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.image_tag }}
+      image-digest: ${{ steps.get-digest.outputs.digest }}
+      artifact-purl: ${{ steps.set-purl.outputs.purl }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5 - https://github.com/actions/checkout/releases/tag/v5.0.0
+        with:
+          fetch-depth: 0 # needed for flake.nix to resolve self.shortRev
+          persist-credentials: false
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          install_url: ${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix-version) }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            ${{ inputs.nix-cache-substituter != '' && format('substituters = https://cache.nixos.org {0}', inputs.nix-cache-substituter) || '' }}
+            ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
+
+      - name: Show Nix version
+        run: nix --version
+
+      - name: Install crane and devguard-scanner
+        run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
+
+      - name: In-Toto Provenance record start
+        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.api-url }} --assetName=${{ inputs.asset-name }} --supplyChainId=${{ github.sha }}
+        continue-on-error: true
+
+      - name: Write Nix cache secret key
+        if: ${{ inputs.nix-cache-s3-endpoint != '' }}
+        run: |
+          echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
+
+      - name: Build OCI image with Nix
+        run: nix build .#${{ inputs.nix-target }}
+
+      - name: Push build results to Nix cache
+        if: ${{ inputs.nix-cache-s3-endpoint != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.nix-cache-aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.nix-cache-aws-secret-access-key }}
+        run: |
+          mkdir -p ~/.aws
+          echo "[profile nix-cache]" >> ~/.aws/config
+          echo "s3.addressing_style = path" >> ~/.aws/config
+          nix copy $(nix-store -qR $(nix-store -r $(nix eval --raw .#${{ inputs.nix-target }}.drvPath 2>/dev/null || readlink result))) \
+            --to 's3://${{ inputs.nix-cache-s3-bucket }}?endpoint=${{ inputs.nix-cache-s3-endpoint }}&region=${{ inputs.nix-cache-region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' \
+            || nix copy $(readlink result) \
+            --to 's3://${{ inputs.nix-cache-s3-bucket }}?endpoint=${{ inputs.nix-cache-s3-endpoint }}&region=${{ inputs.nix-cache-region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem'
+
+      - name: Prepare image.tar
+        run: gunzip -c "$(readlink -f result)" > image.tar
+
+      - name: Get image digest
+        id: get-digest
+        run: |
+          crane digest --tarball=image.tar > image-digest.txt
+          echo "digest=$(cat image-digest.txt)" >> $GITHUB_OUTPUT
+
+      - name: Upload oci-image artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 - https://github.com/actions/upload-artifact/releases/tag/v4.6.2
+        with:
+          name: oci-image${{ inputs.artifact-name-suffix }}
+          path: image.tar
+
+      - name: Set image tag
+        id: set-image-tag
+        run: |
+          devguard-scanner generate-tag \
+            --imagePath='${{ inputs.image-name }}' \
+            --ref='${{ github.ref_name }}' \
+            --architecture='${{ inputs.arch }}' \
+            >> image-tag-env.txt
+          IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
+          ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
+          ARTIFACT_URL_ENCODED=$(grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2-)
+          echo "$IMAGE_TAG" > image-tag.txt
+          echo "$ARTIFACT_NAME" > artifact-purl.txt
+          echo "$ARTIFACT_URL_ENCODED" > artifact-purl-safe.txt
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
+          echo "ARTIFACT_URL_ENCODED=$ARTIFACT_URL_ENCODED" >> "$GITHUB_ENV"
+
+      - name: Upload image-tag artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 - https://github.com/actions/upload-artifact/releases/tag/v4.6.2
+        with:
+          name: image-tag${{ inputs.artifact-name-suffix }}
+          path: image-tag.txt
+
+      - name: Upload image-digest artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 - https://github.com/actions/upload-artifact/releases/tag/v4.6.2
+        with:
+          name: image-digest${{ inputs.artifact-name-suffix }}
+          path: image-digest.txt
+
+      - name: Set artifact PURL
+        id: set-purl
+        run: |
+          echo "purl=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "$ARTIFACT_NAME" > artifact-purl.txt
+          echo "$ARTIFACT_URL_ENCODED" > artifact-purl-safe.txt
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          ARTIFACT_URL_ENCODED: ${{ env.ARTIFACT_URL_ENCODED }}
+
+      - name: Upload artifact-purl artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 - https://github.com/actions/upload-artifact/releases/tag/v4.6.2
+        with:
+          name: artifact-purl${{ inputs.artifact-name-suffix }}
+          path: artifact-purl.txt
+
+      - name: Upload artifact-purl-safe artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 - https://github.com/actions/upload-artifact/releases/tag/v4.6.2
+        with:
+          name: artifact-purl-safe${{ inputs.artifact-name-suffix }}
+          path: artifact-purl-safe.txt
+
+      - name: In-Toto Provenance record stop
+        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.api-url }} --assetName=${{ inputs.asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+        continue-on-error: true
+
+      - name: Upload SLSA Provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 - https://github.com/actions/upload-artifact/releases/tag/v4.6.2
+        with:
+          name: build${{ inputs.artifact-name-suffix }}.provenance.json
+          path: build.provenance.json

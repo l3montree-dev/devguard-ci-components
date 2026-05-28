@@ -1,0 +1,87 @@
+on:
+  workflow_call:
+    inputs:
+      asset-name:
+        description: 'Name of the asset to be deployed'
+        type: string
+        required: true
+      api-url:
+        description: 'URL of the DevGuard API'
+        type: string
+        required: false
+        default: 'https://api.devguard.org'
+      should-deploy:
+        # Input to determine if the deploy job should run
+        description: 'Should the deploy job run'
+        type: boolean
+        required: false
+        default: true
+      image-already-in-registry:
+        # Input to determine if the image is already in the registry
+        description: 'If set to true, the image wont be pushed again'
+        type: boolean
+        required: false
+        default: false
+      image-suffix:
+        type: string
+        required: false
+        default: 'container'
+        description: "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty."
+      artifact-suffix:
+        type: string
+        required: false
+        default: ''
+        description: "Suffix used to look up build artifacts by name. Defaults to image-suffix when not set."
+
+    secrets:
+      devguard-token:
+        description: 'DevGuard API token'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        persist-credentials: true
+    - name: Download oci-image artifact (can be created by build-image)
+      uses: actions/download-artifact@v4
+      with:
+        name: oci-image${{ inputs.image-suffix }}
+        path: .
+      if: inputs.image-already-in-registry == false
+
+    - name: Download image-tag artifact (can be created by build-image)
+      uses: actions/download-artifact@v4
+      with:
+        name: image-tag${{ inputs.image-suffix }}
+        path: .
+
+    - name: Download image-digest artifact (can be created by build-image)
+      uses: actions/download-artifact@v4
+      with:
+        name: image-digest${{ inputs.image-suffix }}
+        path: .
+
+    - name: Read image-digest.txt
+      id: read-digest
+      run: echo "DIGEST=$(cat image-digest.txt)" >> $GITHUB_ENV
+    
+    - name: In-Toto Provenance run
+      uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.4.2
+      with:
+        args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.api-url }} --assetName=${{ inputs.asset-name }} --supplyChainId=${{ github.sha }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+      continue-on-error: true
+
+    - name: Setup crane
+      uses: imjasonh/setup-crane@v0.1
+
+    - name: Push oci image to GitHub image Registry
+      run: crane push image.tar $(cat image-tag.txt)
+      if: inputs.image-already-in-registry == false
+

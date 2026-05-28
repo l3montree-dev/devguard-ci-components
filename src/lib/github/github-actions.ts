@@ -99,7 +99,7 @@ export interface WorkflowInput {
   description: string;
   deprecationMessage?: string;
   required?: boolean;
-  default?: string;
+  default?: string | boolean | number;
   type?: "string" | "choice" | "boolean" | "environment" | "number";
   options?: string[];
 }

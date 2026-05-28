@@ -1,3 +1,4 @@
 templates/
 tests/
+.github/workflows/
 .gitlab-ci.yml

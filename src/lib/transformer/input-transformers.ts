@@ -10,18 +10,6 @@ import { WorkflowInput } from "../github/github-actions";
 import { mapVariableToGitHub } from "../github/platform-variables";
 
 /**
- * List of GitLab-specific input keys that should not be exported to GitHub Actions
- */
-const GITLAB_ONLY_INPUTS = new Set([
-  "runner_tags",
-  "stage",
-  "git_strategy",
-  "pull_policy",
-  "dependencies",
-  "job_suffix", // Not needed in GitHub Actions
-]);
-
-/**
  * Convert GitLab CI input definitions to GitHub Actions format
  * GitHub Actions requires a 'type' field for all inputs
  * Filters out GitLab-specific inputs
@@ -32,7 +20,7 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
 
   for (const [key, inputDef] of Object.entries(inputs)) {
     // Skip null inputs and GitLab-specific inputs
-    if (!inputDef || GITLAB_ONLY_INPUTS.has(key)) continue;
+    if (!inputDef) continue;
 
     // Determine the type based on the input definition
     let type: "string" | "choice" | "boolean" | "environment" | "number" = "string";
@@ -45,11 +33,14 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
       type = "number";
     }
 
-    let defaultValue: string | undefined = undefined;
+    let defaultValue: string | boolean | undefined = undefined;
     if (inputDef.default !== undefined && inputDef.default !== null) {
-      const stringValue = String(inputDef.default);
-      // Map platform-agnostic variables to GitHub syntax
-      defaultValue = mapVariableToGitHub(stringValue);
+      if (typeof inputDef.default === "boolean") {
+        defaultValue = inputDef.default;
+      } else {
+        // Map platform-agnostic variables to GitHub syntax
+        defaultValue = mapVariableToGitHub(String(inputDef.default));
+      }
     }
 
     gitHubInputs[key] = {
@@ -64,9 +55,42 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
 }
 
 /**
+ * Remove all variables from string
+ */
+export function githubJobId(jobId: string): string {
+  return jobId
+    .replace(/\$\{\{\s*([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\s*\}\}/g, "") // remove any GitHub Action Variables that are not allowed
+    .replace(/[^a-zA-Z0-9_]/g, "_"); // replace any character except _ and alphanumeric with _
+}
+
+/**
  * Transform variable syntax from GitLab CI to GitHub Actions
- * Converts $[[ inputs.xxx ]] to ${{ inputs.xxx }}
+ * Converts $[[ abc.xyz ]] to ${{ abc.xyz }}
  */
 export function transformVariableSyntax(script: string): string {
-  return script.replace(/\$\[\[\s*inputs\.(\w+)\s*\]\]/g, "${{ inputs.$1 }}");
+  return script.replace(/\$\[\[\s*([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\s*\]\]/g, "${{ $1.$2 }}");
+}
+
+/**
+ * Recursively transform all string values in an object/array/tree from
+ * GitLab-style placeholders to GitHub Actions expression syntax.
+ */
+export function transformObjectVariableSyntax<T>(value: T): T {
+  if (typeof value === "string") {
+    return transformVariableSyntax(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => transformObjectVariableSyntax(item)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      transformObjectVariableSyntax(item),
+    ]);
+    return Object.fromEntries(entries) as T;
+  }
+
+  return value;
 }

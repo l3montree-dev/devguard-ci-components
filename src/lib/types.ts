@@ -36,8 +36,12 @@ export type EntryWithSpec = {
   platforms?: ("gitlab" | "github")[];
 };
 
-export type CIComponentGroupTemplate = {
-  [key: string]: (GitHubWorkflow | GitLabJobWithSpec | IncludeWithSpec)[];
+export type CIComponentGroupTemplateGitLab = {
+  [key: string]: (GitLabJobWithSpec | IncludeWithSpec)[];
+};
+
+export type CIComponentGroupTemplateGitHub = {
+  [key: string]: (GitHubWorkflow | IncludeWithSpec)[];
 };
 
 export type ArrayInputItem =

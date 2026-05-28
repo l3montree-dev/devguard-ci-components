@@ -1,3 +1,4 @@
+import { GitLabIsTag } from "../lib/github/platform-variables";
 import { ConfigInputs } from "../lib/types";
 
 export const Inputs = {
@@ -98,7 +99,7 @@ export const Inputs = {
   },
   is_tag: {
     description: "Is the current commit a tag" as const,
-    default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
+    default: GitLabIsTag,
   },
   fail_on_risk: {
     description: "The risk level to fail the job on. Options are: none, low, medium, high, critical" as const,
@@ -315,7 +316,7 @@ export const Inputs = {
   Multi-arch manifest inputs
   */
   create_root_manifest: {
-    default: '$(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)' as const,
+    default: GitLabIsTag,
     description: "Whether to also create a manifest without the branch ref in the tag." as const,
   },
   artifacts_subdirectory: {
