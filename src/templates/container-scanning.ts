@@ -103,7 +103,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
           name: `oci-image${inputValues.image_suffix}`,
           path: ".",
         },
-        if: `${inputValues.fetch_image_from_registry} == false`,
+        if: `$\{{ inputs.fetch-image-from-registry == false }}`,
       },
       {
         name: "Download image-tag artifact (created by build-image)",
@@ -119,7 +119,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
         with: {
           name: `artifact-purl${inputValues.image_suffix}`,
         },
-        if: `${inputValues.devguard_artifact_name} == ''`,
+        if: `$\{{ inputs.devguard-artifact-name == '' }}`,
       },
       {
         name: "Resolve artifact name",
@@ -136,7 +136,7 @@ fi`,
       {
         name: "Download OCI Image from registry",
         run: "crane pull $(cat image-tag.txt) image.tar",
-        if: `${inputValues.fetch_image_from_registry} == true`,
+        if: `$\{{ inputs.fetch-image-from-registry == true }}`,
       },
       {
         name: "DevGuard Container-Scanning",

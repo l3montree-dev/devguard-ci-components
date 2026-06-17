@@ -104,7 +104,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: ${{ inputs.fetch-image-from-registry }} == false
+        if: ${{ inputs.fetch-image-from-registry == false }}
       - name: Download image-tag artifact (created by build-image)
         uses: actions/download-artifact@v4
         with:
@@ -114,7 +114,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: artifact-purl${{ inputs.image-suffix }}
-        if: ${{ inputs.devguard-artifact-name }} == ''
+        if: ${{ inputs.devguard-artifact-name == '' }}
       - name: Resolve artifact name
         run: |-
           if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
@@ -126,7 +126,7 @@ jobs:
         uses: imjasonh/setup-crane@v0.1
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
-        if: ${{ inputs.fetch-image-from-registry }} == true
+        if: ${{ inputs.fetch-image-from-registry == true }}
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
