@@ -69,7 +69,7 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
  * In a string, replace `inputs.snake_case_name` with `inputs.kebab-case-name`.
  * Applied after transformVariableSyntax so that ${{ inputs.foo_bar }} becomes ${{ inputs.foo-bar }}.
  */
-export function transformInputNamesToKebab(s: string): string {
+function transformInputNamesToKebab(s: string): string {
   return s.replace(/(\binputs\.)([a-z][a-z0-9_]*)/g, (_, prefix, name) => prefix + snakeToKebab(name));
 }
 

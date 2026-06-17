@@ -3,7 +3,7 @@ import { GitHubJob, GitHubWorkflowCallJob, WorkflowInput } from "./github/github
 export type { ConfigInputs } from "@sleeyax/gitlab-ci-ts";
 
 // Allow GitLab CI input placeholders ($[[ inputs.xxx ]]) for any field value
-export type JobTemplateLike = { [K in keyof JobTemplate]?: unknown };
+type JobTemplateLike = { [K in keyof JobTemplate]?: unknown };
 
 export type GitHubWorkflow = EntryWithSpec & {
   job: GitHubJob;
@@ -30,7 +30,7 @@ export type IncludeWithSpec = EntryWithSpec & {
   include: IncludeItem;
 };
 
-export type EntryWithSpec = {
+type EntryWithSpec = {
   name: string;
   inputs: ConfigInputs;
   platforms?: ("gitlab" | "github")[];

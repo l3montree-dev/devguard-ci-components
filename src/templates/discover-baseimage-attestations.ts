@@ -3,7 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
+const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   stage: {
     ...Inputs.stage,
     default: "build" as const,
@@ -28,7 +28,7 @@ export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   },
 });
 
-export const DiscoverBaseimageAttestationsJobInputsGitHub = defineInputsGitHub({
+const DiscoverBaseimageAttestationsJobInputsGitHub = defineInputsGitHub({
   registry: {
     ...Inputs.registry,
     default: "ghcr.io" as const,

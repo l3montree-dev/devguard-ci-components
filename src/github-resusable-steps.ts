@@ -9,15 +9,4 @@ export class GitHubReusableSteps {
     },
   };
 
-  static checkoutCode(fetchDepth: number | string = 0) {
-    return {
-      name: "Checkout code",
-      uses: "actions/checkout@v4",
-      with: {
-        "fetch-depth": fetchDepth,
-        "persist-credentials": false,
-        submodules: "recursive",
-      },
-    };
-  }
 }
