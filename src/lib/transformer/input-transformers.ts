@@ -41,9 +41,11 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
       type = "number";
     }
 
-    let defaultValue: string | boolean | undefined = undefined;
+    let defaultValue: string | boolean | number | undefined = undefined;
     if (inputDef.default !== undefined && inputDef.default !== null) {
       if (typeof inputDef.default === "boolean") {
+        defaultValue = inputDef.default;
+      } else if (typeof inputDef.default === "number") {
         defaultValue = inputDef.default;
       } else {
         // Map platform-agnostic variables to GitHub syntax
