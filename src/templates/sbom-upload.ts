@@ -2,6 +2,7 @@
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
 export const SbomUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -35,6 +36,59 @@ export const SbomUploadJobInputs = defineInputsGitLab({
 
   sbom_file: Inputs.sbom_file,
 });
+
+export const SbomUploadJobInputsGitHub = defineInputsGitHub({
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  devguard_web_ui: Inputs.devguard_web_ui,
+  devguard_artifact_name: {
+    ...Inputs.devguard_artifact_name,
+    default: "source" as const,
+  },
+  devguard_origin: Inputs.devguard_origin,
+
+  allow_failure: Inputs.allow_failure,
+
+  default_ref: Inputs.default_ref,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+  fail_on_risk: Inputs.fail_on_risk,
+  fail_on_cvss: Inputs.fail_on_cvss,
+  ignore_external_references: Inputs.ignore_external_references,
+
+  sbom_file: Inputs.sbom_file,
+});
+
+export const SbomUploadTemplateGitHub = defineJobGitHub(SbomUploadJobInputsGitHub, (inputValues) => ({
+  name: "devguard:sbom-upload",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+  },
+  job: {
+    "runs-on": "ubuntu-latest",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          "fetch-depth": 0,
+          "persist-credentials": false,
+        },
+      },
+      {
+        name: "DevGuard SBOM Upload",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        "continue-on-error": inputValues.allow_failure as boolean,
+        with: {
+          args: `devguard-scanner sbom \${{ inputs.sbom_file }} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --webUI=${inputValues.devguard_web_ui} --failOnRisk=${inputValues.fail_on_risk} --failOnCVSS=${inputValues.fail_on_cvss} --ignoreExternalReferences=${inputValues.ignore_external_references}`,
+        },
+      },
+    ],
+  },
+}));
 
 export const SbomUploadTemplate = defineJobGitLab(SbomUploadJobInputs, (inputValues) => ({
   name: `devguard:sbom_upload${inputValues.job_suffix}`,

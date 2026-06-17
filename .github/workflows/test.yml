@@ -1,0 +1,79 @@
+name: Validate templates
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-github:
+    name: Validate GitHub Actions workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install act
+        run: |
+          curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash -s -- -b /usr/local/bin
+
+      - name: Dry-run all reusable workflows
+        run: |
+          PASS=0; FAIL=0; FAILURES=()
+          BASE_INPUTS=(
+            --input devguard_asset_name=test/org/assets/test
+            --input devguard_api_url=https://api.devguard.org
+            --input devguard_web_ui=https://app.devguard.org
+          )
+          for wf in .github/workflows/*.yml; do
+            name=$(basename "$wf")
+            # skip this file itself and any non-reusable workflows
+            [[ "$name" == "test.yml" ]] && continue
+            [[ "$name" == "devguard-scanner.yml" ]] && continue
+            output=$(act --dryrun workflow_call \
+              -W "$wf" \
+              "${BASE_INPUTS[@]}" \
+              --container-architecture linux/amd64 \
+              2>&1) && {
+              echo "  ✅  $name"
+              ((PASS++)) || true
+            } || {
+              echo "  ❌  $name"
+              FAILURES+=("$name")
+              ((FAIL++)) || true
+              echo "$output" | grep -E "level=error|level=fatal|Error" | head -3 | sed 's/^/       /'
+            }
+          done
+          echo ""
+          echo "Results: $PASS passed, $FAIL failed"
+          [[ ${#FAILURES[@]} -eq 0 ]] || { echo "Failed: ${FAILURES[*]}"; exit 1; }
+
+  validate-gitlab:
+    name: Validate GitLab CI component templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint all component templates via GitLab CI Lint API
+        run: |
+          PASS=0; FAIL=0; FAILURES=()
+          for tpl in templates/*.yml; do
+            name=$(basename "$tpl")
+            content=$(cat "$tpl")
+            response=$(curl -s --max-time 15 \
+              --request POST \
+              --header "Content-Type: application/json" \
+              --data "$(jq -n --arg c "$content" '{"content":$c,"dry_run":false}')" \
+              "https://gitlab.com/api/v4/ci/lint")
+            valid=$(echo "$response" | jq -r '.valid // false')
+            if [[ "$valid" == "true" ]]; then
+              echo "  ✅  $name"
+              ((PASS++)) || true
+            else
+              echo "  ❌  $name"
+              FAILURES+=("$name")
+              ((FAIL++)) || true
+              echo "$response" | jq -r '.errors[]? // .error // "unknown error"' 2>/dev/null | head -3 | sed 's/^/       /'
+            fi
+          done
+          echo ""
+          echo "Results: $PASS passed, $FAIL failed"
+          [[ ${#FAILURES[@]} -eq 0 ]] || { echo "Failed: ${FAILURES[*]}"; exit 1; }

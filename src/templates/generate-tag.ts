@@ -1,4 +1,5 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
@@ -30,6 +31,76 @@ export const GenerateTagJobInputs = defineInputsGitLab({
   image_path: Inputs.image_path,
   upstream_version: Inputs.upstream_version,
 });
+
+const GenerateTagConfig = {
+  image_suffix: Inputs.image_suffix,
+  image_variant: Inputs.image_variant,
+  architecture: Inputs.architecture,
+  image_path: Inputs.image_path,
+  upstream_version: Inputs.upstream_version,
+  devguard_artifact_name: {
+    ...Inputs.devguard_artifact_name,
+    description:
+      "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image" as const,
+  },
+};
+
+export const GenerateTagJobInputsGitHub = defineInputsGitHub({
+  ...GenerateTagConfig,
+});
+
+export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGitHub, (inputValues) => ({
+  name: "devguard:generate-tag",
+  job: {
+    "runs-on": "ubuntu-latest",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          "fetch-depth": 0,
+          "persist-credentials": false,
+        },
+      },
+      {
+        name: "Generate tag",
+        run: `docker run --rm \\
+  -e IMAGE_SUFFIX \\
+  -e IMAGE_VARIANT \\
+  -e ARCHITECTURE \\
+  -e IMAGE_PATH \\
+  -e GITHUB_REF_NAME \\
+  -e UPSTREAM_VERSION \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  devguard-scanner generate-tag \\
+    --imageSuffix="$IMAGE_SUFFIX" \\
+    --imageVariant="$IMAGE_VARIANT" \\
+    --architecture="$ARCHITECTURE" \\
+    --imagePath="$IMAGE_PATH" \\
+    --ref="$GITHUB_REF_NAME" \\
+    --upstreamVersion="$UPSTREAM_VERSION" \\
+  >> generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env
+echo "Generated tag:"
+cat generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env`,
+        env: {
+          IMAGE_SUFFIX: `\${{ inputs.image_suffix }}`,
+          IMAGE_VARIANT: `\${{ inputs.image_variant }}`,
+          ARCHITECTURE: `\${{ inputs.architecture }}`,
+          IMAGE_PATH: `\${{ inputs.image_path }}`,
+          UPSTREAM_VERSION: `\${{ inputs.upstream_version }}`,
+        },
+      },
+      {
+        name: "Upload generate-tag env artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `generate-tag-env\${{ inputs.image_suffix }}`,
+          path: `generate_tag_\${{ inputs.upstream_version }}_\${{ inputs.architecture }}.env`,
+        },
+      },
+    ],
+  },
+}));
 
 export const GenerateTagTemplate = defineJobGitLab(GenerateTagJobInputs, (inputValues) => ({
   name: `devguard:generate_tag${inputValues.job_suffix}`,

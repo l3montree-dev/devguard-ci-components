@@ -10,12 +10,15 @@ spec:
     devguard_asset_name:
       description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
       default: $DEVGUARD_ASSET_NAME
-    devguard_token:
-      description: The DevGuard API token (use CI/CD variable, your private key)
-      default: $DEVGUARD_TOKEN
     devguard_artifact_name:
       description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
       default: ""
+    image_suffix:
+      default: default
+      description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
+    devguard_token:
+      description: The DevGuard API token (use CI/CD variable, your private key)
+      default: $DEVGUARD_TOKEN
     runner_tags:
       default: []
       type: array

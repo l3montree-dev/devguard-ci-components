@@ -15,16 +15,16 @@ on:
         type: string
         required: false
         default: $DEVGUARD_ASSET_NAME
-      devguard-artifact-name:
-        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-        type: string
-        required: false
-        default: source
       devguard-web-ui:
         description: The DevGuard Web-UI Instance URL
         type: string
         required: false
         default: https://app.devguard.org
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+        type: string
+        required: false
+        default: source
       devguard-origin:
         description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
         type: string
@@ -35,11 +35,6 @@ on:
         type: boolean
         required: false
         default: false
-      path:
-        description: The path to the git repository to scan
-        type: string
-        required: false
-        default: /github/workspace
       default-ref:
         description: Default branch reference
         type: string
@@ -70,23 +65,26 @@ on:
         type: string
         required: false
         default: "false"
+      sbom-file:
+        description: The SBOM file to upload
+        type: string
+        required: false
     secrets:
       devguard-token:
         description: DevGuard API token
         required: true
 jobs:
-  devguard_software_composition_analysis:
+  devguard_sbom_upload:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
-          persist-credentials: true
-      - name: DevGuard SCA
+          persist-credentials: false
+      - name: DevGuard SBOM Upload
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
         with:
-          args: devguard-scanner sca --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }} --artifactName=${{ inputs.devguard-artifact-name }} --failOnRisk=${{ inputs.fail-on-risk }} --failOnCVSS=${{ inputs.fail-on-cvss }} --ignoreExternalReferences=${{ inputs.ignore-external-references }}
-    name: devguard:software-composition-analysis
+          args: devguard-scanner sbom ${{ inputs.sbom-file }} --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="${{ inputs.devguard-artifact-name }}" --webUI=${{ inputs.devguard-web-ui }} --failOnRisk=${{ inputs.fail-on-risk }} --failOnCVSS=${{ inputs.fail-on-cvss }} --ignoreExternalReferences=${{ inputs.ignore-external-references }}
+    name: devguard:sbom-upload

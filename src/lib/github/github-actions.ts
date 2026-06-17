@@ -105,6 +105,19 @@ export interface WorkflowInput {
 }
 
 /**
+ * GitHub Actions Workflow Call Job (for orchestrator workflows)
+ * Represents a job that calls another reusable workflow
+ */
+export interface GitHubWorkflowCallJob {
+  uses: string;
+  needs?: string[];
+  with?: Record<string, string | boolean | number>;
+  secrets?: Record<string, string> | "inherit";
+  if?: string;
+  permissions?: Record<string, "read" | "write" | "none"> | "read-all" | "write-all";
+}
+
+/**
  * GitHub Actions complete workflow
  * Exported as reusable workflow
  */

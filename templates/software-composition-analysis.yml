@@ -10,9 +10,6 @@ spec:
     devguard_asset_name:
       description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
       default: $DEVGUARD_ASSET_NAME
-    devguard_token:
-      description: The DevGuard API token (use CI/CD variable, your private key)
-      default: $DEVGUARD_TOKEN
     devguard_artifact_name:
       description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
       default: source
@@ -22,35 +19,10 @@ spec:
     devguard_origin:
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
       default: DEFAULT
-    runner_tags:
-      default: []
-      type: array
-      description: The runner tags to use for the job
-    stage:
-      default: test
-      description: The pipeline stage for the job
-    job_suffix:
-      type: string
-      description: Suffix for the job name. You need this if you are using the component multiple times in one pipeline.
-      default: ""
-    git_strategy:
-      description: The Git strategy to use for the job
-      default: fetch
-    pull_policy:
-      description: The pull policy for the container image (can be [always, if-not-present, never])
-      default: always
     allow_failure:
       description: Whether the job is allowed to fail without stopping the pipeline
       type: boolean
       default: false
-    needs:
-      description: " The jobs that this job depends on"
-      type: array
-      default: []
-    dependencies:
-      description: List of jobs to download artifacts from
-      type: array
-      default: []
     path:
       description: The path to the git repository to scan
       default: $CI_PROJECT_DIR
@@ -72,6 +44,34 @@ spec:
     ignore_external_references:
       description: Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.
       default: "false"
+    devguard_token:
+      description: The DevGuard API token (use CI/CD variable, your private key)
+      default: $DEVGUARD_TOKEN
+    runner_tags:
+      default: []
+      type: array
+      description: The runner tags to use for the job
+    stage:
+      default: test
+      description: The pipeline stage for the job
+    job_suffix:
+      type: string
+      description: Suffix for the job name. You need this if you are using the component multiple times in one pipeline.
+      default: ""
+    git_strategy:
+      description: The Git strategy to use for the job
+      default: fetch
+    pull_policy:
+      description: The pull policy for the container image (can be [always, if-not-present, never])
+      default: always
+    needs:
+      description: " The jobs that this job depends on"
+      type: array
+      default: []
+    dependencies:
+      description: List of jobs to download artifacts from
+      type: array
+      default: []
 ---
 
 include: []

@@ -1,4 +1,5 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 export const ContainerScanningJobInputs = defineInputsGitLab({
@@ -47,6 +48,110 @@ export const ContainerScanningJobInputs = defineInputsGitLab({
 
   fetch_image_from_registry: Inputs.fetch_image_from_registry,
 });
+
+const ContainerScanningConfig = {
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  devguard_artifact_name: Inputs.devguard_artifact_name,
+  devguard_web_ui: Inputs.devguard_web_ui,
+  devguard_origin: Inputs.devguard_origin,
+
+  allow_failure: Inputs.allow_failure,
+
+  image_tar_path: Inputs.image_tar_path,
+  fetch_image_from_registry: Inputs.fetch_image_from_registry,
+  image_suffix: Inputs.image_suffix,
+
+  default_ref: Inputs.default_ref,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+
+  fail_on_risk: Inputs.fail_on_risk,
+  fail_on_cvss: Inputs.fail_on_cvss,
+  ignore_external_references: Inputs.ignore_external_references,
+  ignore_upstream_attestations: Inputs.ignore_upstream_attestations,
+};
+
+export const ContainerScanningJobInputsGitHub = defineInputsGitHub({
+  ...ContainerScanningConfig,
+});
+
+export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanningJobInputsGitHub, (inputValues) => ({
+  name: "devguard:container-scanning",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+  },
+  job: {
+    "runs-on": "ubuntu-latest",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          submodules: "recursive",
+          "fetch-depth": 0,
+          "persist-credentials": true,
+        },
+      },
+      {
+        name: "Download Docker image artifact (created by build-image)",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `oci-image${inputValues.image_suffix}`,
+          path: ".",
+        },
+        if: `${inputValues.fetch_image_from_registry} == false`,
+      },
+      {
+        name: "Download image-tag artifact (created by build-image)",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `image-tag${inputValues.image_suffix}`,
+          path: ".",
+        },
+      },
+      {
+        name: "Download artifact purl (created by build-image)",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `artifact-purl${inputValues.image_suffix}`,
+        },
+        if: `${inputValues.devguard_artifact_name} == ''`,
+      },
+      {
+        name: "Resolve artifact name",
+        run: `if [ -z "\${{ inputs.devguard_artifact_name }}" ] && [ -f artifact-purl.txt ]; then
+  echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+else
+  echo "ARTIFACT_NAME=\${{ inputs.devguard_artifact_name }}" >> $GITHUB_ENV
+fi`,
+      },
+      {
+        name: "Setup crane",
+        uses: "imjasonh/setup-crane@v0.1",
+      },
+      {
+        name: "Download OCI Image from registry",
+        run: "crane pull $(cat image-tag.txt) image.tar",
+        if: `${inputValues.fetch_image_from_registry} == true`,
+      },
+      {
+        name: "DevGuard Container-Scanning",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        "continue-on-error": inputValues.allow_failure as boolean,
+        with: {
+          args: `devguard-scanner container-scanning --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --path="${inputValues.image_tar_path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="\${{ env.ARTIFACT_NAME }}" --webUI="${inputValues.devguard_web_ui}" --failOnRisk="${inputValues.fail_on_risk}" --failOnCVSS="${inputValues.fail_on_cvss}" --ignoreExternalReferences=${inputValues.ignore_external_references} --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations}`,
+        },
+        env: {
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+        },
+      },
+    ],
+  },
+}));
 
 export const ContainerScanningTemplate = defineJobGitLab(ContainerScanningJobInputs, (inputValues) => ({
   name: `devguard:container_scanning${inputValues.job_suffix}`,

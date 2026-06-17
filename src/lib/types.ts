@@ -1,5 +1,5 @@
 import { ConfigInputs, IncludeItem, JobTemplate } from "@sleeyax/gitlab-ci-ts";
-import { GitHubJob } from "./github/github-actions";
+import { GitHubJob, GitHubWorkflowCallJob, WorkflowInput } from "./github/github-actions";
 export type { ConfigInputs } from "@sleeyax/gitlab-ci-ts";
 
 // Allow GitLab CI input placeholders ($[[ inputs.xxx ]]) for any field value
@@ -42,6 +42,14 @@ export type CIComponentGroupTemplateGitLab = {
 
 export type CIComponentGroupTemplateGitHub = {
   [key: string]: (GitHubWorkflow | IncludeWithSpec)[];
+};
+
+export type GitHubOrchestratorWorkflow = {
+  name?: string;
+  inputs: Record<string, WorkflowInput>;
+  secrets?: Record<string, { description?: string; required?: boolean }>;
+  permissions?: Record<string, string>;
+  jobs: Record<string, GitHubWorkflowCallJob>;
 };
 
 export type ArrayInputItem =

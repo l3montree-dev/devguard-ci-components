@@ -1,10 +1,23 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
-export const SignOciImageJobInputs = defineInputsGitLab({
+const SignOciImageConfig = {
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
+  devguard_artifact_name: Inputs.devguard_artifact_name,
+
+  image: {
+    ...Inputs.image,
+    description: "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
+    default: "$CI_REGISTRY_IMAGE:latest" as const,
+  },
+  image_suffix: Inputs.image_suffix,
+};
+
+export const SignOciImageJobInputs = defineInputsGitLab({
+  ...SignOciImageConfig,
   devguard_token: Inputs.devguard_token,
 
   runner_tags: Inputs.runner_tags,
@@ -28,12 +41,6 @@ export const SignOciImageJobInputs = defineInputsGitLab({
   registry: Inputs.registry,
   registry_user: Inputs.registry_user,
   registry_password: Inputs.registry_password,
-
-  image: {
-    ...Inputs.image,
-    description: "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
-    default: "$CI_REGISTRY_IMAGE:latest" as const,
-  },
 });
 
 export const SignOciImageTemplate = defineJobGitLab(SignOciImageJobInputs, (inputValues) => ({
@@ -55,6 +62,67 @@ export const SignOciImageTemplate = defineJobGitLab(SignOciImageJobInputs, (inpu
     script: [
       `devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
       `devguard-scanner sign --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" "${inputValues.image}"`,
+    ],
+  },
+}));
+
+export const SignJobInputsGitHub = defineInputsGitHub({
+  ...SignOciImageConfig,
+  should_deploy: {
+    description: "Should the signing job run",
+    default: true,
+    type: "boolean" as const,
+  },
+});
+
+export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputValues) => ({
+  name: "devguard:sign",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+  },
+  job: {
+    "runs-on": "ubuntu-latest",
+    if: "inputs.should_deploy",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          submodules: "recursive",
+          "fetch-depth": 0,
+          "persist-credentials": true,
+        },
+      },
+      {
+        name: "Download image-tag artifact (can be created by build-image)",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `image-tag\${{ inputs.image_suffix }}`,
+          path: ".",
+        },
+      },
+      {
+        name: "Download image-digest artifact (can be created by build-image)",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `image-digest\${{ inputs.image_suffix }}`,
+          path: ".",
+        },
+      },
+      {
+        name: "Set Image to be signed",
+        run: `echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV`,
+      },
+      {
+        name: "DevGuard Image-Signing",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `devguard-scanner sign -u \${{ github.actor }} -r ghcr.io -p \${{ secrets.GITHUB_TOKEN }} --token="\${{ secrets.devguard-token }}" \${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name}`,
+        },
+      },
     ],
   },
 }));

@@ -15,21 +15,21 @@ on:
         type: string
         required: false
         default: $DEVGUARD_ASSET_NAME
-      devguard-web-ui:
-        description: The DevGuard Web-UI Instance URL
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
         type: string
         required: false
-        default: https://app.devguard.org
+        default: source
+      devguard-origin:
+        description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
+        type: string
+        required: false
+        default: DEFAULT
       allow-failure:
         description: Whether the job is allowed to fail without stopping the pipeline
         type: boolean
         required: false
         default: false
-      path:
-        description: The path to the git repository to scan
-        type: string
-        required: false
-        default: /github/workspace
       default-ref:
         description: Default branch reference
         type: string
@@ -45,23 +45,32 @@ on:
         type: string
         required: false
         default: ${{ github.ref_type == 'tag' }}
+      ignore-external-references:
+        description: Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.
+        type: string
+        required: false
+        default: "false"
+      vex-file:
+        description: The VeX file to upload
+        type: string
+        required: false
+        default: $CI_PROJECT_DIR/vex.json
     secrets:
       devguard-token:
         description: DevGuard API token
         required: true
 jobs:
-  devguard_infrastructure_as_code:
+  devguard_vex_upload:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-          persist-credentials: false
           fetch-depth: 0
-      - name: DevGuard Infrastructure as Code
+          persist-credentials: false
+      - name: DevGuard VeX Upload
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
         with:
-          args: devguard-scanner iac --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }}
-    name: devguard:infrastructure-as-code
+          args: devguard-scanner vex ${{ inputs.vex-file }} --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="${{ inputs.devguard-artifact-name }}" --ignoreExternalReferences=${{ inputs.ignore-external-references }}
+    name: devguard:vex-upload

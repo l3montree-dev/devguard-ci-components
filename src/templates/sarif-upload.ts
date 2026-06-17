@@ -1,6 +1,56 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
+
+const SarifUploadConfig = {
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  devguard_web_ui: Inputs.devguard_web_ui,
+
+  allow_failure: Inputs.allow_failure,
+
+  default_ref: Inputs.default_ref,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+
+  sarif_file: Inputs.sarif_file,
+};
+
+export const SarifUploadJobInputsGitHub = defineInputsGitHub({
+  ...SarifUploadConfig,
+});
+
+export const SarifUploadTemplateGitHub = defineJobGitHub(SarifUploadJobInputsGitHub, (inputValues) => ({
+  name: "devguard:sarif-upload",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+  },
+  job: {
+    "runs-on": "ubuntu-latest",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          "fetch-depth": 0,
+          "persist-credentials": false,
+        },
+      },
+      {
+        name: "DevGuard SARIF Upload",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        "continue-on-error": inputValues.allow_failure as boolean,
+        with: {
+          args: `devguard-scanner sarif \${{ inputs.sarif_file }} --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui}`,
+        },
+      },
+    ],
+  },
+}));
 
 export const SarifUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,

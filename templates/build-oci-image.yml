@@ -10,6 +10,19 @@ spec:
     devguard_asset_name:
       description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
       default: $DEVGUARD_ASSET_NAME
+    devguard_artifact_name:
+      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      default: ""
+    image:
+      description: The image file to build (e.g. image.tar)
+      default: image.tar
+    image_suffix:
+      default: default
+      description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
+    fetch_depth:
+      type: number
+      description: Number of commits to fetch. 0 indicates all history for all branches and tags.
+      default: 1
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
@@ -54,9 +67,6 @@ spec:
     registry_password:
       description: Container registry password
       default: $CI_REGISTRY_PASSWORD
-    image:
-      description: The image file to build (e.g. image.tar)
-      default: image.tar
     image_tag:
       default: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
       description: The tag to use for the built image

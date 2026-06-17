@@ -270,6 +270,12 @@ export const Inputs = {
     description: "Output directory for discovered attestations (relative to project root)." as const,
   },
 
+  fetch_depth: {
+    type: "number" as const,
+    description: "Number of commits to fetch. 0 indicates all history for all branches and tags." as const,
+    default: 1 as const,
+  },
+
   /*
   Docker DinD build inputs
   */

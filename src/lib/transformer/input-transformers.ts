@@ -10,10 +10,18 @@ import { WorkflowInput } from "../github/github-actions";
 import { mapVariableToGitHub } from "../github/platform-variables";
 
 /**
- * Convert GitLab CI input definitions to GitHub Actions format
- * GitHub Actions requires a 'type' field for all inputs
- * Filters out GitLab-specific inputs
- * Transforms platform-agnostic defaults to GitHub-specific values
+ * Convert a snake_case string to kebab-case.
+ * Only converts underscore separators; does not touch digits or uppercase.
+ */
+export function snakeToKebab(s: string): string {
+  return s.replace(/_/g, "-");
+}
+
+/**
+ * Convert GitLab CI input definitions to GitHub Actions format.
+ * - Renames keys from snake_case to kebab-case (GitHub convention)
+ * - Requires a 'type' field for all inputs
+ * - Transforms platform-agnostic defaults to GitHub-specific values
  */
 export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, WorkflowInput> {
   const gitHubInputs: Record<string, WorkflowInput> = {};
@@ -43,7 +51,10 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
       }
     }
 
-    gitHubInputs[key] = {
+    // Rename key to kebab-case for GitHub Actions convention
+    const kebabKey = snakeToKebab(key);
+
+    gitHubInputs[kebabKey] = {
       description: inputDef.description || "",
       type,
       required: false,
@@ -52,6 +63,34 @@ export function transformInputsToGitHub(inputs: ConfigInputs): Record<string, Wo
   }
 
   return gitHubInputs;
+}
+
+/**
+ * In a string, replace `inputs.snake_case_name` with `inputs.kebab-case-name`.
+ * Applied after transformVariableSyntax so that ${{ inputs.foo_bar }} becomes ${{ inputs.foo-bar }}.
+ */
+export function transformInputNamesToKebab(s: string): string {
+  return s.replace(/(\binputs\.)([a-z][a-z0-9_]*)/g, (_, prefix, name) => prefix + snakeToKebab(name));
+}
+
+/**
+ * Recursively apply transformInputNamesToKebab to all string values in an object/array/tree.
+ */
+export function transformObjectInputNamesToKebab<T>(value: T): T {
+  if (typeof value === "string") {
+    return transformInputNamesToKebab(value) as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => transformObjectInputNamesToKebab(item)) as T;
+  }
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      transformObjectInputNamesToKebab(item),
+    ]);
+    return Object.fromEntries(entries) as T;
+  }
+  return value;
 }
 
 /**

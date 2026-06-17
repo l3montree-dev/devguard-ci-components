@@ -2,6 +2,7 @@
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -43,6 +44,126 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
 });
+
+export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  devguard_artifact_name: Inputs.devguard_artifact_name,
+
+  image: {
+    ...Inputs.image,
+    description: "The image file to build (e.g. image.tar)" as const,
+    default: "image.tar" as const,
+  },
+  image_suffix: Inputs.image_suffix,
+  image_tag: Inputs.image_tag,
+  build_args: Inputs.build_args,
+  push_image: Inputs.push_image,
+  supplyChainId: Inputs.supplyChainId,
+});
+
+export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageWDockerJobInputsGitHub, (inputValues) => ({
+  name: "devguard:build-oci-image-w-docker",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+    "build-args": {
+      description: "Build arguments passed to docker buildx build.",
+      required: false,
+    },
+    "registry-user": {
+      description: "Registry username for pushing the image.",
+      required: false,
+    },
+    "registry-password": {
+      description: "Registry password for pushing the image.",
+      required: false,
+    },
+  },
+  job: {
+    "runs-on": "ubuntu-latest",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          submodules: "recursive",
+          "fetch-depth": 0,
+          "persist-credentials": false,
+        },
+      },
+      {
+        name: "Set up Docker Buildx",
+        uses: "docker/setup-buildx-action@v3",
+      },
+      {
+        name: "In-Toto Provenance record start",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }}`,
+        },
+        "continue-on-error": true,
+      },
+      {
+        name: "Build Docker image",
+        run: `BUILD_ARGS="\${{ secrets.build-args }}"
+if [ -z "$BUILD_ARGS" ]; then
+  BUILD_ARGS="--context=. --file=Dockerfile"
+fi
+docker buildx build $BUILD_ARGS --output type=docker,dest=./\${{ inputs.image }} -t \${{ inputs.image_tag }}`,
+      },
+      {
+        name: "Get image digest",
+        run: `docker run --rm \\
+  -v "$GITHUB_WORKSPACE:/workspace" \\
+  -w /workspace \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  crane digest --tarball="\${{ inputs.image }}" > image-digest.txt`,
+      },
+      {
+        name: "Push image to registry",
+        if: "inputs.push_image == 'true'",
+        run: `docker load -i \${{ inputs.image }}
+docker push \${{ inputs.image_tag }}`,
+      },
+      {
+        name: "Upload oci-image artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `oci-image\${{ inputs.image_suffix }}`,
+          path: `\${{ inputs.image }}`,
+        },
+        if: "inputs.push_image != 'true'",
+      },
+      {
+        name: "Upload image-digest artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `image-digest\${{ inputs.image_suffix }}`,
+          path: "image-digest.txt",
+        },
+      },
+      {
+        name: "In-Toto Provenance record stop",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --generateSlsaProvenance --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+        },
+        "continue-on-error": true,
+      },
+      {
+        name: "Upload SLSA Provenance",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          path: "build.provenance.json",
+          name: `build\${{ inputs.image_suffix }}.provenance.json`,
+        },
+      },
+    ],
+  },
+}));
 
 export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDockerJobInputs, (inputValues) => ({
   name: `devguard:build_oci_image${inputValues.job_suffix}`,

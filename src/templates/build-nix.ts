@@ -1,5 +1,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
+import { ContainerImages } from "../container-image-versions";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
 export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
@@ -101,6 +103,191 @@ export const BuildNixJobInputs = defineInputsGitLab({
   nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
   nix_cache_region: Inputs.nix_cache_region,
 });
+
+export const BuildNixJobInputsGitHub = defineInputsGitHub({
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  image_name: {
+    description: "Full OCI image name without tag (e.g. ghcr.io/org/repo/image)" as const,
+    type: "string" as const,
+  },
+  image_suffix: Inputs.image_suffix,
+  nix_target: Inputs.nix_target,
+  nix_cache_substituter: Inputs.nix_cache_substituter,
+  nix_cache_public_key: Inputs.nix_cache_public_key,
+  nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
+  nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
+  nix_cache_region: Inputs.nix_cache_region,
+  nix_version: {
+    description: "Pinned Nix version for deterministic builds (must match other CI systems)" as const,
+    default: "2.34.4" as const,
+    type: "string" as const,
+  },
+  architecture: {
+    ...Inputs.architecture,
+    default: "" as const,
+  },
+  runner: {
+    description: "GitHub Actions runner label to use (e.g. ubuntu-latest, ubuntu-24.04-arm)" as const,
+    default: "ubuntu-latest" as const,
+    type: "string" as const,
+  },
+  allow_failure: Inputs.allow_failure,
+});
+
+export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (inputValues) => ({
+  name: "devguard:build-nix",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: false,
+    },
+    "nix-cache-secret-key": {
+      description: "Nix binary cache signing secret key.",
+      required: false,
+    },
+    "nix-cache-aws-access-key-id": {
+      description: "AWS access key ID for the Nix S3 cache.",
+      required: false,
+    },
+    "nix-cache-aws-secret-access-key": {
+      description: "AWS secret access key for the Nix S3 cache.",
+      required: false,
+    },
+  },
+  job: {
+    "runs-on": `\${{ inputs.runner }}`,
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          "fetch-depth": 0,
+          "persist-credentials": false,
+        },
+      },
+      {
+        name: "Install Nix",
+        uses: "cachix/install-nix-action@v31",
+        with: {
+          install_url: `\${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix_version) }}`,
+          extra_nix_config: `experimental-features = nix-command flakes
+\${{ inputs.nix_cache_substituter != '' && format('substituters = https://cache.nixos.org {0}', inputs.nix_cache_substituter) || '' }}
+\${{ inputs.nix_cache_public_key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix_cache_public_key) || '' }}`,
+        },
+      },
+      {
+        name: "Install crane and devguard-scanner",
+        run: `nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner`,
+      },
+      {
+        name: "In-Toto Provenance record start",
+        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }}`,
+        "continue-on-error": true,
+      },
+      {
+        name: "Write Nix cache secret key",
+        if: `inputs.nix_cache_s3_endpoint != ''`,
+        run: `echo "\${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem`,
+      },
+      {
+        name: "Build OCI image with Nix",
+        run: `nix build .#\${{ inputs.nix_target }}`,
+      },
+      {
+        name: "Push build results to Nix cache",
+        if: `inputs.nix_cache_s3_endpoint != ''`,
+        env: {
+          AWS_ACCESS_KEY_ID: `\${{ secrets.nix-cache-aws-access-key-id }}`,
+          AWS_SECRET_ACCESS_KEY: `\${{ secrets.nix-cache-aws-secret-access-key }}`,
+        },
+        run: `mkdir -p ~/.aws
+echo "[profile nix-cache]" >> ~/.aws/config
+echo "s3.addressing_style = path" >> ~/.aws/config
+nix copy $(nix-store -qR $(readlink result)) \\
+  --to 's3://\${{ inputs.nix_cache_s3_bucket }}?endpoint=\${{ inputs.nix_cache_s3_endpoint }}&region=\${{ inputs.nix_cache_region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true`,
+      },
+      {
+        name: "Prepare image.tar",
+        run: `gunzip -c "$(readlink -f result)" > image.tar`,
+      },
+      {
+        name: "Get image digest",
+        run: `crane digest --tarball=image.tar > image-digest.txt`,
+      },
+      {
+        name: "Upload oci-image artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `oci-image\${{ inputs.image_suffix }}`,
+          path: "image.tar",
+        },
+      },
+      {
+        name: "Set image tag",
+        id: "set-image-tag",
+        run: `devguard-scanner generate-tag \\
+  --imagePath='\${{ inputs.image_name }}' \\
+  --ref='\${{ github.ref_name }}' \\
+  --architecture='\${{ inputs.architecture }}' \\
+  >> image-tag-env.txt
+IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
+ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
+ARTIFACT_URL_ENCODED=$(grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2-)
+echo "$IMAGE_TAG" > image-tag.txt
+echo "$ARTIFACT_NAME" > artifact-purl.txt
+echo "$ARTIFACT_URL_ENCODED" > artifact-purl-safe.txt
+echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
+      },
+      {
+        name: "Upload image-tag artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `image-tag\${{ inputs.image_suffix }}`,
+          path: "image-tag.txt",
+        },
+      },
+      {
+        name: "Upload image-digest artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `image-digest\${{ inputs.image_suffix }}`,
+          path: "image-digest.txt",
+        },
+      },
+      {
+        name: "Upload artifact-purl artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `artifact-purl\${{ inputs.image_suffix }}`,
+          path: "artifact-purl.txt",
+        },
+      },
+      {
+        name: "Upload artifact-purl-safe artifact",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          name: `artifact-purl-safe\${{ inputs.image_suffix }}`,
+          path: "artifact-purl-safe.txt",
+        },
+      },
+      {
+        name: "In-Toto Provenance record stop",
+        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --generateSlsaProvenance --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+        "continue-on-error": true,
+      },
+      {
+        name: "Upload SLSA Provenance",
+        uses: "actions/upload-artifact@v4",
+        with: {
+          path: "build.provenance.json",
+          name: `build\${{ inputs.image_suffix }}.provenance.json`,
+        },
+      },
+    ],
+  },
+}));
 
 export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues) => ({
   name: `devguard:build_oci_image${inputValues.job_suffix}`,

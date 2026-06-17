@@ -2,6 +2,7 @@
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
 export const PushOciImageJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -46,6 +47,94 @@ export const PushOciImageJobInputs = defineInputsGitLab({
 
   disable_job: Inputs.disable_job,
 });
+
+export const PushOciImageJobInputsGitHub = defineInputsGitHub({
+  devguard_api_url: Inputs.devguard_api_url,
+  devguard_asset_name: Inputs.devguard_asset_name,
+  image_suffix: Inputs.image_suffix,
+  supplyChainId: Inputs.supplyChainId,
+  should_deploy: {
+    description: "Should the push job run",
+    default: true,
+    type: "boolean" as const,
+  },
+});
+
+export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsGitHub, (inputValues) => ({
+  name: "devguard:push-oci-image",
+  secrets: {
+    "devguard-token": {
+      description: "DevGuard API token",
+      required: true,
+    },
+  },
+  job: {
+    "runs-on": "ubuntu-latest",
+    if: "inputs.should_deploy",
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          "fetch-depth": 0,
+          "persist-credentials": true,
+        },
+      },
+      {
+        name: "Download oci-image artifact",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `oci-image\${{ inputs.image_suffix }}`,
+          path: ".",
+        },
+      },
+      {
+        name: "Download image-tag artifact",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `image-tag\${{ inputs.image_suffix }}`,
+          path: ".",
+        },
+      },
+      {
+        name: "Download image-digest artifact",
+        uses: "actions/download-artifact@v4",
+        with: {
+          name: `image-digest\${{ inputs.image_suffix }}`,
+          path: ".",
+        },
+      },
+      {
+        name: "Log in to ghcr.io",
+        run: `mkdir -p \${HOME}/.docker
+sudo chown -R 53111:53111 \${HOME}/.docker || true
+sudo chmod 700 \${HOME}/.docker || true
+docker run --rm \\
+  --user 53111:53111 \\
+  -v "\${HOME}/.docker:/tmp/.docker" \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  crane auth login ghcr.io -u \${{ github.actor }} -p \${{ github.token }}`,
+      },
+      {
+        name: "Push OCI image",
+        run: `docker run --rm \\
+  -v "$GITHUB_WORKSPACE:/workspace" \\
+  -w /workspace \\
+  -v "\${HOME}/.docker:/tmp/.docker:ro" \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  crane push image.tar "$(cat image-tag.txt)"`,
+      },
+      {
+        name: "In-Toto Provenance run",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --supplyChainOutputDigest="$(cat image-digest.txt)" --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+        },
+        "continue-on-error": true,
+      },
+    ],
+  },
+}));
 
 export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inputValues) => ({
   name: `devguard:push_oci_image${inputValues.job_suffix}`,

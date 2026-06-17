@@ -5,13 +5,16 @@ import {
   GitHubWorkflow,
   CIComponentGroupTemplateGitLab,
   CIComponentGroupTemplateGitHub,
+  GitHubOrchestratorWorkflow,
 } from "./types";
 import { stringify } from "yaml";
 import { writeFile, mkdir } from "fs/promises";
 import { GitHubWorkflowReusable, GitHubJob } from "./github/github-actions";
 import {
   githubJobId,
+  snakeToKebab,
   transformInputsToGitHub,
+  transformObjectInputNamesToKebab,
   transformObjectVariableSyntax,
   transformVariableSyntax,
 } from "./transformer/input-transformers";
@@ -178,6 +181,54 @@ export async function ExportCIComponentsGitLab(
   }
 }
 
+export async function ExportGitHubOrchestratorWorkflows(
+  orchestrators: Record<string, GitHubOrchestratorWorkflow>,
+  header: string,
+): Promise<void> {
+  await mkdir("./.github/workflows/", { recursive: true });
+
+  for (const [name, orchestrator] of Object.entries(orchestrators)) {
+    const workflow: any = {
+      on: {
+        workflow_call: {
+          inputs: orchestrator.inputs,
+          ...(orchestrator.secrets ? { secrets: orchestrator.secrets } : {}),
+        },
+      },
+      ...(orchestrator.permissions ? { permissions: orchestrator.permissions } : {}),
+      // Convert with: key names from snake_case to kebab-case so they match
+      // the leaf workflow input names that are now generated as kebab-case
+      jobs: Object.fromEntries(
+        Object.entries(orchestrator.jobs).map(([jobId, job]) => [
+          jobId,
+          {
+            ...job,
+            ...(job.with
+              ? {
+                  with: Object.fromEntries(
+                    Object.entries(job.with).map(([k, v]) => [snakeToKebab(k), v]),
+                  ),
+                }
+              : {}),
+          },
+        ]),
+      ),
+    };
+
+    if (orchestrator.name) {
+      workflow.name = orchestrator.name;
+    }
+
+    const filePath = `./.github/workflows/${name}.yml`;
+    const dir = filePath.split("/").slice(0, -1).join("/");
+    await mkdir(dir, { recursive: true });
+
+    const yaml = stringifyData(workflow);
+    await writeFile(filePath, header + yaml);
+    console.log(`Exported GitHub Orchestrator workflow to ${filePath}`);
+  }
+}
+
 export async function ExportCIComponentsGitHub(
   templates: CIComponentGroupTemplateGitHub,
   header: string,
@@ -210,10 +261,12 @@ export async function ExportCIComponentsGitHub(
       jobs: jobDefs.reduce(
         (acc, def) => ({
           ...acc,
-          [githubJobId(transformVariableSyntax(def.name))]: transformObjectVariableSyntax({
-            ...def.job,
-            name: transformVariableSyntax(def.name),
-          }),
+          [githubJobId(transformVariableSyntax(def.name))]: transformObjectInputNamesToKebab(
+            transformObjectVariableSyntax({
+              ...def.job,
+              name: transformVariableSyntax(def.name),
+            }),
+          ),
         }),
         {},
       ),

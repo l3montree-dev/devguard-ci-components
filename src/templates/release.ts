@@ -1,4 +1,5 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 
@@ -22,6 +23,43 @@ export const ReleaseJobInputs = defineInputsGitLab({
       "List of assets links to attach to the release. Each item should have (name) the name of the link and (url) the URL to download the asset from and could have (filepath) the The redirect link to the url. Must start with a slash (/) and (link_type) the content kind of what users can download with url." as const,
   },
 });
+
+export const ReleaseJobInputsGitHub = defineInputsGitHub({
+  release_tag: Inputs.release_tag,
+  release_name: Inputs.release_name,
+  release_description: Inputs.release_description,
+  allow_failure: Inputs.allow_failure,
+});
+
+export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (inputValues) => ({
+  name: "devguard:release",
+  job: {
+    "runs-on": "ubuntu-latest",
+    permissions: {
+      contents: "write",
+    },
+    steps: [
+      {
+        name: "Checkout code",
+        uses: "actions/checkout@v4",
+        with: {
+          "fetch-depth": 0,
+          "persist-credentials": true,
+        },
+      },
+      {
+        name: "Create GitHub Release",
+        uses: "softprops/action-gh-release@v2",
+        "continue-on-error": inputValues.allow_failure as boolean,
+        with: {
+          tag_name: inputValues.release_tag || `\${{ github.ref_name }}`,
+          name: inputValues.release_name || `\${{ github.ref_name }}`,
+          body: inputValues.release_description,
+        },
+      },
+    ],
+  },
+}));
 
 export const ReleaseTemplate = defineJobGitLab(ReleaseJobInputs, (inputValues) => ({
   name: `devguard:release${inputValues.job_suffix}`,
