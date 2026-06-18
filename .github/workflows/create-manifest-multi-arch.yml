@@ -30,12 +30,12 @@ jobs:
       - name: Download amd64 generate-tag env
         uses: actions/download-artifact@v4
         with:
-          name: generate-tag-env-amd64
+          name: generate-tag-env${{ inputs.image-suffix }}-amd64
           path: .
       - name: Download arm64 generate-tag env
         uses: actions/download-artifact@v4
         with:
-          name: generate-tag-env-arm64
+          name: generate-tag-env${{ inputs.image-suffix }}-arm64
           path: .
       - name: Log in to ghcr.io
         uses: docker/login-action@v3

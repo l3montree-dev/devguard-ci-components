@@ -34,7 +34,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         name: "Download amd64 generate-tag env",
         uses: "actions/download-artifact@v4",
         with: {
-          name: `generate-tag-env-amd64`,
+          name: `generate-tag-env\${{ inputs.image_suffix }}-amd64`,
           path: ".",
         },
       },
@@ -42,7 +42,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         name: "Download arm64 generate-tag env",
         uses: "actions/download-artifact@v4",
         with: {
-          name: `generate-tag-env-arm64`,
+          name: `generate-tag-env\${{ inputs.image_suffix }}-arm64`,
           path: ".",
         },
       },

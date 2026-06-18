@@ -94,7 +94,7 @@ cat generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env`,
         name: "Upload generate-tag env artifact",
         uses: "actions/upload-artifact@v4",
         with: {
-          name: `generate-tag-env\${{ inputs.image_suffix }}`,
+          name: `generate-tag-env\${{ inputs.image_suffix }}-\${{ inputs.architecture }}`,
           path: `generate_tag_\${{ inputs.upstream_version }}_\${{ inputs.architecture }}.env`,
         },
       },
