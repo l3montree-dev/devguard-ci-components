@@ -1,6 +1,6 @@
 # DevSecOps Workflow Definition
 # This workflow is triggered on every push to the repository
-name: DevGuard Workflow
+name: DevGuard CI Components
 
 on:
   push:
@@ -67,14 +67,12 @@ jobs:
     secrets:
       devguard-token: ${{ secrets.DEVGUARD_TOKEN }}    
 
-  sbom-test:
-    uses: ./.github/workflows/dependency-risk-identification.yml
+  zizmor-scanning:
+    uses: ./.github/workflows/zizmor-scanning.yml
     with:
-      asset-name: l3montree-cybersecurity/projects/devguard/assets/devguard-action
-      api-url: https://api.main.devguard.org
-      artifact-name: "source-code-sbom"
-      sbom-file: "sbom-in-repo.json"
-      fail-on-cvss: "none"
-      fail-on-risk: "none"
+      devguard_asset_name: l3montree-cybersecurity/projects/devguard/assets/devguard-ci-components
+      devguard_api_url: https://api.main.devguard.org
+      devguard_web_ui: https://main.devguard.org
+      allow_failure: true
     secrets:
-      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}    
+      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}
