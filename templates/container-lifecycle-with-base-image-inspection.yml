@@ -304,8 +304,12 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:container_scanning$[[ inputs.job_suffix ]]
   dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:container_scanning$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none

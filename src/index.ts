@@ -301,8 +301,8 @@ const clbiPushOciImage = PushOciImageTemplate({
   git_strategy: "none",
   image: "image.tar",
   image_tag: "$IMAGE_TAG",
-  needs: [clbiContainerScanning.name],
-  dependencies: [clbiContainerScanning.name],
+  needs: [clbiGenerateTag.name, clbiBuildOciImage.name, clbiContainerScanning.name],
+  dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name, clbiContainerScanning.name],
 });
 const clbiSignOciImage = SignOciImageTemplate({
   stage: "attestation",
