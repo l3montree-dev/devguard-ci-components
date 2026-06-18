@@ -1,7 +1,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages } from "../container-image-versions";
+import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
 export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
@@ -160,7 +160,7 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
     steps: [
       {
         name: "Checkout code",
-        uses: "actions/checkout@v4",
+        uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": false,

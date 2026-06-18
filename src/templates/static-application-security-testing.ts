@@ -1,7 +1,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages } from "../container-image-versions";
+import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
 
 const SASTConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -49,7 +49,7 @@ export const StaticApplicationSecurityTestingTemplateGitHub = defineJobGitHub(SA
     steps: [
       {
         name: "Checkout code",
-        uses: "actions/checkout@v4",
+        uses: ACTIONS_CHECKOUT,
         with: {
           submodules: "recursive",
           "fetch-depth": 0,

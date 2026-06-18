@@ -1,7 +1,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages } from "../container-image-versions";
+import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
 export const ContainerScanningJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
@@ -89,7 +89,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
     steps: [
       {
         name: "Checkout code",
-        uses: "actions/checkout@v4",
+        uses: ACTIONS_CHECKOUT,
         with: {
           submodules: "recursive",
           "fetch-depth": 0,

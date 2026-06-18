@@ -1,7 +1,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages } from "../container-image-versions";
+import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
 
 export const GenerateTagJobInputs = defineInputsGitLab({
   devguard_artifact_name: {
@@ -56,7 +56,7 @@ export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGit
     steps: [
       {
         name: "Checkout code",
-        uses: "actions/checkout@v4",
+        uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": false,
