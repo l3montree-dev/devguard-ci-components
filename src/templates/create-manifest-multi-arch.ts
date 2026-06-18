@@ -31,19 +31,19 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
     },
     steps: [
       {
-        name: "Download amd64 generate-tag env",
+        name: "Download amd64 image-tag",
         uses: "actions/download-artifact@v4",
         with: {
-          name: `generate-tag-env\${{ inputs.image_suffix }}-amd64`,
-          path: ".",
+          name: `image-tag\${{ inputs.image_suffix }}-amd64`,
+          path: "amd64",
         },
       },
       {
-        name: "Download arm64 generate-tag env",
+        name: "Download arm64 image-tag",
         uses: "actions/download-artifact@v4",
         with: {
-          name: `generate-tag-env\${{ inputs.image_suffix }}-arm64`,
-          path: ".",
+          name: `image-tag\${{ inputs.image_suffix }}-arm64`,
+          path: "arm64",
         },
       },
       {
@@ -57,11 +57,11 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       },
       {
         name: "Create and push multi-arch manifest",
-        run: `AMD64_TAG=$(grep '^IMAGE_TAG=' generate_tag_\${{ inputs.upstream_version }}_amd64.env | cut -d'=' -f2)
-ARM64_TAG=$(grep '^IMAGE_TAG=' generate_tag_\${{ inputs.upstream_version }}_arm64.env | cut -d'=' -f2)
+        run: `AMD64_TAG=$(cat amd64/image-tag.txt)
+ARM64_TAG=$(cat arm64/image-tag.txt)
 
 if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ]; then
-  echo "ERROR: Could not read arch-specific IMAGE_TAG from generate_tag env files"
+  echo "ERROR: Could not read arch-specific IMAGE_TAG from image-tag artifacts"
   exit 1
 fi
 
