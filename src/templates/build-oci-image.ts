@@ -1,6 +1,6 @@
 
 import { Inputs } from "./inputs";
-import { ContainerImages } from "../container-image-versions";
+import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
@@ -138,7 +138,7 @@ echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar
       },
       {
         name: "Checkout code",
-        uses: "actions/checkout@v4",
+        uses: ACTIONS_CHECKOUT,
         with: {
           submodules: "recursive",
           "persist-credentials": false,

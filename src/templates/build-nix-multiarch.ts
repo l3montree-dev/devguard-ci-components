@@ -2,6 +2,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
+import { ACTIONS_CHECKOUT } from "../container-image-versions";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
@@ -128,7 +129,7 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
     steps: [
       {
         name: "Checkout code",
-        uses: "actions/checkout@v4",
+        uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": false,
