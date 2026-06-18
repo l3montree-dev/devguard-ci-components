@@ -166,10 +166,16 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
     ],
     script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
-echo "Image: ${inputValues.image}"
-echo "Image Tag: ${inputValues.image_tag}"
+# Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
+# "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
+# digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
+IMAGE_REF="${inputValues.image_tag}"
+IMAGE_REF="\${IMAGE_REF%@*}"
 
-/crane push ${inputValues.image} ${inputValues.image_tag}
+echo "Image: ${inputValues.image}"
+echo "Image Tag: \${IMAGE_REF}"
+
+/crane push ${inputValues.image} "\${IMAGE_REF}"
 
 /devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"
 `,
