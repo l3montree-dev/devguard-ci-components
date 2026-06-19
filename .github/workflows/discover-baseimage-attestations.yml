@@ -54,7 +54,7 @@ jobs:
         with:
           args: devguard-scanner login -u ${{ inputs.registry-user || github.actor }} -p ${{ secrets.registry-password || github.token }} ${{ inputs.registry }} && devguard-scanner discover-baseimage-attestations --output "${{ inputs.output }}" --predicateType "${{ inputs.predicate-type }}" "${{ inputs.path }}"
       - name: Upload attestation artifacts
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: baseimage-attestations
           path: ${{ inputs.output }}/attestation-*.json

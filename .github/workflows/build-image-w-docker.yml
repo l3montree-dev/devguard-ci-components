@@ -100,13 +100,13 @@ jobs:
           docker load -i ${{ inputs.image }}
           docker push ${{ inputs.image-tag }}
       - name: Upload oci-image artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: ${{ inputs.image }}
         if: inputs.push-image != 'true'
       - name: Upload image-digest artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: image-digest.txt
@@ -116,7 +116,7 @@ jobs:
           args: devguard-scanner intoto stop --step=build --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
         continue-on-error: true
       - name: Upload SLSA Provenance
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           path: build.provenance.json
           name: build${{ inputs.image-suffix }}.provenance.json

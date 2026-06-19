@@ -129,7 +129,7 @@ jobs:
       - name: Get image digest
         run: crane digest --tarball=image.tar > image-digest.txt
       - name: Upload oci-image artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: image.tar
@@ -150,22 +150,22 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
           echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
       - name: Upload image-tag artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: image-tag.txt
       - name: Upload image-digest artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: image-digest.txt
       - name: Upload artifact-purl artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: artifact-purl${{ inputs.image-suffix }}
           path: artifact-purl.txt
       - name: Upload artifact-purl-safe artifact
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: artifact-purl-safe${{ inputs.image-suffix }}
           path: artifact-purl-safe.txt
@@ -173,7 +173,7 @@ jobs:
         run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
         continue-on-error: true
       - name: Upload SLSA Provenance
-        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           path: build.provenance.json
           name: build${{ inputs.image-suffix }}.provenance.json

@@ -2,7 +2,7 @@ export const ACTIONS_CHECKOUT =
   "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0"; // v6.0.3
 
 export const ACTIONS_UPLOAD_ARTIFACT =
-  "actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"; // v7.0.1
+  "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"; // v7.0.1
 
 export const ACTIONS_DOWNLOAD_ARTIFACT =
   "actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317"; // v8.0.1
