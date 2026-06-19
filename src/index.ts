@@ -216,11 +216,11 @@ const clnAttest = AttestTemplate({
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
 const paGenerateTag = GenerateTagTemplate({
-  stage: "oci-image",
+  stage: "$[[ inputs.build_stage ]]",
   git_strategy: "fetch",
 });
 const paPushOciImage = PushOciImageTemplate({
-  stage: "oci-image",
+  stage: "$[[ inputs.build_stage ]]",
   git_strategy: "none",
   image: "image.tar",
   image_tag: "$IMAGE_TAG",
@@ -228,14 +228,14 @@ const paPushOciImage = PushOciImageTemplate({
   dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
 const paSignOciImage = SignOciImageTemplate({
-  stage: "attestation",
+  stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   image: "$IMAGE_TAG",
   needs: [paGenerateTag.name, paPushOciImage.name],
   dependencies: [paGenerateTag.name, paPushOciImage.name],
 });
 const paAttest = AttestTemplate({
-  stage: "attestation",
+  stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", paPushOciImage.name],
 });
@@ -437,6 +437,19 @@ await ExportCIComponentsGitLab(templates, fileHeader, {
   },
   "container-lifecycle-with-base-image-inspection": {
     devguard_artifact_name: Inputs.devguard_artifact_name,
+  },
+  "push-and-attest": {
+    build_job_name: {
+      description: "Name of the build job to depend on" as const,
+    },
+    build_stage: {
+      description: "Pipeline stage for the push jobs (e.g. build, oci-image)" as const,
+      default: "oci-image" as const,
+    },
+    attest_stage: {
+      description: "Pipeline stage for the sign/attest jobs (e.g. test, attestation)" as const,
+      default: "attestation" as const,
+    },
   },
 });
 
