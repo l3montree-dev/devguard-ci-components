@@ -8,6 +8,8 @@ on:
 permissions:
   packages: write
   contents: read
+  actions: read
+  security-events: write
 
 jobs:
   zizmor-scanning:
