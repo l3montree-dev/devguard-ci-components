@@ -8,7 +8,7 @@ export const ACTIONS_DOWNLOAD_ARTIFACT =
   "actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317"; // v8.0.1
 
 export const ACTION_GH_RELEASE =
-  "actions/download-artifact@9ed3cf9a6863b31f005d951c8d19de20628cf4eb"; // v3.0.0
+  "softprops/action-gh-release@9ed3cf9a6863b31f005d951c8d19de20628cf4eb"; // v3.0.0
 
 export const DOCKER_SETUP_BUILDX_ACTION =
   "docker/setup-buildx-action@c887d9748da14dcb42b11cf8bcc773b301ea55b5"; // v4.1.0
