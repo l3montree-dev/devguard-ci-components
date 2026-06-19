@@ -96,9 +96,15 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   script: |
     /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo "Image: $[[ inputs.image ]]"
-    echo "Image Tag: $[[ inputs.image_tag ]]"
+    # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
+    # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
+    # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
+    IMAGE_REF="$[[ inputs.image_tag ]]"
+    IMAGE_REF="${IMAGE_REF%@*}"
 
-    /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
+    echo "Image: $[[ inputs.image ]]"
+    echo "Image Tag: ${IMAGE_REF}"
+
+    /crane push $[[ inputs.image ]] "${IMAGE_REF}"
 
     /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
