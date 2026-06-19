@@ -47,7 +47,7 @@ export const ZizmorScanningTemplateGitHub = defineJobGitHub(ZizmorScanningJobInp
       },
       {
         name: "Run zizmor",
-        run: `uvx zizmor --format=sarif . > zizmor.sarif`,
+        run: `uvx zizmor --format=sarif .github/workflows/ > zizmor.sarif`,
         env: {
           GH_TOKEN: "${{ github.token }}",
         },
