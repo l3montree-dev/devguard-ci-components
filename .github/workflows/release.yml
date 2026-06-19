@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Create GitHub Release
-        uses: actions/download-artifact@9ed3cf9a6863b31f005d951c8d19de20628cf4eb
+        uses: softprops/action-gh-release@9ed3cf9a6863b31f005d951c8d19de20628cf4eb
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           tag_name: ${{ inputs.release-tag }}
