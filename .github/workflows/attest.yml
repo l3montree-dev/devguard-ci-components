@@ -40,23 +40,23 @@ jobs:
     if: inputs.should-deploy
     steps:
       - name: Download image-digest artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
         continue-on-error: true
       - name: Download image-tag artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download artifact purl (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl${{ inputs.image-suffix }}
         if: inputs.devguard-artifact-name == ''
       - name: Download safe-artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl-safe${{ inputs.image-suffix }}
         if: inputs.devguard-artifact-name == ''
@@ -142,7 +142,7 @@ jobs:
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
       - name: Download and Attest build-provenance.json
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: build${{ inputs.image-suffix }}.provenance.json
       - name: Attest build-provenance.json

@@ -1,6 +1,7 @@
 
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, DOCKER_SETUP_BUILDX_ACTION } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
@@ -96,7 +97,7 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
       },
       {
         name: "Set up Docker Buildx",
-        uses: "docker/setup-buildx-action@v3",
+        uses: DOCKER_SETUP_BUILDX_ACTION,
       },
       {
         name: "In-Toto Provenance record start",
@@ -130,7 +131,7 @@ docker push \${{ inputs.image_tag }}`,
       },
       {
         name: "Upload oci-image artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}`,
           path: `\${{ inputs.image }}`,
@@ -139,7 +140,7 @@ docker push \${{ inputs.image_tag }}`,
       },
       {
         name: "Upload image-digest artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: "image-digest.txt",
@@ -155,7 +156,7 @@ docker push \${{ inputs.image_tag }}`,
       },
       {
         name: "Upload SLSA Provenance",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
           name: `build\${{ inputs.image_suffix }}.provenance.json`,

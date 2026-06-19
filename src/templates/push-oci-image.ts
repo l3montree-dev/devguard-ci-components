@@ -1,6 +1,7 @@
 
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
@@ -82,7 +83,7 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
       },
       {
         name: "Download oci-image artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}`,
           path: ".",
@@ -90,7 +91,7 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
       },
       {
         name: "Download image-tag artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}`,
           path: ".",
@@ -98,7 +99,7 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
       },
       {
         name: "Download image-digest artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: ".",

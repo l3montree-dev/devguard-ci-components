@@ -1,7 +1,8 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTION_GH_RELEASE, ACTIONS_CHECKOUT } from "../actions-versions";
 
 export const ReleaseJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
@@ -49,7 +50,7 @@ export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (in
       },
       {
         name: "Create GitHub Release",
-        uses: "softprops/action-gh-release@v2",
+        uses: ACTION_GH_RELEASE,
         "continue-on-error": inputValues.allow_failure as boolean,
         with: {
           tag_name: inputValues.release_tag || `\${{ github.ref_name }}`,

@@ -90,17 +90,17 @@ jobs:
       packages: write
     steps:
       - name: Download amd64 image-tag artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}-amd64
           path: amd64
       - name: Download arm64 image-tag artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}-arm64
           path: arm64
       - name: Log in to ghcr.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

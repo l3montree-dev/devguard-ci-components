@@ -2,6 +2,7 @@ import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
+import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 
 const AttestConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -163,7 +164,7 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
     steps: [
       {
         name: "Download image-digest artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: ".",
@@ -172,7 +173,7 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
       },
       {
         name: "Download image-tag artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}`,
           path: ".",
@@ -180,7 +181,7 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
       },
       {
         name: "Download artifact purl (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `artifact-purl\${{ inputs.image_suffix }}`,
         },
@@ -188,7 +189,7 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
       },
       {
         name: "Download safe-artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `artifact-purl-safe\${{ inputs.image_suffix }}`,
         },
@@ -287,7 +288,7 @@ echo "Resolved artifact name for attestation: \${{ inputs.devguard_artifact_name
       },
       {
         name: "Download and Attest build-provenance.json",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `build\${{ inputs.image_suffix }}.provenance.json`,
         },

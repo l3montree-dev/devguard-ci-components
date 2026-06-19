@@ -1,7 +1,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
 export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
@@ -168,7 +168,7 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
       },
       {
         name: "Install Nix",
-        uses: "cachix/install-nix-action@v31",
+        uses: CACHIX_INSTALL_NIX_ACTION,
         with: {
           install_url: `\${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix_version) }}`,
           extra_nix_config: `experimental-features = nix-command flakes
@@ -217,7 +217,7 @@ nix copy $(nix-store -qR $(readlink result)) \\
       },
       {
         name: "Upload oci-image artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}`,
           path: "image.tar",
@@ -242,7 +242,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
       },
       {
         name: "Upload image-tag artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}`,
           path: "image-tag.txt",
@@ -250,7 +250,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
       },
       {
         name: "Upload image-digest artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: "image-digest.txt",
@@ -258,7 +258,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
       },
       {
         name: "Upload artifact-purl artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `artifact-purl\${{ inputs.image_suffix }}`,
           path: "artifact-purl.txt",
@@ -266,7 +266,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
       },
       {
         name: "Upload artifact-purl-safe artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `artifact-purl-safe\${{ inputs.image_suffix }}`,
           path: "artifact-purl-safe.txt",
@@ -279,7 +279,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
       },
       {
         name: "Upload SLSA Provenance",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
           name: `build\${{ inputs.image_suffix }}.provenance.json`,

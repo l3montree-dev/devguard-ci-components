@@ -1,7 +1,8 @@
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
 
 export const DeployJobInputsGitHub = defineInputsGitHub({
   devguard_api_url: Inputs.devguard_api_url,
@@ -127,7 +128,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
       },
       {
         name: "Download oci-image artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}`,
           path: ".",
@@ -136,7 +137,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
       },
       {
         name: "Download image-tag artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}`,
           path: ".",
@@ -144,7 +145,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
       },
       {
         name: "Download image-digest artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: ".",
@@ -165,7 +166,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
       },
       {
         name: "Setup crane",
-        uses: "imjasonh/setup-crane@v0.1",
+        uses: IMJASONH_SETUP_CRANE,
       },
       {
         name: "Push oci image to GitHub image Registry",

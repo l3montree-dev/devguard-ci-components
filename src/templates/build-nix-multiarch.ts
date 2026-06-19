@@ -2,7 +2,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION, DOCKER_LOGIN_ACTION } from "../actions-versions";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
@@ -137,7 +137,7 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
       },
       {
         name: "Install Nix",
-        uses: "cachix/install-nix-action@v31",
+        uses: CACHIX_INSTALL_NIX_ACTION,
         with: {
           install_url: `\${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix_version) }}`,
           extra_nix_config: `experimental-features = nix-command flakes
@@ -197,7 +197,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload oci-image artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
           path: "image.tar",
@@ -205,7 +205,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload image-tag artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
           path: "image-tag.txt",
@@ -213,7 +213,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload image-digest artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
           path: "image-digest.txt",
@@ -226,7 +226,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload SLSA Provenance",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
           name: `build\${{ inputs.image_suffix }}-\${{ matrix.arch }}.provenance.json`,
@@ -247,7 +247,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
     steps: [
       {
         name: "Download amd64 image-tag artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-amd64`,
           path: "amd64",
@@ -255,7 +255,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
       },
       {
         name: "Download arm64 image-tag artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-arm64`,
           path: "arm64",
@@ -263,7 +263,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
       },
       {
         name: "Log in to ghcr.io",
-        uses: "docker/login-action@v3",
+        uses: DOCKER_LOGIN_ACTION,
         with: {
           registry: "ghcr.io",
           username: `\${{ github.actor }}`,

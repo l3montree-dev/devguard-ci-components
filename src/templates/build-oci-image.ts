@@ -1,6 +1,7 @@
 
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
@@ -205,7 +206,7 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
       },
       {
         name: "Upload artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}`,
           path: `\${{ inputs.image_destination_path }}`,
@@ -273,7 +274,7 @@ docker run --rm \\
       },
       {
         name: "Upload digest",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: "image-digest.txt",
@@ -298,7 +299,7 @@ echo "Using artifact name: $PURL"`,
       },
       {
         name: "Upload artifact purl",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `artifact-purl\${{ inputs.image_suffix }}`,
           path: "artifact-purl.txt",
@@ -306,7 +307,7 @@ echo "Using artifact name: $PURL"`,
       },
       {
         name: "Upload safe artifact purl",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `artifact-purl-safe\${{ inputs.image_suffix }}`,
           path: "artifact-purl-safe.txt",
@@ -314,7 +315,7 @@ echo "Using artifact name: $PURL"`,
       },
       {
         name: "Upload image tag",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}`,
           path: "image-tag.txt",
@@ -336,7 +337,7 @@ sudo chmod -R u+rw,g+r,o+r $GITHUB_WORKSPACE || true`,
       },
       {
         name: "Upload SLSA Provenance",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
           name: `build\${{ inputs.image_suffix }}.provenance.json`,

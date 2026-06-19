@@ -2,6 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "../actions-versions";
 
 export const CreateManifestMultiArchJobInputs = defineInputsGitLab({
   stage: {
@@ -32,7 +33,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
     steps: [
       {
         name: "Download amd64 image-tag",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-amd64`,
           path: "amd64",
@@ -40,7 +41,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       },
       {
         name: "Download arm64 image-tag",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-arm64`,
           path: "arm64",
@@ -48,7 +49,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       },
       {
         name: "Log in to ghcr.io",
-        uses: "docker/login-action@v3",
+        uses: DOCKER_LOGIN_ACTION,
         with: {
           registry: "ghcr.io",
           username: `\${{ github.actor }}`,
