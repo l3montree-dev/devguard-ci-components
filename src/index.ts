@@ -11,8 +11,15 @@ import {
   SASTJobInputs,
   StaticApplicationSecurityTestingTemplate,
 } from "./templates/static-application-security-testing";
-import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
-import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab, GitHubOrchestratorWorkflow } from "./lib/types";
+import {
+  BuildNixMultiArchBuildImageTemplate,
+  BuildNixMultiArchCreateManifestTemplate,
+} from "./templates/build-nix-multiarch";
+import {
+  CIComponentGroupTemplateGitHub,
+  CIComponentGroupTemplateGitLab,
+  GitHubOrchestratorWorkflow,
+} from "./lib/types";
 import { ExportCIComponentsGitHub, ExportCIComponentsGitLab, ExportGitHubOrchestratorWorkflows } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
@@ -45,7 +52,10 @@ import { BuildOciImageWDockerTemplateGitHub } from "./templates/build-oci-image-
 import { CreateManifestMultiArchTemplateGitHub } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplateGitHub } from "./templates/discover-baseimage-attestations";
 import { SarifUploadTemplateGitHub } from "./templates/sarif-upload";
-import { BuildNixMultiArchBuildImageTemplateGitHub, BuildNixMultiArchCreateManifestTemplateGitHub } from "./templates/build-nix-multiarch";
+import {
+  BuildNixMultiArchBuildImageTemplateGitHub,
+  BuildNixMultiArchCreateManifestTemplateGitHub,
+} from "./templates/build-nix-multiarch";
 import { BuildNixTemplateGitHub } from "./templates/build-nix";
 
 // const fileHeader = `# Copyright 2025-${new Date().getFullYear()} l3montree GmbH.
@@ -401,13 +411,7 @@ const templates: CIComponentGroupTemplateGitLab = {
     clnAttest,
   ],
   "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
-  "container-scanning-and-attest": [
-    csaGenerateTag,
-    csaContainerScanning,
-    csaPushOciImage,
-    csaSignOciImage,
-    csaAttest,
-  ],
+  "container-scanning-and-attest": [csaGenerateTag, csaContainerScanning, csaPushOciImage, csaSignOciImage, csaAttest],
   "container-lifecycle-with-base-image-inspection": [
     clbiDiscoverAttestations,
     clbiGenerateTag,
@@ -419,15 +423,8 @@ const templates: CIComponentGroupTemplateGitLab = {
     clbiSbomUpload,
     clbiVexUpload,
   ],
-  "build-nix": [
-    BuildNixExtractScannerTemplate({}),
-    BuildNixGenerateTagTemplate({}),
-    BuildNixTemplate({}),
-  ],
-  "build-nix-multiarch": [
-    BuildNixMultiArchBuildImageTemplate({}),
-    BuildNixMultiArchCreateManifestTemplate({}),
-  ],
+  "build-nix": [BuildNixExtractScannerTemplate({}), BuildNixGenerateTagTemplate({}), BuildNixTemplate({})],
+  "build-nix-multiarch": [BuildNixMultiArchBuildImageTemplate({}), BuildNixMultiArchCreateManifestTemplate({})],
 };
 
 await ExportCIComponentsGitLab(templates, fileHeader, {
@@ -519,7 +516,8 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
         default: "",
       },
       "fail-on-cvss": {
-        description: "Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low",
+        description:
+          "Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low",
         type: "string",
         required: false,
         default: "",
@@ -659,7 +657,8 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
         default: "",
       },
       "fail-on-cvss": {
-        description: "Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low",
+        description:
+          "Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low",
         type: "string",
         required: false,
         default: "",
@@ -690,7 +689,8 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
         required: true,
       },
       "build-args": {
-        description: "Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.",
+        description:
+          "Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.",
         required: false,
       },
     },
@@ -797,16 +797,56 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
     name: "Container Lifecycle",
     inputs: {
       "asset-name": { description: "Name of the asset", type: "string", required: true },
-      "api-url": { type: "string", required: false, default: "https://api.devguard.org", description: "URL of the DevGuard API" },
-      "web-ui": { type: "string", required: false, default: "https://app.devguard.org", description: "URL of the DevGuard Web UI" },
-      "image-destination-path": { description: "Path to the OCI image tar file", type: "string", required: false, default: "image.tar" },
+      "api-url": {
+        type: "string",
+        required: false,
+        default: "https://api.devguard.org",
+        description: "URL of the DevGuard API",
+      },
+      "web-ui": {
+        type: "string",
+        required: false,
+        default: "https://app.devguard.org",
+        description: "URL of the DevGuard Web UI",
+      },
+      "image-destination-path": {
+        description: "Path to the OCI image tar file",
+        type: "string",
+        required: false,
+        default: "image.tar",
+      },
       image: { description: "OCI image tag", type: "string", required: false, default: "" },
-      "disable-artifact-registry-as-image-store": { required: false, default: false, type: "boolean", description: "Push image directly to registry instead of uploading as artifact" },
-      "image-suffix": { description: "Suffix for the image name when building multiple images", type: "string", required: false, default: "" },
-      "artifact-name": { type: "string", required: false, default: "", description: "The name of the artifact you are building" },
+      "disable-artifact-registry-as-image-store": {
+        required: false,
+        default: false,
+        type: "boolean",
+        description: "Push image directly to registry instead of uploading as artifact",
+      },
+      "image-suffix": {
+        description: "Suffix for the image name when building multiple images",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "artifact-name": {
+        type: "string",
+        required: false,
+        default: "",
+        description: "The name of the artifact you are building",
+      },
       "should-deploy": { description: "Should the deploy job run", type: "boolean", required: false, default: true },
-      "fail-on-risk": { description: "Fail if risk level reaches this threshold", type: "string", required: false, default: "" },
-      "fail-on-cvss": { description: "Fail if CVSS score reaches this threshold", type: "string", required: false, default: "" },
+      "fail-on-risk": {
+        description: "Fail if risk level reaches this threshold",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "fail-on-cvss": {
+        description: "Fail if CVSS score reaches this threshold",
+        type: "string",
+        required: false,
+        default: "",
+      },
       "fetch-depth": { type: "number", required: false, default: 1, description: "Number of commits to fetch" },
     },
     secrets: {
@@ -889,17 +929,72 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
       "nix-target": { description: "Nix flake build target (e.g. devguardOCI)", type: "string", required: true },
       "image-name": { description: "Full OCI image name without tag", type: "string", required: true },
       "asset-name": { description: "DevGuard asset name for supply chain tracking", type: "string", required: true },
-      "api-url": { type: "string", required: false, default: "https://api.devguard.org", description: "URL of the DevGuard API" },
-      "web-ui": { type: "string", required: false, default: "https://app.devguard.org", description: "URL of the DevGuard Web UI" },
-      "artifact-name-suffix": { description: "Suffix appended to artifact names", type: "string", required: false, default: "" },
-      "should-deploy": { description: "Whether to push the image to the container registry", type: "boolean", required: false, default: true },
-      "fail-on-risk": { description: "Fail if risk level reaches this threshold", type: "string", required: false, default: "" },
-      "fail-on-cvss": { description: "Fail if CVSS score reaches this threshold", type: "string", required: false, default: "" },
-      "nix-cache-substituter": { description: "Nix binary cache substituter URL", type: "string", required: false, default: "" },
-      "nix-cache-public-key": { description: "Trusted public key for the Nix binary cache", type: "string", required: false, default: "" },
-      "nix-cache-s3-endpoint": { description: "S3 API endpoint for pushing to the Nix cache", type: "string", required: false, default: "" },
-      "nix-cache-s3-bucket": { description: "S3 bucket name for the Nix cache", type: "string", required: false, default: "nix" },
-      "nix-cache-region": { description: "S3 region for the Nix cache bucket", type: "string", required: false, default: "garage" },
+      "api-url": {
+        type: "string",
+        required: false,
+        default: "https://api.devguard.org",
+        description: "URL of the DevGuard API",
+      },
+      "web-ui": {
+        type: "string",
+        required: false,
+        default: "https://app.devguard.org",
+        description: "URL of the DevGuard Web UI",
+      },
+      "artifact-name-suffix": {
+        description: "Suffix appended to artifact names",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "should-deploy": {
+        description: "Whether to push the image to the container registry",
+        type: "boolean",
+        required: false,
+        default: true,
+      },
+      "fail-on-risk": {
+        description: "Fail if risk level reaches this threshold",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "fail-on-cvss": {
+        description: "Fail if CVSS score reaches this threshold",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "nix-cache-substituter": {
+        description: "Nix binary cache substituter URL",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "nix-cache-public-key": {
+        description: "Trusted public key for the Nix binary cache",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "nix-cache-s3-endpoint": {
+        description: "S3 API endpoint for pushing to the Nix cache",
+        type: "string",
+        required: false,
+        default: "",
+      },
+      "nix-cache-s3-bucket": {
+        description: "S3 bucket name for the Nix cache",
+        type: "string",
+        required: false,
+        default: "nix",
+      },
+      "nix-cache-region": {
+        description: "S3 region for the Nix cache bucket",
+        type: "string",
+        required: false,
+        default: "garage",
+      },
       "nix-version": { description: "Pinned Nix version", type: "string", required: false, default: "2.34.4" },
     },
     secrets: {
@@ -947,7 +1042,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
         },
         secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
       },
-      "deploy": {
+      deploy: {
         if: "${{ inputs.should-deploy }}",
         needs: ["build-image", "container-scanning"],
         uses: "./.github/workflows/deploy.yml",
@@ -959,7 +1054,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
         },
         secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
       },
-      "sign": {
+      sign: {
         if: "${{ inputs.should-deploy }}",
         needs: ["build-image", "container-scanning", "deploy"],
         uses: "./.github/workflows/sign.yml",
@@ -971,7 +1066,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
         },
         secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
       },
-      "attest": {
+      attest: {
         if: "${{ inputs.should-deploy }}",
         needs: ["build-image", "container-scanning", "deploy"],
         uses: "./.github/workflows/attest.yml",
