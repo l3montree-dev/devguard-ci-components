@@ -1,6 +1,6 @@
 # DevSecOps Workflow Definition
 # This workflow is triggered on every push to the repository
-name: DevGuard CI Components
+name: DevGuard Scanner
 
 on:
   push:
