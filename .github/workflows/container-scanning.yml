@@ -100,30 +100,32 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Download Docker image artifact (created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
         if: ${{ inputs.fetch-image-from-registry == 'false' }}
       - name: Download image-tag artifact (created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download artifact purl (created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl${{ inputs.image-suffix }}
         if: ${{ inputs.devguard-artifact-name == '' }}
       - name: Resolve artifact name
+        env:
+          DEVGUARD_ARTIFACT_NAME: ${{ inputs.devguard-artifact-name }}
         run: |-
-          if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
             echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
           else
-            echo "ARTIFACT_NAME=${{ inputs.devguard-artifact-name }}" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
           fi
       - name: Setup crane
-        uses: imjasonh/setup-crane@v0.1
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
         if: ${{ inputs.fetch-image-from-registry == 'true' }}

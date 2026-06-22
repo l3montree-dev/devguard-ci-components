@@ -72,7 +72,7 @@ jobs:
           IMAGE_PATH: ${{ inputs.image-path }}
           UPSTREAM_VERSION: ${{ inputs.upstream-version }}
       - name: Upload generate-tag env artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: generate-tag-env${{ inputs.image-suffix }}
           path: generate_tag_${{ inputs.upstream-version }}_${{ inputs.architecture }}.env

@@ -118,7 +118,7 @@ jobs:
         env:
           IMAGE_DESTINATION_PATH: ${{ inputs.image-destination-path }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: ${{ inputs.image-destination-path }}
@@ -164,7 +164,7 @@ jobs:
             --user 53111:53111 \
             -v "${HOME}/.docker:/tmp/.docker" \
             ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane auth login ghcr.io -u ${{ github.actor }} -p ${{ github.token }}
+            crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
         if: inputs.disable-artifact-registry-as-image-store == true
       - name: Upload to container registry
         run: |-
@@ -178,7 +178,7 @@ jobs:
           IMAGE_DESTINATION_PATH: ${{ inputs.image-destination-path }}
         if: inputs.disable-artifact-registry-as-image-store == true
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: image-digest.txt
@@ -198,17 +198,17 @@ jobs:
         env:
           ARTIFACT_NAME_INPUT: ${{ inputs.devguard-artifact-name }}
       - name: Upload artifact purl
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: artifact-purl${{ inputs.image-suffix }}
           path: artifact-purl.txt
       - name: Upload safe artifact purl
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: artifact-purl-safe${{ inputs.image-suffix }}
           path: artifact-purl-safe.txt
       - name: Upload image tag
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: image-tag.txt
@@ -223,7 +223,7 @@ jobs:
           sudo chmod -R u+rw,g+r,o+r $GITHUB_WORKSPACE || true
         continue-on-error: true
       - name: Upload SLSA Provenance
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           path: build.provenance.json
           name: build${{ inputs.image-suffix }}.provenance.json

@@ -1,7 +1,8 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 
 export const GenerateTagJobInputs = defineInputsGitLab({
   devguard_artifact_name: {
@@ -92,7 +93,7 @@ cat generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env`,
       },
       {
         name: "Upload generate-tag env artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `generate-tag-env\${{ inputs.image_suffix }}`,
           path: `generate_tag_\${{ inputs.upstream_version }}_\${{ inputs.architecture }}.env`,
