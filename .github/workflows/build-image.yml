@@ -164,7 +164,7 @@ jobs:
             --user 53111:53111 \
             -v "${HOME}/.docker:/tmp/.docker" \
             ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane auth login ghcr.io -u ${{ github.actor }} -p ${{ github.token }}
+            crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
         if: inputs.disable-artifact-registry-as-image-store == true
       - name: Upload to container registry
         run: |-

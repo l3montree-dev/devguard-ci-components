@@ -58,6 +58,9 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       },
       {
         name: "Create and push multi-arch manifest",
+        env: {
+          CREATE_ROOT_MANIFEST: `\${{ inputs.create_root_manifest }}`,
+        },
         run: `AMD64_TAG=$(cat amd64/image-tag.txt)
 ARM64_TAG=$(cat arm64/image-tag.txt)
 
@@ -75,7 +78,7 @@ echo "Creating manifest: $BASE_TAG -> $AMD64_TAG + $ARM64_TAG"
 docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
 docker manifest push "$BASE_TAG"
 
-if [ "\${{ inputs.create_root_manifest }}" = "true" ]; then
+if [ "$CREATE_ROOT_MANIFEST" = "true" ]; then
   ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-\${GITHUB_REF_NAME}//")
   if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
     echo "Creating root manifest: $ROOT_TAG"

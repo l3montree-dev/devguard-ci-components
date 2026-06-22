@@ -197,7 +197,10 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
       },
       {
         name: "set artifact-name variable if it is empty",
-        run: `if [ -z "\${{ inputs.devguard_artifact_name }}" ] && [ -f artifact-purl.txt ]; then
+        env: {
+          DEVGUARD_ARTIFACT_NAME: `\${{ inputs.devguard_artifact_name }}`,
+        },
+        run: `if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
   echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
   echo "Using artifact name from file: $ARTIFACT_NAME"
   # For API calls, use safe artifact name if it exists
@@ -208,12 +211,12 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
   fi
 else
   # make sure to url encode
-  echo "ARTIFACT_NAME=\${{ inputs.devguard_artifact_name }}" >> $GITHUB_ENV
-  echo "API_ARTIFACT_NAME=$(echo -n "\${{ inputs.devguard_artifact_name }}" | jq -s -R -r @uri)" >> $GITHUB_ENV
-  echo "Using provided artifact name: \${{ inputs.devguard_artifact_name }}"
+  echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
+  echo "API_ARTIFACT_NAME=$(echo -n "$DEVGUARD_ARTIFACT_NAME" | jq -s -R -r @uri)" >> $GITHUB_ENV
+  echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
   echo "Encoded: $API_ARTIFACT_NAME"
 fi
-echo "Resolved artifact name for attestation: \${{ inputs.devguard_artifact_name }}"`,
+echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
       },
       {
         name: "Get and Attest SBOM",

@@ -256,7 +256,7 @@ docker run --rm \\
   --user 53111:53111 \\
   -v "\${HOME}/.docker:/tmp/.docker" \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane auth login ghcr.io -u \${{ github.actor }} -p \${{ github.token }}`,
+  crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN`,
         if: "inputs.disable_artifact_registry_as_image_store == true",
       },
       {

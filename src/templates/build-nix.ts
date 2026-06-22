@@ -182,7 +182,11 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
       },
       {
         name: "In-Toto Provenance record start",
-        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }}`,
+        env: {
+          DEVGUARD_API_URL: inputValues.devguard_api_url,
+          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
+        } as Record<string, string>,
+        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA`,
         "continue-on-error": true,
       },
       {
@@ -192,7 +196,10 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
       },
       {
         name: "Build OCI image with Nix",
-        run: `nix build .#\${{ inputs.nix_target }}`,
+        env: {
+          NIX_TARGET: `\${{ inputs.nix_target }}`,
+        } as Record<string, string>,
+        run: `nix build .#$NIX_TARGET`,
       },
       {
         name: "Push build results to Nix cache",
@@ -200,12 +207,15 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
         env: {
           AWS_ACCESS_KEY_ID: `\${{ secrets.nix-cache-aws-access-key-id }}`,
           AWS_SECRET_ACCESS_KEY: `\${{ secrets.nix-cache-aws-secret-access-key }}`,
-        },
+          NIX_CACHE_S3_BUCKET: `\${{ inputs.nix_cache_s3_bucket }}`,
+          NIX_CACHE_S3_ENDPOINT: `\${{ inputs.nix_cache_s3_endpoint }}`,
+          NIX_CACHE_REGION: `\${{ inputs.nix_cache_region }}`,
+        } as Record<string, string>,
         run: `mkdir -p ~/.aws
 echo "[profile nix-cache]" >> ~/.aws/config
 echo "s3.addressing_style = path" >> ~/.aws/config
 nix copy $(nix-store -qR $(readlink result)) \\
-  --to 's3://\${{ inputs.nix_cache_s3_bucket }}?endpoint=\${{ inputs.nix_cache_s3_endpoint }}&region=\${{ inputs.nix_cache_region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true`,
+  --to "s3://$NIX_CACHE_S3_BUCKET?endpoint=$NIX_CACHE_S3_ENDPOINT&region=$NIX_CACHE_REGION&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem" || true`,
       },
       {
         name: "Prepare image.tar",
@@ -226,10 +236,14 @@ nix copy $(nix-store -qR $(readlink result)) \\
       {
         name: "Set image tag",
         id: "set-image-tag",
+        env: {
+          IMAGE_NAME: inputValues.image_name,
+          ARCHITECTURE: inputValues.architecture,
+        } as Record<string, string>,
         run: `devguard-scanner generate-tag \\
-  --imagePath='\${{ inputs.image_name }}' \\
-  --ref='\${{ github.ref_name }}' \\
-  --architecture='\${{ inputs.architecture }}' \\
+  --imagePath="$IMAGE_NAME" \\
+  --ref="$GITHUB_REF_NAME" \\
+  --architecture="$ARCHITECTURE" \\
   >> image-tag-env.txt
 IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
 ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
@@ -274,7 +288,13 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
       },
       {
         name: "In-Toto Provenance record stop",
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --generateSlsaProvenance --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+        env: {
+          DEVGUARD_API_URL: inputValues.devguard_api_url,
+          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
+          DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
+          IS_TAG: `\${{ github.ref_type == 'tag' }}`,
+        } as Record<string, string>,
+        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME`,
         "continue-on-error": true,
       },
       {

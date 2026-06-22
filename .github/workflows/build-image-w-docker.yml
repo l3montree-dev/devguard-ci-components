@@ -81,24 +81,32 @@ jobs:
           args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }}
         continue-on-error: true
       - name: Build Docker image
+        env:
+          IMAGE: ${{ inputs.image }}
+          IMAGE_TAG: ${{ inputs.image-tag }}
         run: |-
           BUILD_ARGS="${{ secrets.build-args }}"
           if [ -z "$BUILD_ARGS" ]; then
             BUILD_ARGS="--context=. --file=Dockerfile"
           fi
-          docker buildx build $BUILD_ARGS --output type=docker,dest=./${{ inputs.image }} -t ${{ inputs.image-tag }}
+          docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG
       - name: Get image digest
+        env:
+          IMAGE: ${{ inputs.image }}
         run: |-
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
             ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane digest --tarball="${{ inputs.image }}" > image-digest.txt
+            crane digest --tarball="$IMAGE" > image-digest.txt
       - name: Push image to registry
         if: inputs.push-image == 'true'
+        env:
+          IMAGE: ${{ inputs.image }}
+          IMAGE_TAG: ${{ inputs.image-tag }}
         run: |-
-          docker load -i ${{ inputs.image }}
-          docker push ${{ inputs.image-tag }}
+          docker load -i $IMAGE
+          docker push $IMAGE_TAG
       - name: Upload oci-image artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

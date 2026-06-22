@@ -124,34 +124,44 @@ jobs:
       - name: Install crane and devguard-scanner
         run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
       - name: In-Toto Provenance record start
-        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }}
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
+        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA
         continue-on-error: true
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
       - name: Build OCI image with Nix
-        run: nix build .#${{ matrix.nix_target }}
+        env:
+          NIX_TARGET: ${{ matrix.nix_target }}
+        run: nix build .#$NIX_TARGET
       - name: Push build results to Nix cache
         if: inputs.nix-cache-s3-endpoint != ''
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.nix-cache-aws-access-key-id }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.nix-cache-aws-secret-access-key }}
+          NIX_CACHE_S3_BUCKET: ${{ inputs.nix-cache-s3-bucket }}
+          NIX_CACHE_S3_ENDPOINT: ${{ inputs.nix-cache-s3-endpoint }}
+          NIX_CACHE_REGION: ${{ inputs.nix-cache-region }}
         run: |-
           mkdir -p ~/.aws
           echo "[profile nix-cache]" >> ~/.aws/config
           echo "s3.addressing_style = path" >> ~/.aws/config
           nix copy $(nix-store -qR $(readlink result)) \
-            --to 's3://${{ inputs.nix-cache-s3-bucket }}?endpoint=${{ inputs.nix-cache-s3-endpoint }}&region=${{ inputs.nix-cache-region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
+            --to "s3://$NIX_CACHE_S3_BUCKET?endpoint=$NIX_CACHE_S3_ENDPOINT&region=$NIX_CACHE_REGION&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem" || true
       - name: Prepare image.tar
         run: gunzip -c "$(readlink -f result)" > image.tar
       - name: Get image digest
         run: crane digest --tarball=image.tar > image-digest.txt
       - name: Set image tag
+        env:
+          IMAGE_NAME: ${{ inputs.image-name }}
         run: |-
           devguard-scanner generate-tag \
-            --imagePath='${{ inputs.image-name }}' \
-            --ref='${{ github.ref_name }}' \
-            --architecture='${{ matrix.arch }}' \
+            --imagePath="$IMAGE_NAME" \
+            --ref="$GITHUB_REF_NAME" \
+            --architecture="${{ matrix.arch }}" \
             >> image-tag-env.txt
           grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2- > image-tag.txt
           grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2- > artifact-purl.txt
@@ -172,7 +182,12 @@ jobs:
           name: image-digest${{ inputs.image-suffix }}-${{ matrix.arch }}
           path: image-digest.txt
       - name: In-Toto Provenance record stop
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          IS_TAG: ${{ github.ref_type == 'tag' }}
+        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME
         continue-on-error: true
       - name: Upload SLSA Provenance
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

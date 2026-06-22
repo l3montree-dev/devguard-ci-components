@@ -116,11 +116,13 @@ jobs:
           name: artifact-purl${{ inputs.image-suffix }}
         if: ${{ inputs.devguard-artifact-name == '' }}
       - name: Resolve artifact name
+        env:
+          DEVGUARD_ARTIFACT_NAME: ${{ inputs.devguard-artifact-name }}
         run: |-
-          if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
             echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
           else
-            echo "ARTIFACT_NAME=${{ inputs.devguard-artifact-name }}" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
           fi
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2

@@ -109,25 +109,36 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
       },
       {
         name: "Build Docker image",
+        env: {
+          IMAGE: `\${{ inputs.image }}`,
+          IMAGE_TAG: `\${{ inputs.image_tag }}`,
+        } as Record<string, string>,
         run: `BUILD_ARGS="\${{ secrets.build-args }}"
 if [ -z "$BUILD_ARGS" ]; then
   BUILD_ARGS="--context=. --file=Dockerfile"
 fi
-docker buildx build $BUILD_ARGS --output type=docker,dest=./\${{ inputs.image }} -t \${{ inputs.image_tag }}`,
+docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG`,
       },
       {
         name: "Get image digest",
+        env: {
+          IMAGE: `\${{ inputs.image }}`,
+        } as Record<string, string>,
         run: `docker run --rm \\
   -v "$GITHUB_WORKSPACE:/workspace" \\
   -w /workspace \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane digest --tarball="\${{ inputs.image }}" > image-digest.txt`,
+  crane digest --tarball="$IMAGE" > image-digest.txt`,
       },
       {
         name: "Push image to registry",
         if: "inputs.push_image == 'true'",
-        run: `docker load -i \${{ inputs.image }}
-docker push \${{ inputs.image_tag }}`,
+        env: {
+          IMAGE: `\${{ inputs.image }}`,
+          IMAGE_TAG: `\${{ inputs.image_tag }}`,
+        } as Record<string, string>,
+        run: `docker load -i $IMAGE
+docker push $IMAGE_TAG`,
       },
       {
         name: "Upload oci-image artifact",
