@@ -11,9 +11,8 @@ import {
   SASTJobInputs,
   StaticApplicationSecurityTestingTemplate,
 } from "./templates/static-application-security-testing";
-import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchCreateManifestTemplate } from "./templates/build-nix-multiarch";
-import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab, GitHubOrchestratorWorkflow } from "./lib/types";
-import { ExportCIComponentsGitHub, ExportCIComponentsGitLab, ExportGitHubOrchestratorWorkflows } from "./lib/utils";
+import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab } from "./lib/types";
+import { ExportCIComponentsGitHub, ExportCIComponentsGitLab } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
@@ -45,7 +44,10 @@ import { BuildOciImageWDockerTemplateGitHub } from "./templates/build-oci-image-
 import { CreateManifestMultiArchTemplateGitHub } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplateGitHub } from "./templates/discover-baseimage-attestations";
 import { SarifUploadTemplateGitHub } from "./templates/sarif-upload";
-import { BuildNixMultiArchBuildImageTemplateGitHub, BuildNixMultiArchCreateManifestTemplateGitHub } from "./templates/build-nix-multiarch";
+import {
+  BuildNixMultiArchBuildImageTemplateGitHub,
+  BuildNixMultiArchCreateManifestTemplateGitHub,
+} from "./templates/build-nix-multiarch";
 import { BuildNixTemplateGitHub } from "./templates/build-nix";
 import { ZizmorScanningTemplateGitHub } from "./templates/zizmor-scanning";
 
@@ -217,11 +219,11 @@ const clnAttest = AttestTemplate({
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
 const paGenerateTag = GenerateTagTemplate({
-  stage: "oci-image",
+  stage: "$[[ inputs.build_stage ]]",
   git_strategy: "fetch",
 });
 const paPushOciImage = PushOciImageTemplate({
-  stage: "oci-image",
+  stage: "$[[ inputs.build_stage ]]",
   git_strategy: "none",
   image: "image.tar",
   image_tag: "$IMAGE_TAG",
@@ -229,14 +231,14 @@ const paPushOciImage = PushOciImageTemplate({
   dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
 const paSignOciImage = SignOciImageTemplate({
-  stage: "attestation",
+  stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   image: "$IMAGE_TAG",
   needs: [paGenerateTag.name, paPushOciImage.name],
   dependencies: [paGenerateTag.name, paPushOciImage.name],
 });
 const paAttest = AttestTemplate({
-  stage: "attestation",
+  stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", paPushOciImage.name],
 });
@@ -271,6 +273,129 @@ const csaAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]", csaContainerScanning.name, csaPushOciImage.name],
+});
+
+// ── build-nix-multiarch ───────────────────────────────────────────────────────
+const bnmaExtractScannerAmd64 = BuildNixExtractScannerTemplate({ job_suffix: "-amd64" });
+const bnmaExtractScannerArm64 = BuildNixExtractScannerTemplate({ job_suffix: "-arm64" });
+
+const bnmaGenerateTagAmd64 = BuildNixGenerateTagTemplate({
+  stage: "build",
+  git_strategy: "fetch",
+  job_suffix: "-amd64",
+  architecture: "amd64",
+  runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
+  needs: [bnmaExtractScannerAmd64.name],
+  dependencies: [bnmaExtractScannerAmd64.name],
+});
+const bnmaBuildAmd64 = BuildNixTemplate({
+  stage: "build",
+  image: "image-amd64.tar",
+  job_suffix: "-amd64",
+  nix_target: "$[[ inputs.nix_target_amd64 ]]",
+  runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
+  needs: [bnmaGenerateTagAmd64.name],
+  dependencies: [bnmaGenerateTagAmd64.name],
+});
+const bnmaContainerScanningAmd64 = ContainerScanningTemplate({
+  stage: "test",
+  git_strategy: "fetch",
+  job_suffix: "-amd64",
+  image_tar_path: "image-amd64.tar",
+  runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
+  needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
+  dependencies: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
+});
+const bnmaPushAmd64 = PushOciImageTemplate({
+  stage: "deploy",
+  git_strategy: "none",
+  image: "image-amd64.tar",
+  job_suffix: "-amd64",
+  runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
+  needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaContainerScanningAmd64.name],
+  dependencies: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaContainerScanningAmd64.name],
+});
+const bnmaSignAmd64 = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  job_suffix: "-amd64",
+  runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
+  needs: [bnmaGenerateTagAmd64.name, bnmaPushAmd64.name],
+  dependencies: [bnmaGenerateTagAmd64.name, bnmaPushAmd64.name],
+});
+const bnmaAttestAmd64 = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  job_suffix: "-amd64",
+  needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaPushAmd64.name],
+});
+
+const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
+  stage: "build",
+  git_strategy: "fetch",
+  job_suffix: "-arm64",
+  architecture: "arm64",
+  runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
+  needs: [bnmaExtractScannerArm64.name],
+  dependencies: [bnmaExtractScannerArm64.name],
+});
+const bnmaBuildArm64 = BuildNixTemplate({
+  stage: "build",
+  image: "image-arm64.tar",
+  job_suffix: "-arm64",
+  nix_target: "$[[ inputs.nix_target_arm64 ]]",
+  runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
+  needs: [bnmaGenerateTagArm64.name],
+  dependencies: [bnmaGenerateTagArm64.name],
+});
+const bnmaContainerScanningArm64 = ContainerScanningTemplate({
+  stage: "test",
+  git_strategy: "fetch",
+  job_suffix: "-arm64",
+  image_tar_path: "image-arm64.tar",
+  runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
+  needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
+  dependencies: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
+});
+const bnmaPushArm64 = PushOciImageTemplate({
+  stage: "deploy",
+  git_strategy: "none",
+  image: "image-arm64.tar",
+  job_suffix: "-arm64",
+  runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
+  needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaContainerScanningArm64.name],
+  dependencies: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaContainerScanningArm64.name],
+});
+const bnmaSignArm64 = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$IMAGE_TAG",
+  job_suffix: "-arm64",
+  runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
+  needs: [bnmaGenerateTagArm64.name, bnmaPushArm64.name],
+  dependencies: [bnmaGenerateTagArm64.name, bnmaPushArm64.name],
+});
+const bnmaAttestArm64 = AttestTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  job_suffix: "-arm64",
+  needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaPushArm64.name],
+});
+
+const bnmaCreateManifest = CreateManifestMultiArchTemplate({
+  stage: "attestation",
+  artifacts_subdirectory: ".",
+  needs: [bnmaPushAmd64.name, bnmaPushArm64.name],
+  dependencies: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
+});
+const bnmaSignManifest = SignOciImageTemplate({
+  stage: "attestation",
+  git_strategy: "none",
+  image: "$MANIFEST_IMAGE_TAG",
+  job_suffix: "-manifest",
+  needs: [bnmaCreateManifest.name],
+  dependencies: [bnmaCreateManifest.name],
 });
 
 // ── container-lifecycle-with-base-image-inspection ────────────────────────────
@@ -402,13 +527,7 @@ const templates: CIComponentGroupTemplateGitLab = {
     clnAttest,
   ],
   "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
-  "container-scanning-and-attest": [
-    csaGenerateTag,
-    csaContainerScanning,
-    csaPushOciImage,
-    csaSignOciImage,
-    csaAttest,
-  ],
+  "container-scanning-and-attest": [csaGenerateTag, csaContainerScanning, csaPushOciImage, csaSignOciImage, csaAttest],
   "container-lifecycle-with-base-image-inspection": [
     clbiDiscoverAttestations,
     clbiGenerateTag,
@@ -420,14 +539,24 @@ const templates: CIComponentGroupTemplateGitLab = {
     clbiSbomUpload,
     clbiVexUpload,
   ],
-  "build-nix": [
-    BuildNixExtractScannerTemplate({}),
-    BuildNixGenerateTagTemplate({}),
-    BuildNixTemplate({}),
-  ],
+  "build-nix": [BuildNixExtractScannerTemplate({}), BuildNixGenerateTagTemplate({}), BuildNixTemplate({})],
   "build-nix-multiarch": [
-    BuildNixMultiArchBuildImageTemplate({}),
-    BuildNixMultiArchCreateManifestTemplate({}),
+    bnmaExtractScannerAmd64,
+    bnmaExtractScannerArm64,
+    bnmaGenerateTagAmd64,
+    bnmaBuildAmd64,
+    bnmaContainerScanningAmd64,
+    bnmaPushAmd64,
+    bnmaSignAmd64,
+    bnmaAttestAmd64,
+    bnmaGenerateTagArm64,
+    bnmaBuildArm64,
+    bnmaContainerScanningArm64,
+    bnmaPushArm64,
+    bnmaSignArm64,
+    bnmaAttestArm64,
+    bnmaCreateManifest,
+    bnmaSignManifest,
   ],
 };
 
@@ -439,13 +568,185 @@ await ExportCIComponentsGitLab(templates, fileHeader, {
   "container-lifecycle-with-base-image-inspection": {
     devguard_artifact_name: Inputs.devguard_artifact_name,
   },
+  "push-and-attest": {
+    build_job_name: {
+      description: "Name of the build job to depend on" as const,
+    },
+    build_stage: {
+      description: "Pipeline stage for the push jobs (e.g. build, oci-image)" as const,
+      default: "oci-image" as const,
+    },
+    attest_stage: {
+      description: "Pipeline stage for the sign/attest jobs (e.g. test, attestation)" as const,
+      default: "attestation" as const,
+    },
+  },
+  "build-nix-multiarch": {
+    nix_target_amd64: {
+      description: "Nix flake build target for amd64 (e.g. coreutils-amd64)" as const,
+    },
+    nix_target_arm64: {
+      description: "Nix flake build target for arm64 (e.g. coreutils-arm64)" as const,
+    },
+    amd64_runner_tag: {
+      description: "Runner tag for amd64 builds" as const,
+      default: "" as const,
+    },
+    arm64_runner_tag: {
+      description: "Runner tag for arm64 builds" as const,
+      default: "" as const,
+    },
+    image_tag: {
+      description: "OCI image tag (e.g. registry.example.com/org/image:tag)" as const,
+      default: "" as const,
+    },
+  },
 });
 
 // console.log("Finished");
 
 /** GitHub */
 
+// ── code-scanning orchestrator ────────────────────────────────────────────────
+const ghCsSecretScanning = SecretScanningTemplateGitHub({});
+const ghCsSast = StaticApplicationSecurityTestingTemplateGitHub({});
+const ghCsIac = InfrastructureAsCodeScanningTemplateGitHub({});
+const ghCsSca = SoftwareCompositionAnalysisTemplateGitHub({});
+
+// ── container-lifecycle orchestrator ──────────────────────────────────────────
+const ghClBuild = BuildOciImageTemplateGitHub({});
+const ghClScan = ContainerScanningTemplateGitHub({});
+ghClScan.job.needs = ["devguard_build_oci_image"];
+const ghClDeploy = DeployTemplateGitHub({});
+ghClDeploy.job.needs = ["devguard_build_oci_image", "devguard_container_scanning"];
+const ghClSign = SignTemplateGitHub({ image: "image.tar" });
+ghClSign.job.needs = ["devguard_build_oci_image", "devguard_container_scanning", "devguard_deploy"];
+const ghClAttest = AttestTemplateGitHub({});
+ghClAttest.job.needs = ["devguard_build_oci_image", "devguard_container_scanning", "devguard_deploy"];
+
+// ── full orchestrator ─────────────────────────────────────────────────────────
+const ghFullSecretScanning = SecretScanningTemplateGitHub({});
+const ghFullSast = StaticApplicationSecurityTestingTemplateGitHub({});
+const ghFullIac = InfrastructureAsCodeScanningTemplateGitHub({});
+const ghFullSca = SoftwareCompositionAnalysisTemplateGitHub({});
+const ghFullBuild = BuildOciImageTemplateGitHub({});
+const ghFullScan = ContainerScanningTemplateGitHub({});
+ghFullScan.job.needs = ["devguard_build_oci_image"];
+const ghFullDeploy = DeployTemplateGitHub({});
+ghFullDeploy.job.needs = [
+  "devguard_build_oci_image",
+  "devguard_container_scanning",
+  "devguard_secret_scanning",
+  "devguard_static_application_security_testing",
+  "devguard_infrastructure_as_code",
+  "devguard_software_composition_analysis",
+];
+const ghFullSign = SignTemplateGitHub({ image: "image.tar" });
+ghFullSign.job.needs = [
+  "devguard_build_oci_image",
+  "devguard_container_scanning",
+  "devguard_secret_scanning",
+  "devguard_static_application_security_testing",
+  "devguard_infrastructure_as_code",
+  "devguard_software_composition_analysis",
+  "devguard_deploy",
+];
+const ghFullAttest = AttestTemplateGitHub({});
+ghFullAttest.job.needs = [
+  "devguard_build_oci_image",
+  "devguard_container_scanning",
+  "devguard_secret_scanning",
+  "devguard_static_application_security_testing",
+  "devguard_infrastructure_as_code",
+  "devguard_software_composition_analysis",
+  "devguard_deploy",
+];
+
+// ── container-lifecycle-nix orchestrator ──────────────────────────────────────
+const ghClnBuild = BuildNixTemplateGitHub({});
+const ghClnScan = ContainerScanningTemplateGitHub({});
+ghClnScan.job.needs = ["devguard_build_nix"];
+const ghClnDeploy = DeployTemplateGitHub({});
+ghClnDeploy.job.needs = ["devguard_build_nix", "devguard_container_scanning"];
+const ghClnSign = SignTemplateGitHub({ image: "image.tar" });
+ghClnSign.job.needs = ["devguard_build_nix", "devguard_container_scanning", "devguard_deploy"];
+const ghClnAttest = AttestTemplateGitHub({});
+ghClnAttest.job.needs = ["devguard_build_nix", "devguard_container_scanning", "devguard_deploy"];
+
+// ── full-nix orchestrator ─────────────────────────────────────────────────────
+const ghFnBuildAmd64 = BuildNixTemplateGitHub({
+  nix_target: "${{ inputs.nix_target_amd64 }}",
+  image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
+  architecture: "amd64",
+  runner: "${{ inputs.runner_amd64 }}",
+});
+ghFnBuildAmd64.name = "devguard:build-nix-amd64";
+
+const ghFnBuildArm64 = BuildNixTemplateGitHub({
+  nix_target: "${{ inputs.nix_target_arm64 }}",
+  image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
+  architecture: "arm64",
+  runner: "${{ inputs.runner_arm64 }}",
+});
+ghFnBuildArm64.name = "devguard:build-nix-arm64";
+
+const ghFnScanAmd64 = ContainerScanningTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
+});
+ghFnScanAmd64.name = "devguard:container-scanning-amd64";
+ghFnScanAmd64.job.needs = ["devguard_build_nix_amd64"];
+
+const ghFnScanArm64 = ContainerScanningTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
+});
+ghFnScanArm64.name = "devguard:container-scanning-arm64";
+ghFnScanArm64.job.needs = ["devguard_build_nix_arm64"];
+
+const ghFnDeployAmd64 = DeployTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
+});
+ghFnDeployAmd64.name = "devguard:deploy-amd64";
+ghFnDeployAmd64.job.needs = ["devguard_build_nix_amd64", "devguard_container_scanning_amd64"];
+
+const ghFnDeployArm64 = DeployTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
+});
+ghFnDeployArm64.name = "devguard:deploy-arm64";
+ghFnDeployArm64.job.needs = ["devguard_build_nix_arm64", "devguard_container_scanning_arm64"];
+
+const ghFnManifest = CreateManifestMultiArchTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}",
+});
+ghFnManifest.job.needs = ["devguard_deploy_amd64", "devguard_deploy_arm64"];
+
+const ghFnSignAmd64 = SignTemplateGitHub({
+  image: "image.tar",
+  image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
+});
+ghFnSignAmd64.name = "devguard:sign-amd64";
+ghFnSignAmd64.job.needs = ["devguard_build_nix_amd64", "devguard_create_manifest_multi_arch"];
+
+const ghFnSignArm64 = SignTemplateGitHub({
+  image: "image.tar",
+  image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
+});
+ghFnSignArm64.name = "devguard:sign-arm64";
+ghFnSignArm64.job.needs = ["devguard_build_nix_arm64", "devguard_create_manifest_multi_arch"];
+
+const ghFnAttestAmd64 = AttestTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
+});
+ghFnAttestAmd64.name = "devguard:attest-amd64";
+ghFnAttestAmd64.job.needs = ["devguard_build_nix_amd64", "devguard_create_manifest_multi_arch"];
+
+const ghFnAttestArm64 = AttestTemplateGitHub({
+  image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
+});
+ghFnAttestArm64.name = "devguard:attest-arm64";
+ghFnAttestArm64.job.needs = ["devguard_build_nix_arm64", "devguard_create_manifest_multi_arch"];
+
 const templatesGitHub: CIComponentGroupTemplateGitHub = {
+  // Individual reusable component workflows
   "secret-scanning": [SecretScanningTemplateGitHub({})],
   "build-image": [BuildOciImageTemplateGitHub({})],
   "container-scanning": [ContainerScanningTemplateGitHub({})],
@@ -468,798 +769,39 @@ const templatesGitHub: CIComponentGroupTemplateGitHub = {
   "build-nix": [BuildNixTemplateGitHub({})],
   "build-nix-multiarch-build": [BuildNixMultiArchBuildImageTemplateGitHub({})],
   "build-nix-multiarch-manifest": [BuildNixMultiArchCreateManifestTemplateGitHub({})],
+  // Orchestrator workflows (inline, no uses:)
+  "code-scanning": [ghCsSecretScanning, ghCsSast, ghCsIac, ghCsSca],
+  "container-lifecycle": [ghClBuild, ghClScan, ghClDeploy, ghClSign, ghClAttest],
+  full: [ghFullSecretScanning, ghFullSast, ghFullIac, ghFullSca, ghFullBuild, ghFullScan, ghFullDeploy, ghFullSign, ghFullAttest],
+  "container-lifecycle-nix": [ghClnBuild, ghClnScan, ghClnDeploy, ghClnSign, ghClnAttest],
+  "full-nix": [
+    ghFnBuildAmd64, ghFnBuildArm64,
+    ghFnScanAmd64, ghFnScanArm64,
+    ghFnDeployAmd64, ghFnDeployArm64,
+    ghFnManifest,
+    ghFnSignAmd64, ghFnSignArm64,
+    ghFnAttestAmd64, ghFnAttestArm64,
+  ],
 };
 
-await ExportCIComponentsGitHub(templatesGitHub, fileHeader);
-
-/** GitHub Orchestrators */
-
-const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
-  "code-scanning": {
-    name: "Code Scanning",
-    inputs: {
-      "asset-name": {
-        description: "Name of the asset to be scanned",
-        type: "string",
-        required: true,
-      },
-      "api-url": {
-        type: "string",
-        required: false,
-        default: "https://api.devguard.org",
-        description: "URL of the DevGuard API",
-      },
-      path: {
-        description: "Path to the source code to be scanned",
-        type: "string",
-        required: false,
-        default: "/github/workspace",
-      },
-      "web-ui": {
-        type: "string",
-        required: false,
-        default: "https://app.devguard.org",
-        description: "The URL of the DevGuard Web UI. This is used to link the results in the DevGuard Web UI.",
-      },
-      "fail-on-risk": {
-        description: "Fail the job if a risk is higher than the configured threshold, e.g. critical, high, medium, low",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "fail-on-cvss": {
-        description: "Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "continue-on-open-code-risk": {
-        type: "boolean",
-        required: false,
-        default: true,
-        description: "Whether to continue when open code risks are detected",
-      },
-    },
-    secrets: {
-      "devguard-token": {
-        description: "DevGuard API token",
-        required: true,
-      },
-    },
-    jobs: {
-      "call-secret-scanning": {
-        uses: "./.github/workflows/secret-scanning.yml",
-        permissions: {},
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          path: "${{ inputs.path }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          allow_failure: "${{ inputs.continue-on-open-code-risk }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-sast": {
-        uses: "./.github/workflows/static-application-security-testing.yml",
-        permissions: {},
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          path: "${{ inputs.path }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          allow_failure: "${{ inputs.continue-on-open-code-risk }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-iac": {
-        uses: "./.github/workflows/iac.yml",
-        permissions: {},
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          path: "${{ inputs.path }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          allow_failure: "${{ inputs.continue-on-open-code-risk }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-software-composition-analysis": {
-        uses: "./.github/workflows/software-composition-analysis.yml",
-        permissions: {},
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          path: "${{ inputs.path }}",
-          fail_on_risk: "${{ inputs.fail-on-risk }}",
-          fail_on_cvss: "${{ inputs.fail-on-cvss }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-    },
+await ExportCIComponentsGitHub(templatesGitHub, fileHeader, {
+  "container-lifecycle": {
+    image_suffix: { description: "Suffix for the image name when building multiple images" as const, default: "" as const },
   },
   full: {
-    name: "Full DevGuard Scan",
-    inputs: {
-      "asset-name": {
-        description: "Name of the asset to be scanned",
-        type: "string",
-        required: true,
-      },
-      "api-url": {
-        type: "string",
-        required: false,
-        default: "https://api.devguard.org",
-        description: "URL of the DevGuard API",
-      },
-      path: {
-        description: "Path to the source code to be scanned",
-        type: "string",
-        required: false,
-        default: "/github/workspace",
-      },
-      "web-ui": {
-        type: "string",
-        required: false,
-        default: "https://app.devguard.org",
-        description: "The URL of the DevGuard Web UI. This is used to link the results in the DevGuard Web UI.",
-      },
-      "disable-artifact-registry-as-image-store": {
-        required: false,
-        default: false,
-        type: "boolean",
-        description:
-          "If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.",
-      },
-      "image-destination-path": {
-        description:
-          "Path to the oci image to be scanned. Only necessary if deploy reusable workflow is not used and you would like to do further processing of the builded image.tar",
-        type: "string",
-        required: false,
-        default: "image.tar",
-      },
-      image: {
-        description: "oci image tag",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "should-deploy": {
-        description: "Should the deploy job run - publishing the image to the desired Container Registry",
-        type: "boolean",
-        required: false,
-        default: true,
-      },
-      "image-suffix": {
-        description:
-          "Suffix for the image name. You probably need this if you are building multiple images. For example building a <abc>/scanner image and a <abc>/web image.",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "fail-on-risk": {
-        description: "Fail the job if a risk is higher than the configured threshold, e.g. critical, high, medium, low",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "fail-on-cvss": {
-        description: "Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "continue-on-open-code-risk": {
-        type: "boolean",
-        required: false,
-        default: true,
-        description: "Whether to continue when open code risks are detected",
-      },
-      "artifact-name": {
-        type: "string",
-        required: false,
-        default: "",
-        description:
-          "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty.",
-      },
-      "fetch-depth": {
-        type: "number",
-        required: false,
-        default: 1,
-        description: "Number of commits to fetch. 0 indicates all history for all branches and tags.",
-      },
-    },
-    secrets: {
-      "devguard-token": {
-        description: "DevGuard API token",
-        required: true,
-      },
-      "build-args": {
-        description: "Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.",
-        required: false,
-      },
-    },
-    permissions: {
-      contents: "read",
-      packages: "write",
-    },
-    jobs: {
-      "call-code-scanning": {
-        uses: "./.github/workflows/code-scanning.yml",
-        with: {
-          "asset-name": "${{ inputs.asset-name }}",
-          "api-url": "${{ inputs.api-url }}",
-          path: "${{ inputs.path }}",
-          "web-ui": "${{ inputs.web-ui }}",
-          "fail-on-risk": "${{ inputs.fail-on-risk }}",
-          "fail-on-cvss": "${{ inputs.fail-on-cvss }}",
-          "continue-on-open-code-risk": "${{ inputs.continue-on-open-code-risk }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-build-image": {
-        uses: "./.github/workflows/build-image.yml",
-        with: {
-          image_destination_path: "${{ inputs.image-destination-path }}",
-          image: "${{ inputs.image }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          disable_artifact_registry_as_image_store: "${{ inputs.disable-artifact-registry-as-image-store }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-          fetch_depth: "${{ inputs.fetch-depth }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-          "build-args": "${{ secrets.build-args }}",
-        },
-      },
-      "call-container-scanning": {
-        needs: ["call-build-image"],
-        uses: "./.github/workflows/container-scanning.yml",
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_tar_path: "${{ inputs.image-destination-path }}",
-          fetch_image_from_registry: "${{ inputs.disable-artifact-registry-as-image-store }}",
-          fail_on_risk: "${{ inputs.fail-on-risk }}",
-          fail_on_cvss: "${{ inputs.fail-on-cvss }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-deploy": {
-        needs: ["call-build-image", "call-container-scanning", "call-code-scanning"],
-        uses: "./.github/workflows/deploy.yml",
-        with: {
-          should_deploy: "${{ inputs.should-deploy }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_already_in_registry: "${{ inputs.disable-artifact-registry-as-image-store }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-sign": {
-        needs: ["call-build-image", "call-container-scanning", "call-code-scanning", "call-deploy"],
-        uses: "./.github/workflows/sign.yml",
-        with: {
-          should_deploy: "${{ inputs.should-deploy }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-      "call-attest": {
-        needs: ["call-build-image", "call-container-scanning", "call-code-scanning", "call-deploy"],
-        uses: "./.github/workflows/attest.yml",
-        with: {
-          should_deploy: "${{ inputs.should-deploy }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-        },
-      },
-    },
-  },
-  "container-lifecycle": {
-    name: "Container Lifecycle",
-    inputs: {
-      "asset-name": { description: "Name of the asset", type: "string", required: true },
-      "api-url": { type: "string", required: false, default: "https://api.devguard.org", description: "URL of the DevGuard API" },
-      "web-ui": { type: "string", required: false, default: "https://app.devguard.org", description: "URL of the DevGuard Web UI" },
-      "image-destination-path": { description: "Path to the OCI image tar file", type: "string", required: false, default: "image.tar" },
-      image: { description: "OCI image tag", type: "string", required: false, default: "" },
-      "disable-artifact-registry-as-image-store": { required: false, default: false, type: "boolean", description: "Push image directly to registry instead of uploading as artifact" },
-      "image-suffix": { description: "Suffix for the image name when building multiple images", type: "string", required: false, default: "" },
-      "artifact-name": { type: "string", required: false, default: "", description: "The name of the artifact you are building" },
-      "should-deploy": { description: "Should the deploy job run", type: "boolean", required: false, default: true },
-      "fail-on-risk": { description: "Fail if risk level reaches this threshold", type: "string", required: false, default: "" },
-      "fail-on-cvss": { description: "Fail if CVSS score reaches this threshold", type: "string", required: false, default: "" },
-      "fetch-depth": { type: "number", required: false, default: 1, description: "Number of commits to fetch" },
-    },
-    secrets: {
-      "devguard-token": { description: "DevGuard API token", required: true },
-      "build-args": { description: "Build arguments for Docker", required: false },
-    },
-    permissions: { contents: "read", packages: "write" },
-    jobs: {
-      "call-build-image": {
-        uses: "./.github/workflows/build-image.yml",
-        with: {
-          image_destination_path: "${{ inputs.image-destination-path }}",
-          image: "${{ inputs.image }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          disable_artifact_registry_as_image_store: "${{ inputs.disable-artifact-registry-as-image-store }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-          fetch_depth: "${{ inputs.fetch-depth }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}", "build-args": "${{ secrets.build-args }}" },
-      },
-      "call-container-scanning": {
-        needs: ["call-build-image"],
-        uses: "./.github/workflows/container-scanning.yml",
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_tar_path: "${{ inputs.image-destination-path }}",
-          fetch_image_from_registry: "${{ inputs.disable-artifact-registry-as-image-store }}",
-          fail_on_risk: "${{ inputs.fail-on-risk }}",
-          fail_on_cvss: "${{ inputs.fail-on-cvss }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "call-deploy": {
-        needs: ["call-build-image", "call-container-scanning"],
-        uses: "./.github/workflows/deploy.yml",
-        with: {
-          should_deploy: "${{ inputs.should-deploy }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_already_in_registry: "${{ inputs.disable-artifact-registry-as-image-store }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "call-sign": {
-        needs: ["call-build-image", "call-container-scanning", "call-deploy"],
-        uses: "./.github/workflows/sign.yml",
-        with: {
-          should_deploy: "${{ inputs.should-deploy }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "call-attest": {
-        needs: ["call-build-image", "call-container-scanning", "call-deploy"],
-        uses: "./.github/workflows/attest.yml",
-        with: {
-          should_deploy: "${{ inputs.should-deploy }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_artifact_name: "${{ inputs.artifact-name }}",
-          image_suffix: "${{ inputs.image-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-    },
+    image_suffix: { description: "Suffix for the image name when building multiple images" as const, default: "" as const },
+    devguard_artifact_name: { description: "Name of the artifact you are building (leave empty when building a single artifact)" as const, default: "" as const },
   },
   "container-lifecycle-nix": {
-    name: "Container Lifecycle (Nix)",
-    inputs: {
-      "nix-target": { description: "Nix flake build target (e.g. devguardOCI)", type: "string", required: true },
-      "image-name": { description: "Full OCI image name without tag", type: "string", required: true },
-      "asset-name": { description: "DevGuard asset name for supply chain tracking", type: "string", required: true },
-      "api-url": { type: "string", required: false, default: "https://api.devguard.org", description: "URL of the DevGuard API" },
-      "web-ui": { type: "string", required: false, default: "https://app.devguard.org", description: "URL of the DevGuard Web UI" },
-      "artifact-name-suffix": { description: "Suffix appended to artifact names", type: "string", required: false, default: "" },
-      "should-deploy": { description: "Whether to push the image to the container registry", type: "boolean", required: false, default: true },
-      "fail-on-risk": { description: "Fail if risk level reaches this threshold", type: "string", required: false, default: "" },
-      "fail-on-cvss": { description: "Fail if CVSS score reaches this threshold", type: "string", required: false, default: "" },
-      "nix-cache-substituter": { description: "Nix binary cache substituter URL", type: "string", required: false, default: "" },
-      "nix-cache-public-key": { description: "Trusted public key for the Nix binary cache", type: "string", required: false, default: "" },
-      "nix-cache-s3-endpoint": { description: "S3 API endpoint for pushing to the Nix cache", type: "string", required: false, default: "" },
-      "nix-cache-s3-bucket": { description: "S3 bucket name for the Nix cache", type: "string", required: false, default: "nix" },
-      "nix-cache-region": { description: "S3 region for the Nix cache bucket", type: "string", required: false, default: "garage" },
-      "nix-version": { description: "Pinned Nix version", type: "string", required: false, default: "2.34.4" },
-    },
-    secrets: {
-      "devguard-token": { description: "DevGuard API token", required: true },
-      "nix-cache-secret-key": { description: "Nix binary cache signing secret key", required: false },
-      "nix-cache-aws-access-key-id": { description: "AWS access key ID for the Nix S3 cache", required: false },
-      "nix-cache-aws-secret-access-key": { description: "AWS secret access key for the Nix S3 cache", required: false },
-    },
-    permissions: { contents: "read", packages: "write" },
-    jobs: {
-      "build-image": {
-        uses: "./.github/workflows/build-nix.yml",
-        permissions: { contents: "read" },
-        with: {
-          nix_target: "${{ inputs.nix-target }}",
-          image_name: "${{ inputs.image-name }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          nix_cache_substituter: "${{ inputs.nix-cache-substituter }}",
-          nix_cache_public_key: "${{ inputs.nix-cache-public-key }}",
-          nix_cache_s3_endpoint: "${{ inputs.nix-cache-s3-endpoint }}",
-          nix_cache_s3_bucket: "${{ inputs.nix-cache-s3-bucket }}",
-          nix_cache_region: "${{ inputs.nix-cache-region }}",
-          nix_version: "${{ inputs.nix-version }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-          "nix-cache-secret-key": "${{ secrets.nix-cache-secret-key }}",
-          "nix-cache-aws-access-key-id": "${{ secrets.nix-cache-aws-access-key-id }}",
-          "nix-cache-aws-secret-access-key": "${{ secrets.nix-cache-aws-secret-access-key }}",
-        },
-      },
-      "container-scanning": {
-        needs: ["build-image"],
-        uses: "./.github/workflows/container-scanning.yml",
-        permissions: { contents: "read", "security-events": "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          fail_on_cvss: "${{ inputs.fail-on-cvss }}",
-          fail_on_risk: "${{ inputs.fail-on-risk }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "deploy": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-image", "container-scanning"],
-        uses: "./.github/workflows/deploy.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "sign": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-image", "container-scanning", "deploy"],
-        uses: "./.github/workflows/sign.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "attest": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-image", "container-scanning", "deploy"],
-        uses: "./.github/workflows/attest.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-    },
+    image_suffix: { description: "Suffix for the image name when building multiple images" as const, default: "" as const },
   },
   "full-nix": {
-    name: "Full Nix Multi-Arch Pipeline",
-    inputs: {
-      "nix-target-amd64": {
-        description: "Nix flake build target for amd64 (e.g. devguard-0-amd64)",
-        type: "string",
-        required: true,
-      },
-      "nix-target-arm64": {
-        description: "Nix flake build target for arm64 (e.g. devguard-0-arm64)",
-        type: "string",
-        required: true,
-      },
-      "image-name": {
-        description: "Full OCI image name without tag (e.g. ghcr.io/org/repo/image)",
-        type: "string",
-        required: true,
-      },
-      "artifact-name-suffix": {
-        description: "Suffix appended to artifact names to avoid conflicts when building multiple images",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "asset-name": {
-        description: "DevGuard asset name for supply chain tracking",
-        type: "string",
-        required: true,
-      },
-      "api-url": {
-        type: "string",
-        required: false,
-        default: "https://api.devguard.org",
-        description: "URL of the DevGuard API",
-      },
-      "web-ui": {
-        type: "string",
-        required: false,
-        default: "https://app.devguard.org",
-        description: "URL of the DevGuard Web UI",
-      },
-      "fail-on-risk": {
-        description: "Fail if risk level reaches this threshold (none|low|medium|high|critical)",
-        type: "string",
-        required: false,
-        default: "critical",
-      },
-      "fail-on-cvss": {
-        description: "Fail if CVSS score reaches this threshold (none|low|medium|high|critical)",
-        type: "string",
-        required: false,
-        default: "critical",
-      },
-      "should-deploy": {
-        description: "Whether to push the images and manifest to the container registry",
-        type: "boolean",
-        required: false,
-        default: true,
-      },
-      "runner-amd64": {
-        description: "GitHub Actions runner label for the amd64 build",
-        type: "string",
-        required: false,
-        default: "ubuntu-latest",
-      },
-      "runner-arm64": {
-        description: "GitHub Actions runner label for the arm64 build",
-        type: "string",
-        required: false,
-        default: "ubuntu-24.04-arm",
-      },
-      "nix-cache-substituter": {
-        description: "Nix binary cache substituter URL",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "nix-cache-public-key": {
-        description: "Trusted public key for the Nix binary cache",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "nix-cache-s3-endpoint": {
-        description: "S3 API endpoint for pushing to the Nix cache",
-        type: "string",
-        required: false,
-        default: "",
-      },
-      "nix-cache-s3-bucket": {
-        description: "S3 bucket name for the Nix cache",
-        type: "string",
-        required: false,
-        default: "nix",
-      },
-      "nix-cache-region": {
-        description: "S3 region for the Nix cache bucket",
-        type: "string",
-        required: false,
-        default: "garage",
-      },
-      "nix-version": {
-        description: "Pinned Nix version used by reusable build jobs",
-        type: "string",
-        required: false,
-        default: "2.34.4",
-      },
-    },
-    secrets: {
-      "devguard-token": { description: "DevGuard API token", required: true },
-      "nix-cache-secret-key": { description: "Nix binary cache signing secret key", required: false },
-      "nix-cache-aws-access-key-id": { description: "AWS access key ID for the Nix S3 cache", required: false },
-      "nix-cache-aws-secret-access-key": { description: "AWS secret access key for the Nix S3 cache", required: false },
-    },
-    permissions: {
-      contents: "read",
-      packages: "write",
-    },
-    jobs: {
-      "build-amd64": {
-        uses: "./.github/workflows/build-nix.yml",
-        permissions: { contents: "read" },
-        with: {
-          nix_target: "${{ inputs.nix-target-amd64 }}",
-          image_name: "${{ inputs.image-name }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-amd64",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          architecture: "amd64",
-          runner: "${{ inputs.runner-amd64 }}",
-          nix_cache_substituter: "${{ inputs.nix-cache-substituter }}",
-          nix_cache_public_key: "${{ inputs.nix-cache-public-key }}",
-          nix_cache_s3_endpoint: "${{ inputs.nix-cache-s3-endpoint }}",
-          nix_cache_s3_bucket: "${{ inputs.nix-cache-s3-bucket }}",
-          nix_cache_region: "${{ inputs.nix-cache-region }}",
-          nix_version: "${{ inputs.nix-version }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-          "nix-cache-secret-key": "${{ secrets.nix-cache-secret-key }}",
-          "nix-cache-aws-access-key-id": "${{ secrets.nix-cache-aws-access-key-id }}",
-          "nix-cache-aws-secret-access-key": "${{ secrets.nix-cache-aws-secret-access-key }}",
-        },
-      },
-      "build-arm64": {
-        uses: "./.github/workflows/build-nix.yml",
-        permissions: { contents: "read" },
-        with: {
-          nix_target: "${{ inputs.nix-target-arm64 }}",
-          image_name: "${{ inputs.image-name }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-arm64",
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          architecture: "arm64",
-          runner: "${{ inputs.runner-arm64 }}",
-          nix_cache_substituter: "${{ inputs.nix-cache-substituter }}",
-          nix_cache_public_key: "${{ inputs.nix-cache-public-key }}",
-          nix_cache_s3_endpoint: "${{ inputs.nix-cache-s3-endpoint }}",
-          nix_cache_s3_bucket: "${{ inputs.nix-cache-s3-bucket }}",
-          nix_cache_region: "${{ inputs.nix-cache-region }}",
-          nix_version: "${{ inputs.nix-version }}",
-        },
-        secrets: {
-          "devguard-token": "${{ secrets.devguard-token }}",
-          "nix-cache-secret-key": "${{ secrets.nix-cache-secret-key }}",
-          "nix-cache-aws-access-key-id": "${{ secrets.nix-cache-aws-access-key-id }}",
-          "nix-cache-aws-secret-access-key": "${{ secrets.nix-cache-aws-secret-access-key }}",
-        },
-      },
-      "container-scanning-amd64": {
-        needs: ["build-amd64"],
-        uses: "./.github/workflows/container-scanning.yml",
-        permissions: { contents: "read", "security-events": "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          fail_on_cvss: "${{ inputs.fail-on-cvss }}",
-          fail_on_risk: "${{ inputs.fail-on-risk }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-amd64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "container-scanning-arm64": {
-        needs: ["build-arm64"],
-        uses: "./.github/workflows/container-scanning.yml",
-        permissions: { contents: "read", "security-events": "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          devguard_web_ui: "${{ inputs.web-ui }}",
-          fail_on_cvss: "${{ inputs.fail-on-cvss }}",
-          fail_on_risk: "${{ inputs.fail-on-risk }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-arm64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "deploy-amd64": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-amd64", "container-scanning-amd64"],
-        uses: "./.github/workflows/deploy.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-amd64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "deploy-arm64": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-arm64", "container-scanning-arm64"],
-        uses: "./.github/workflows/deploy.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-arm64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "create-manifest": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-amd64", "build-arm64", "deploy-amd64", "deploy-arm64"],
-        uses: "./.github/workflows/create-manifest-multi-arch.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          image_suffix: "${{ inputs.artifact-name-suffix }}",
-        },
-      },
-      "sign-amd64": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-amd64", "create-manifest"],
-        uses: "./.github/workflows/sign.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-amd64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "sign-arm64": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-arm64", "create-manifest"],
-        uses: "./.github/workflows/sign.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-arm64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "attest-amd64": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-amd64", "create-manifest"],
-        uses: "./.github/workflows/attest.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-amd64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-      "attest-arm64": {
-        if: "${{ inputs.should-deploy }}",
-        needs: ["build-arm64", "create-manifest"],
-        uses: "./.github/workflows/attest.yml",
-        permissions: { contents: "read", packages: "write" },
-        with: {
-          devguard_asset_name: "${{ inputs.asset-name }}",
-          devguard_api_url: "${{ inputs.api-url }}",
-          image_suffix: "${{ inputs.artifact-name-suffix }}-arm64",
-        },
-        secrets: { "devguard-token": "${{ secrets.devguard-token }}" },
-      },
-    },
+    nix_target_amd64: { description: "Nix flake build target for amd64 (e.g. devguard-0-amd64)" as const },
+    nix_target_arm64: { description: "Nix flake build target for arm64 (e.g. devguard-0-arm64)" as const },
+    runner_amd64: { description: "GitHub Actions runner label for the amd64 build" as const, default: "ubuntu-latest" as const },
+    runner_arm64: { description: "GitHub Actions runner label for the arm64 build" as const, default: "ubuntu-24.04-arm" as const },
+    artifact_name_suffix: { description: "Suffix appended to artifact names to avoid conflicts when building multiple images" as const, default: "" as const },
   },
-};
-
-await ExportGitHubOrchestratorWorkflows(orchestratorsGitHub, fileHeader);
+});
 
 // console.log("Finished");

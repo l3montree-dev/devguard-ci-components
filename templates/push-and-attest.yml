@@ -91,12 +91,20 @@ spec:
     image:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
+    build_job_name:
+      description: Name of the build job to depend on
+    build_stage:
+      description: Pipeline stage for the push jobs (e.g. build, oci-image)
+      default: oci-image
+    attest_stage:
+      description: Pipeline stage for the sign/attest jobs (e.g. test, attestation)
+      default: attestation
 ---
 
 include: []
 devguard:generate_tag$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: oci-image
+  stage: $[[ inputs.build_stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
   needs: $[[ inputs.needs ]]
   dependencies: $[[ inputs.dependencies ]]
@@ -121,7 +129,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
       - ${ENV_FILENAME}
 devguard:push_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: oci-image
+  stage: $[[ inputs.build_stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
@@ -158,7 +166,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
-  stage: attestation
+  stage: $[[ inputs.attest_stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
@@ -183,7 +191,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
     entrypoint:
       - ""
   tags: $[[ inputs.runner_tags ]]
-  stage: attestation
+  stage: $[[ inputs.attest_stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
