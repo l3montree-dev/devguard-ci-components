@@ -50,13 +50,13 @@ export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (in
       },
       {
         name: "Create GitHub Release",
-        uses: ACTION_GH_RELEASE,
         "continue-on-error": inputValues.allow_failure as boolean,
-        with: {
-          tag_name: inputValues.release_tag || `\${{ github.ref_name }}`,
-          name: inputValues.release_name || `\${{ github.ref_name }}`,
-          body: inputValues.release_description,
-        },
+        env: {
+          RELEASE_TAG: inputValues.release_tag || `\${{ github.ref_name }}`,
+          RELEASE_NAME: inputValues.release_name || `\${{ github.ref_name }}`,
+          RELEASE_DESCRIPTION: inputValues.release_description,
+        } as Record<string, string>,
+        run: `gh release create "$RELEASE_TAG" --title "$RELEASE_NAME" --notes "$RELEASE_DESCRIPTION"`,
       },
     ],
   },

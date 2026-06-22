@@ -46,6 +46,7 @@ on:
 jobs:
   call-secret-scanning:
     uses: ./.github/workflows/secret-scanning.yml
+    permissions: {}
     with:
       devguard-asset-name: ${{ inputs.asset-name }}
       devguard-api-url: ${{ inputs.api-url }}
@@ -56,6 +57,7 @@ jobs:
       devguard-token: ${{ secrets.devguard-token }}
   call-sast:
     uses: ./.github/workflows/static-application-security-testing.yml
+    permissions: {}
     with:
       devguard-asset-name: ${{ inputs.asset-name }}
       devguard-api-url: ${{ inputs.api-url }}
@@ -66,6 +68,7 @@ jobs:
       devguard-token: ${{ secrets.devguard-token }}
   call-iac:
     uses: ./.github/workflows/iac.yml
+    permissions: {}
     with:
       devguard-asset-name: ${{ inputs.asset-name }}
       devguard-api-url: ${{ inputs.api-url }}
@@ -76,6 +79,7 @@ jobs:
       devguard-token: ${{ secrets.devguard-token }}
   call-software-composition-analysis:
     uses: ./.github/workflows/software-composition-analysis.yml
+    permissions: {}
     with:
       devguard-asset-name: ${{ inputs.asset-name }}
       devguard-api-url: ${{ inputs.api-url }}

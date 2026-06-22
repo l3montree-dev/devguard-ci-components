@@ -529,6 +529,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
     jobs: {
       "call-secret-scanning": {
         uses: "./.github/workflows/secret-scanning.yml",
+        permissions: {},
         with: {
           devguard_asset_name: "${{ inputs.asset-name }}",
           devguard_api_url: "${{ inputs.api-url }}",
@@ -542,6 +543,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
       },
       "call-sast": {
         uses: "./.github/workflows/static-application-security-testing.yml",
+        permissions: {},
         with: {
           devguard_asset_name: "${{ inputs.asset-name }}",
           devguard_api_url: "${{ inputs.api-url }}",
@@ -555,6 +557,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
       },
       "call-iac": {
         uses: "./.github/workflows/iac.yml",
+        permissions: {},
         with: {
           devguard_asset_name: "${{ inputs.asset-name }}",
           devguard_api_url: "${{ inputs.api-url }}",
@@ -568,6 +571,7 @@ const orchestratorsGitHub: Record<string, GitHubOrchestratorWorkflow> = {
       },
       "call-software-composition-analysis": {
         uses: "./.github/workflows/software-composition-analysis.yml",
+        permissions: {},
         with: {
           devguard_asset_name: "${{ inputs.asset-name }}",
           devguard_api_url: "${{ inputs.api-url }}",
