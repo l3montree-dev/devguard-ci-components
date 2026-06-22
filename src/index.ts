@@ -384,8 +384,9 @@ const bnmaAttestArm64 = AttestTemplate({
 
 const bnmaCreateManifest = CreateManifestMultiArchTemplate({
   stage: "attestation",
+  job_suffix: "",
   artifacts_subdirectory: ".",
-  needs: [bnmaPushAmd64.name, bnmaPushArm64.name],
+  needs: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
 });
 const bnmaSignManifest = SignOciImageTemplate({
@@ -770,35 +771,71 @@ const templatesGitHub: CIComponentGroupTemplateGitHub = {
   // Orchestrator workflows (inline, no uses:)
   "code-scanning": [ghCsSecretScanning, ghCsSast, ghCsIac, ghCsSca],
   "container-lifecycle": [ghClBuild, ghClScan, ghClDeploy, ghClSign, ghClAttest],
-  full: [ghFullSecretScanning, ghFullSast, ghFullIac, ghFullSca, ghFullBuild, ghFullScan, ghFullDeploy, ghFullSign, ghFullAttest],
+  full: [
+    ghFullSecretScanning,
+    ghFullSast,
+    ghFullIac,
+    ghFullSca,
+    ghFullBuild,
+    ghFullScan,
+    ghFullDeploy,
+    ghFullSign,
+    ghFullAttest,
+  ],
   "container-lifecycle-nix": [ghClnBuild, ghClnScan, ghClnDeploy, ghClnSign, ghClnAttest],
   "full-nix": [
-    ghFnBuildAmd64, ghFnBuildArm64,
-    ghFnScanAmd64, ghFnScanArm64,
-    ghFnDeployAmd64, ghFnDeployArm64,
+    ghFnBuildAmd64,
+    ghFnBuildArm64,
+    ghFnScanAmd64,
+    ghFnScanArm64,
+    ghFnDeployAmd64,
+    ghFnDeployArm64,
     ghFnManifest,
-    ghFnSignAmd64, ghFnSignArm64,
-    ghFnAttestAmd64, ghFnAttestArm64,
+    ghFnSignAmd64,
+    ghFnSignArm64,
+    ghFnAttestAmd64,
+    ghFnAttestArm64,
   ],
 };
 
 await ExportCIComponentsGitHub(templatesGitHub, fileHeader, {
   "container-lifecycle": {
-    image_suffix: { description: "Suffix for the image name when building multiple images" as const, default: "" as const },
+    image_suffix: {
+      description: "Suffix for the image name when building multiple images" as const,
+      default: "" as const,
+    },
   },
   full: {
-    image_suffix: { description: "Suffix for the image name when building multiple images" as const, default: "" as const },
-    devguard_artifact_name: { description: "Name of the artifact you are building (leave empty when building a single artifact)" as const, default: "" as const },
+    image_suffix: {
+      description: "Suffix for the image name when building multiple images" as const,
+      default: "" as const,
+    },
+    devguard_artifact_name: {
+      description: "Name of the artifact you are building (leave empty when building a single artifact)" as const,
+      default: "" as const,
+    },
   },
   "container-lifecycle-nix": {
-    image_suffix: { description: "Suffix for the image name when building multiple images" as const, default: "" as const },
+    image_suffix: {
+      description: "Suffix for the image name when building multiple images" as const,
+      default: "" as const,
+    },
   },
   "full-nix": {
     nix_target_amd64: { description: "Nix flake build target for amd64 (e.g. devguard-0-amd64)" as const },
     nix_target_arm64: { description: "Nix flake build target for arm64 (e.g. devguard-0-arm64)" as const },
-    runner_amd64: { description: "GitHub Actions runner label for the amd64 build" as const, default: "ubuntu-latest" as const },
-    runner_arm64: { description: "GitHub Actions runner label for the arm64 build" as const, default: "ubuntu-24.04-arm" as const },
-    artifact_name_suffix: { description: "Suffix appended to artifact names to avoid conflicts when building multiple images" as const, default: "" as const },
+    runner_amd64: {
+      description: "GitHub Actions runner label for the amd64 build" as const,
+      default: "ubuntu-latest" as const,
+    },
+    runner_arm64: {
+      description: "GitHub Actions runner label for the arm64 build" as const,
+      default: "ubuntu-24.04-arm" as const,
+    },
+    artifact_name_suffix: {
+      description: "Suffix appended to artifact names to avoid conflicts when building multiple images" as const,
+      default: "" as const,
+    },
   },
 });
 
