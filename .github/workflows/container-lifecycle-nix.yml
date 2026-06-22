@@ -5,177 +5,505 @@
 on:
   workflow_call:
     inputs:
-      nix-target:
-        description: Nix flake build target (e.g. devguardOCI)
-        type: string
-        required: true
-      image-name:
-        description: Full OCI image name without tag
-        type: string
-        required: true
-      asset-name:
-        description: DevGuard asset name for supply chain tracking
-        type: string
-        required: true
-      api-url:
+      devguard-api-url:
+        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
         type: string
         required: false
         default: https://api.devguard.org
-        description: URL of the DevGuard API
-      web-ui:
+      devguard-asset-name:
+        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
         type: string
         required: false
-        default: https://app.devguard.org
-        description: URL of the DevGuard Web UI
-      artifact-name-suffix:
-        description: Suffix appended to artifact names
+        default: $DEVGUARD_ASSET_NAME
+      image-name:
+        description: Full OCI image name without tag (e.g. ghcr.io/org/repo/image)
         type: string
         required: false
-        default: ""
-      should-deploy:
-        description: Whether to push the image to the container registry
-        type: boolean
-        required: false
-        default: true
-      fail-on-risk:
-        description: Fail if risk level reaches this threshold
+      image-suffix:
+        description: Suffix for the image name when building multiple images
         type: string
         required: false
         default: ""
-      fail-on-cvss:
-        description: Fail if CVSS score reaches this threshold
+      nix-target:
+        description: Flake output attribute to build (e.g. devguardOCI). Must be a dockerTools.buildLayeredImage derivation.
         type: string
         required: false
-        default: ""
       nix-cache-substituter:
-        description: Nix binary cache substituter URL
+        description: Nix binary cache substituter URL. Set to empty string to disable.
         type: string
         required: false
         default: ""
       nix-cache-public-key:
-        description: Trusted public key for the Nix binary cache
+        description: Trusted public key for the Nix binary cache.
         type: string
         required: false
         default: ""
       nix-cache-s3-endpoint:
-        description: S3 API endpoint for pushing to the Nix cache
+        description: S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud). Leave empty to skip pushing.
         type: string
         required: false
         default: ""
       nix-cache-s3-bucket:
-        description: S3 bucket name for the Nix cache
+        description: S3 bucket name for the cache.
         type: string
         required: false
-        default: nix
+        default: ""
       nix-cache-region:
-        description: S3 region for the Nix cache bucket
+        description: S3 region for the cache bucket.
         type: string
         required: false
-        default: garage
+        default: ""
       nix-version:
-        description: Pinned Nix version
+        description: Pinned Nix version for deterministic builds (must match other CI systems)
         type: string
         required: false
         default: 2.34.4
+      architecture:
+        description: Target architecture (e.g., amd64 or arm64)
+        type: string
+        required: false
+        default: ""
+      runner:
+        description: GitHub Actions runner label to use (e.g. ubuntu-latest, ubuntu-24.04-arm)
+        type: string
+        required: false
+        default: ubuntu-latest
+      allow-failure:
+        description: Whether the job is allowed to fail without stopping the pipeline
+        type: boolean
+        required: false
+        default: false
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+        type: string
+        required: false
+        default: ""
+      devguard-web-ui:
+        description: The DevGuard Web-UI Instance URL
+        type: string
+        required: false
+        default: https://app.devguard.org
+      devguard-origin:
+        description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
+        type: string
+        required: false
+        default: DEFAULT
+      image-tar-path:
+        description: The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty.
+        type: string
+        required: false
+        default: image.tar
+      fetch-image-from-registry:
+        description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
+        type: string
+        required: false
+        default: "false"
+      default-ref:
+        description: Default branch reference
+        type: string
+        required: false
+        default: ${{ github.event.repository.default_branch }}
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
+      fail-on-risk:
+        description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
+        type: string
+        required: false
+        default: critical
+      fail-on-cvss:
+        description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
+        type: string
+        required: false
+        default: critical
+      ignore-external-references:
+        description: Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.
+        type: string
+        required: false
+        default: "false"
+      ignore-upstream-attestations:
+        description: Whether to ignore upstream attestations when scanning the image.
+        type: string
+        required: false
+        default: "false"
+      should-deploy:
+        description: Should the attestation job run
+        type: boolean
+        required: false
+        default: true
+      image-already-in-registry:
+        description: If set to true, the image wont be pushed again
+        type: boolean
+        required: false
+        default: false
+      artifact-suffix:
+        description: Suffix used to look up build artifacts by name. Defaults to image-suffix when not set.
+        type: string
+        required: false
+        default: ""
     secrets:
       devguard-token:
         description: DevGuard API token
         required: true
       nix-cache-secret-key:
-        description: Nix binary cache signing secret key
+        description: Nix binary cache signing secret key.
         required: false
       nix-cache-aws-access-key-id:
-        description: AWS access key ID for the Nix S3 cache
+        description: AWS access key ID for the Nix S3 cache.
         required: false
       nix-cache-aws-secret-access-key:
-        description: AWS secret access key for the Nix S3 cache
+        description: AWS secret access key for the Nix S3 cache.
         required: false
-permissions:
-  contents: read
-  packages: write
 jobs:
-  build-image:
-    uses: ./.github/workflows/build-nix.yml
-    permissions:
-      contents: read
-    with:
-      nix-target: ${{ inputs.nix-target }}
-      image-name: ${{ inputs.image-name }}
-      image-suffix: ${{ inputs.artifact-name-suffix }}
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      nix-cache-substituter: ${{ inputs.nix-cache-substituter }}
-      nix-cache-public-key: ${{ inputs.nix-cache-public-key }}
-      nix-cache-s3-endpoint: ${{ inputs.nix-cache-s3-endpoint }}
-      nix-cache-s3-bucket: ${{ inputs.nix-cache-s3-bucket }}
-      nix-cache-region: ${{ inputs.nix-cache-region }}
-      nix-version: ${{ inputs.nix-version }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-      nix-cache-secret-key: ${{ secrets.nix-cache-secret-key }}
-      nix-cache-aws-access-key-id: ${{ secrets.nix-cache-aws-access-key-id }}
-      nix-cache-aws-secret-access-key: ${{ secrets.nix-cache-aws-secret-access-key }}
-  container-scanning:
+  devguard_build_nix:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          install_url: ${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix-version) }}
+          extra_nix_config: |-
+            experimental-features = nix-command flakes
+            ${{ inputs.nix-cache-substituter != '' && format('substituters = https://cache.nixos.org {0}', inputs.nix-cache-substituter) || '' }}
+            ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
+      - name: Install crane and devguard-scanner
+        run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
+      - name: In-Toto Provenance record start
+        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }}
+        continue-on-error: true
+      - name: Write Nix cache secret key
+        if: inputs.nix-cache-s3-endpoint != ''
+        run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
+      - name: Build OCI image with Nix
+        run: nix build .#${{ inputs.nix-target }}
+      - name: Push build results to Nix cache
+        if: inputs.nix-cache-s3-endpoint != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.nix-cache-aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.nix-cache-aws-secret-access-key }}
+        run: |-
+          mkdir -p ~/.aws
+          echo "[profile nix-cache]" >> ~/.aws/config
+          echo "s3.addressing_style = path" >> ~/.aws/config
+          nix copy $(nix-store -qR $(readlink result)) \
+            --to 's3://${{ inputs.nix-cache-s3-bucket }}?endpoint=${{ inputs.nix-cache-s3-endpoint }}&region=${{ inputs.nix-cache-region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
+      - name: Prepare image.tar
+        run: gunzip -c "$(readlink -f result)" > image.tar
+      - name: Get image digest
+        run: crane digest --tarball=image.tar > image-digest.txt
+      - name: Upload oci-image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oci-image${{ inputs.image-suffix }}
+          path: image.tar
+      - name: Set image tag
+        id: set-image-tag
+        run: |-
+          devguard-scanner generate-tag \
+            --imagePath='${{ inputs.image-name }}' \
+            --ref='${{ github.ref_name }}' \
+            --architecture='${{ inputs.architecture }}' \
+            >> image-tag-env.txt
+          IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
+          ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
+          ARTIFACT_URL_ENCODED=$(grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2-)
+          echo "$IMAGE_TAG" > image-tag.txt
+          echo "$ARTIFACT_NAME" > artifact-purl.txt
+          echo "$ARTIFACT_URL_ENCODED" > artifact-purl-safe.txt
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
+      - name: Upload image-tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tag${{ inputs.image-suffix }}
+          path: image-tag.txt
+      - name: Upload image-digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-digest${{ inputs.image-suffix }}
+          path: image-digest.txt
+      - name: Upload artifact-purl artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-purl${{ inputs.image-suffix }}
+          path: artifact-purl.txt
+      - name: Upload artifact-purl-safe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-purl-safe${{ inputs.image-suffix }}
+          path: artifact-purl-safe.txt
+      - name: In-Toto Provenance record stop
+        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+        continue-on-error: true
+      - name: Upload SLSA Provenance
+        uses: actions/upload-artifact@v4
+        with:
+          path: build.provenance.json
+          name: build${{ inputs.image-suffix }}.provenance.json
+    name: devguard:build-nix
+  devguard_container_scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Download Docker image artifact (created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: oci-image${{ inputs.image-suffix }}
+          path: .
+        if: ${{ inputs.fetch-image-from-registry == 'false' }}
+      - name: Download image-tag artifact (created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag${{ inputs.image-suffix }}
+          path: .
+      - name: Download artifact purl (created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-purl${{ inputs.image-suffix }}
+        if: ${{ inputs.devguard-artifact-name == '' }}
+      - name: Resolve artifact name
+        run: |-
+          if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+            echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+          else
+            echo "ARTIFACT_NAME=${{ inputs.devguard-artifact-name }}" >> $GITHUB_ENV
+          fi
+      - name: Setup crane
+        uses: imjasonh/setup-crane@v0.1
+      - name: Download OCI Image from registry
+        run: crane pull $(cat image-tag.txt) image.tar
+        if: ${{ inputs.fetch-image-from-registry == 'true' }}
+      - name: DevGuard Container-Scanning
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        continue-on-error: ${{ inputs.allow-failure }}
+        with:
+          args: devguard-scanner container-scanning --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.image-tar-path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="${{ env.ARTIFACT_NAME }}" --webUI="${{ inputs.devguard-web-ui }}" --failOnRisk="${{ inputs.fail-on-risk }}" --failOnCVSS="${{ inputs.fail-on-cvss }}" --ignoreExternalReferences=${{ inputs.ignore-external-references }} --ignoreUpstreamAttestations=${{ inputs.ignore-upstream-attestations }}
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
     needs:
-      - build-image
-    uses: ./.github/workflows/container-scanning.yml
-    permissions:
-      contents: read
-      security-events: write
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      devguard-web-ui: ${{ inputs.web-ui }}
-      fail-on-cvss: ${{ inputs.fail-on-cvss }}
-      fail-on-risk: ${{ inputs.fail-on-risk }}
-      image-suffix: ${{ inputs.artifact-name-suffix }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-  deploy:
-    if: ${{ inputs.should-deploy }}
+      - devguard_build_nix
+    name: devguard:container-scanning
+  devguard_deploy:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Download oci-image artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: oci-image${{ inputs.image-suffix }}
+          path: .
+        if: inputs.image-already-in-registry == false
+      - name: Download image-tag artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag${{ inputs.image-suffix }}
+          path: .
+      - name: Download image-digest artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-digest${{ inputs.image-suffix }}
+          path: .
+      - name: Read image-digest.txt
+        id: read-digest
+        run: echo "DIGEST=$(cat image-digest.txt)" >> $GITHUB_ENV
+      - name: In-Toto Provenance run
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+        continue-on-error: true
+      - name: Setup crane
+        uses: imjasonh/setup-crane@v0.1
+      - name: Push oci image to GitHub image Registry
+        run: crane push image.tar $(cat image-tag.txt)
+        if: inputs.image-already-in-registry == false
     needs:
-      - build-image
-      - container-scanning
-    uses: ./.github/workflows/deploy.yml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      image-suffix: ${{ inputs.artifact-name-suffix }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-  sign:
-    if: ${{ inputs.should-deploy }}
+      - devguard_build_nix
+      - devguard_container_scanning
+    name: devguard:deploy
+  devguard_sign:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Download image-tag artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag${{ inputs.image-suffix }}
+          path: .
+      - name: Download image-digest artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-digest${{ inputs.image-suffix }}
+          path: .
+      - name: Set Image to be signed
+        run: echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV
+      - name: DevGuard Image-Signing
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: devguard-scanner sign -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     needs:
-      - build-image
-      - container-scanning
-      - deploy
-    uses: ./.github/workflows/sign.yml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      image-suffix: ${{ inputs.artifact-name-suffix }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-  attest:
-    if: ${{ inputs.should-deploy }}
+      - devguard_build_nix
+      - devguard_container_scanning
+      - devguard_deploy
+    name: devguard:sign
+  devguard_attest:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    steps:
+      - name: Download image-digest artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-digest${{ inputs.image-suffix }}
+          path: .
+        continue-on-error: true
+      - name: Download image-tag artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag${{ inputs.image-suffix }}
+          path: .
+      - name: Download artifact purl (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-purl${{ inputs.image-suffix }}
+        if: inputs.devguard-artifact-name == ''
+      - name: Download safe-artifact (can be created by build-image)
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-purl-safe${{ inputs.image-suffix }}
+        if: inputs.devguard-artifact-name == ''
+      - name: set artifact-name variable if it is empty
+        run: |-
+          if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+            echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+            echo "Using artifact name from file: $ARTIFACT_NAME"
+            # For API calls, use safe artifact name if it exists
+            if [ -f artifact-purl-safe.txt ]; then
+              echo "API_ARTIFACT_NAME=$(cat artifact-purl-safe.txt)" >> $GITHUB_ENV
+            else
+              echo "API_ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+            fi
+          else
+            # make sure to url encode
+            echo "ARTIFACT_NAME=${{ inputs.devguard-artifact-name }}" >> $GITHUB_ENV
+            echo "API_ARTIFACT_NAME=$(echo -n "${{ inputs.devguard-artifact-name }}" | jq -s -R -r @uri)" >> $GITHUB_ENV
+            echo "Using provided artifact name: ${{ inputs.devguard-artifact-name }}"
+            echo "Encoded: $API_ARTIFACT_NAME"
+          fi
+          echo "Resolved artifact name for attestation: ${{ inputs.devguard-artifact-name }}"
+      - name: Get and Attest SBOM
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: |-
+            sh -c "
+              slug=$(devguard-scanner slug ${{ github.ref_name }}) &&
+              artifact_name="$ARTIFACT_NAME" &&
+              echo 'Fetching SBOM for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/sbom.json &&
+              echo 'SBOM downloaded to /tmp/sbom.json' &&
+              if [ -f image-digest.txt ]; then
+                echo 'Attesting SBOM with image digest present' &&
+                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              else
+                echo 'Attesting SBOM without image digest' &&
+                devguard-scanner attest /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              fi
+            "
+        env:
+          API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+      - name: Get and Attest VeX
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: |-
+            sh -c "
+              slug=$(devguard-scanner slug ${{ github.ref_name }}) &&
+              artifact_name="$ARTIFACT_NAME" &&
+              echo 'Fetching VeX for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/vex.json &&
+              echo 'VeX downloaded to /tmp/vex.json' &&
+              if [ -f image-digest.txt ]; then
+                echo 'Attesting VeX with image digest present' &&
+                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/vex.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --token='${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              else
+                echo 'Attesting VeX without image digest' &&
+                devguard-scanner attest /tmp/vex.json --predicateType='https://cyclonedx.org/vex' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              fi
+            "
+        env:
+          API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+      - name: Get and Attest SAST-Results
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: |-
+            sh -c "
+              slug=$(devguard-scanner slug ${{ github.ref_name }}) &&
+              artifact_name="$ARTIFACT_NAME" &&
+              echo 'Fetching SAST results for artifact:' '${{ env.ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/sarif.json' --token='${{ secrets.devguard-token }}' > /tmp/sarif.json &&
+              echo 'SAST results downloaded to /tmp/sarif.json' &&
+              if [ -f image-digest.txt ]; then
+                echo 'Attesting SAST results with image digest present' &&
+                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/sarif.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              else
+                echo 'Attesting SAST results without image digest' &&
+                devguard-scanner attest /tmp/sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              fi
+            "
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+      - name: Download and Attest build-provenance.json
+        uses: actions/download-artifact@v4
+        with:
+          name: build${{ inputs.image-suffix }}.provenance.json
+      - name: Attest build-provenance.json
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        continue-on-error: true
+        with:
+          args: |-
+            sh -c "
+              artifact_name="$ARTIFACT_NAME" &&
+              echo 'Building provenance attestation for artifact:' '${{ env.ARTIFACT_NAME }}' &&
+              if [ -f image-digest.txt ]; then
+                echo 'Attesting provenance with image digest present' &&
+                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} build.provenance.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              else
+                echo 'Attesting provenance without image digest' &&
+                devguard-scanner attest build.provenance.json --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --predicateType='https://slsa.dev/provenance/v1' --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+              fi
+            "
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
     needs:
-      - build-image
-      - container-scanning
-      - deploy
-    uses: ./.github/workflows/attest.yml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      image-suffix: ${{ inputs.artifact-name-suffix }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-name: Container Lifecycle (Nix)
+      - devguard_build_nix
+      - devguard_container_scanning
+      - devguard_deploy
+    name: devguard:attest

@@ -5,84 +5,138 @@
 on:
   workflow_call:
     inputs:
-      asset-name:
-        description: Name of the asset to be scanned
-        type: string
-        required: true
-      api-url:
+      devguard-api-url:
+        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
         type: string
         required: false
         default: https://api.devguard.org
-        description: URL of the DevGuard API
-      path:
-        description: Path to the source code to be scanned
+      devguard-asset-name:
+        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
         type: string
         required: false
-        default: /github/workspace
-      web-ui:
+        default: $DEVGUARD_ASSET_NAME
+      devguard-web-ui:
+        description: The DevGuard Web-UI Instance URL
         type: string
         required: false
         default: https://app.devguard.org
-        description: The URL of the DevGuard Web UI. This is used to link the results in the DevGuard Web UI.
-      fail-on-risk:
-        description: Fail the job if a risk is higher than the configured threshold, e.g. critical, high, medium, low
+      job-suffix:
+        description: Suffix for the job name. You need this if you are using the component multiple times in one pipeline.
         type: string
         required: false
         default: ""
-      fail-on-cvss:
-        description: Fail the job if a CVSS score is higher than the configured threshold, e.g. critical, high, medium, low
-        type: string
-        required: false
-        default: ""
-      continue-on-open-code-risk:
+      allow-failure:
+        description: Whether the job is allowed to fail without stopping the pipeline
         type: boolean
         required: false
-        default: true
-        description: Whether to continue when open code risks are detected
+        default: false
+      path:
+        description: The path to the git repository to scan
+        type: string
+        required: false
+        default: /github/workspace
+      default-ref:
+        description: Default branch reference
+        type: string
+        required: false
+        default: ${{ github.event.repository.default_branch }}
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+        type: string
+        required: false
+        default: source
+      devguard-origin:
+        description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
+        type: string
+        required: false
+        default: DEFAULT
+      fail-on-risk:
+        description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
+        type: string
+        required: false
+        default: critical
+      fail-on-cvss:
+        description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
+        type: string
+        required: false
+        default: critical
+      ignore-external-references:
+        description: Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.
+        type: string
+        required: false
+        default: "false"
     secrets:
       devguard-token:
         description: DevGuard API token
         required: true
 jobs:
-  call-secret-scanning:
-    uses: ./.github/workflows/secret-scanning.yml
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      path: ${{ inputs.path }}
-      devguard-web-ui: ${{ inputs.web-ui }}
-      allow-failure: ${{ inputs.continue-on-open-code-risk }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-  call-sast:
-    uses: ./.github/workflows/static-application-security-testing.yml
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      path: ${{ inputs.path }}
-      devguard-web-ui: ${{ inputs.web-ui }}
-      allow-failure: ${{ inputs.continue-on-open-code-risk }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-  call-iac:
-    uses: ./.github/workflows/iac.yml
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      path: ${{ inputs.path }}
-      devguard-web-ui: ${{ inputs.web-ui }}
-      allow-failure: ${{ inputs.continue-on-open-code-risk }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-  call-software-composition-analysis:
-    uses: ./.github/workflows/software-composition-analysis.yml
-    with:
-      devguard-asset-name: ${{ inputs.asset-name }}
-      devguard-api-url: ${{ inputs.api-url }}
-      path: ${{ inputs.path }}
-      fail-on-risk: ${{ inputs.fail-on-risk }}
-      fail-on-cvss: ${{ inputs.fail-on-cvss }}
-      devguard-web-ui: ${{ inputs.web-ui }}
-    secrets:
-      devguard-token: ${{ secrets.devguard-token }}
-name: Code Scanning
+  devguard_secret_scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: recursive
+      - name: Run DevGuard Secret Scanning
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        continue-on-error: ${{ inputs.allow-failure }}
+        with:
+          args: devguard-scanner secret-scanning --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }}
+    name: devguard:secret-scanning${{ inputs.job-suffix }}
+  devguard_static_application_security_testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+      - name: DevGuard Static application security testing
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        continue-on-error: ${{ inputs.allow-failure }}
+        with:
+          args: devguard-scanner sast --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }}
+    name: devguard:static-application-security-testing
+  devguard_infrastructure_as_code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          submodules: recursive
+          persist-credentials: false
+          fetch-depth: 0
+      - name: DevGuard Infrastructure as Code
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        continue-on-error: ${{ inputs.allow-failure }}
+        with:
+          args: devguard-scanner iac --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }}
+    name: devguard:infrastructure-as-code
+  devguard_software_composition_analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: true
+      - name: DevGuard SCA
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        continue-on-error: ${{ inputs.allow-failure }}
+        with:
+          args: devguard-scanner sca --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }} --artifactName=${{ inputs.devguard-artifact-name }} --failOnRisk=${{ inputs.fail-on-risk }} --failOnCVSS=${{ inputs.fail-on-cvss }} --ignoreExternalReferences=${{ inputs.ignore-external-references }}
+    name: devguard:software-composition-analysis
