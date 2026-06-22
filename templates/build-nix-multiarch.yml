@@ -136,14 +136,10 @@ build_image$[[ inputs.job_suffix ]]:
           devguard_api_url: $[[ inputs.devguard_api_url ]]
           build_job_name: devguard:build_oci_image$[[ inputs.job_suffix ]]
           job_suffix: $[[ inputs.job_suffix ]]
-          build_stage: build
+          build_stage: test
           attest_stage: test
           image_suffix: $[[ inputs.image_suffix ]]
           architecture: ${ARCHITECTURE}
-          needs:
-            - devguard:container_scanning$[[ inputs.job_suffix ]]
-          dependencies:
-            - devguard:container_scanning$[[ inputs.job_suffix ]]
 create_and_sign_manifest$[[ inputs.job_suffix ]]:
   stage: attestation
   variables:
