@@ -236,7 +236,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
 devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
-  stage: test
+  stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
@@ -322,7 +322,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
 devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
-  stage: deploy
+  stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
@@ -559,7 +559,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
 devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
-  stage: test
+  stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
@@ -645,7 +645,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
 devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
-  stage: deploy
+  stage: oci-image
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64

@@ -300,7 +300,7 @@ const bnmaBuildAmd64 = BuildNixTemplate({
   dependencies: [bnmaGenerateTagAmd64.name],
 });
 const bnmaContainerScanningAmd64 = ContainerScanningTemplate({
-  stage: "test",
+  stage: "build",
   git_strategy: "fetch",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   image_tar_path: "image-amd64.tar",
@@ -309,7 +309,7 @@ const bnmaContainerScanningAmd64 = ContainerScanningTemplate({
   dependencies: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
 });
 const bnmaPushAmd64 = PushOciImageTemplate({
-  stage: "deploy",
+  stage: "oci-image",
   git_strategy: "none",
   image: "image-amd64.tar",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
@@ -352,7 +352,7 @@ const bnmaBuildArm64 = BuildNixTemplate({
   dependencies: [bnmaGenerateTagArm64.name],
 });
 const bnmaContainerScanningArm64 = ContainerScanningTemplate({
-  stage: "test",
+  stage: "build",
   git_strategy: "fetch",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   image_tar_path: "image-arm64.tar",
@@ -361,7 +361,7 @@ const bnmaContainerScanningArm64 = ContainerScanningTemplate({
   dependencies: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
 });
 const bnmaPushArm64 = PushOciImageTemplate({
-  stage: "deploy",
+  stage: "oci-image",
   git_strategy: "none",
   image: "image-arm64.tar",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
