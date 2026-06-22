@@ -372,6 +372,7 @@ export const BuildNixMultiArchBuildImageTemplate = defineJobGitLab(BuildNixMulti
             devguard_api_url: inputValues.devguard_api_url,
             build_job_name: `devguard:build_oci_image${inputValues.job_suffix}`,
             job_suffix: inputValues.job_suffix,
+            build_stage: "build",
             image_suffix: inputValues.image_suffix,
             architecture: "${ARCHITECTURE}",
             needs: [`devguard:container_scanning${inputValues.job_suffix}`],
