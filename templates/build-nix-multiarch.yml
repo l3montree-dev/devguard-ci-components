@@ -350,7 +350,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
     # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
-    IMAGE_REF="$[[ inputs.image_tag ]]"
+    IMAGE_REF="$IMAGE_TAG"
     IMAGE_REF="${IMAGE_REF%@*}"
 
     echo "Image: image-amd64.tar"
@@ -673,7 +673,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
     # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
-    IMAGE_REF="$[[ inputs.image_tag ]]"
+    IMAGE_REF="$IMAGE_TAG"
     IMAGE_REF="${IMAGE_REF%@*}"
 
     echo "Image: image-arm64.tar"
