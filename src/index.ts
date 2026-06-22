@@ -276,13 +276,15 @@ const csaAttest = AttestTemplate({
 });
 
 // ── build-nix-multiarch ───────────────────────────────────────────────────────
-const bnmaExtractScannerAmd64 = BuildNixExtractScannerTemplate({ job_suffix: "-amd64" });
-const bnmaExtractScannerArm64 = BuildNixExtractScannerTemplate({ job_suffix: "-arm64" });
+// job_suffix is user-provided at include time (e.g. ":scanner") and prepended
+// to the arch suffix so each inclusion gets globally unique job names.
+const bnmaExtractScannerAmd64 = BuildNixExtractScannerTemplate({ job_suffix: "$[[ inputs.job_suffix ]]-amd64" });
+const bnmaExtractScannerArm64 = BuildNixExtractScannerTemplate({ job_suffix: "$[[ inputs.job_suffix ]]-arm64" });
 
 const bnmaGenerateTagAmd64 = BuildNixGenerateTagTemplate({
   stage: "build",
   git_strategy: "fetch",
-  job_suffix: "-amd64",
+  job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   architecture: "amd64",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
   needs: [bnmaExtractScannerAmd64.name],
@@ -291,7 +293,7 @@ const bnmaGenerateTagAmd64 = BuildNixGenerateTagTemplate({
 const bnmaBuildAmd64 = BuildNixTemplate({
   stage: "build",
   image: "image-amd64.tar",
-  job_suffix: "-amd64",
+  job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   nix_target: "$[[ inputs.nix_target_amd64 ]]",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
   needs: [bnmaGenerateTagAmd64.name],
@@ -300,7 +302,7 @@ const bnmaBuildAmd64 = BuildNixTemplate({
 const bnmaContainerScanningAmd64 = ContainerScanningTemplate({
   stage: "test",
   git_strategy: "fetch",
-  job_suffix: "-amd64",
+  job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   image_tar_path: "image-amd64.tar",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
   needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
@@ -310,7 +312,7 @@ const bnmaPushAmd64 = PushOciImageTemplate({
   stage: "deploy",
   git_strategy: "none",
   image: "image-amd64.tar",
-  job_suffix: "-amd64",
+  job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
   needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaContainerScanningAmd64.name],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaContainerScanningAmd64.name],
@@ -319,7 +321,7 @@ const bnmaSignAmd64 = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  job_suffix: "-amd64",
+  job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
   needs: [bnmaGenerateTagAmd64.name, bnmaPushAmd64.name],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaPushAmd64.name],
@@ -327,14 +329,14 @@ const bnmaSignAmd64 = SignOciImageTemplate({
 const bnmaAttestAmd64 = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  job_suffix: "-amd64",
+  job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaPushAmd64.name],
 });
 
 const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
   stage: "build",
   git_strategy: "fetch",
-  job_suffix: "-arm64",
+  job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   architecture: "arm64",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
   needs: [bnmaExtractScannerArm64.name],
@@ -343,7 +345,7 @@ const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
 const bnmaBuildArm64 = BuildNixTemplate({
   stage: "build",
   image: "image-arm64.tar",
-  job_suffix: "-arm64",
+  job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   nix_target: "$[[ inputs.nix_target_arm64 ]]",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
   needs: [bnmaGenerateTagArm64.name],
@@ -352,7 +354,7 @@ const bnmaBuildArm64 = BuildNixTemplate({
 const bnmaContainerScanningArm64 = ContainerScanningTemplate({
   stage: "test",
   git_strategy: "fetch",
-  job_suffix: "-arm64",
+  job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   image_tar_path: "image-arm64.tar",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
   needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
@@ -362,7 +364,7 @@ const bnmaPushArm64 = PushOciImageTemplate({
   stage: "deploy",
   git_strategy: "none",
   image: "image-arm64.tar",
-  job_suffix: "-arm64",
+  job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
   needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaContainerScanningArm64.name],
   dependencies: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaContainerScanningArm64.name],
@@ -371,7 +373,7 @@ const bnmaSignArm64 = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  job_suffix: "-arm64",
+  job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
   needs: [bnmaGenerateTagArm64.name, bnmaPushArm64.name],
   dependencies: [bnmaGenerateTagArm64.name, bnmaPushArm64.name],
@@ -379,13 +381,12 @@ const bnmaSignArm64 = SignOciImageTemplate({
 const bnmaAttestArm64 = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
-  job_suffix: "-arm64",
+  job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaPushArm64.name],
 });
 
 const bnmaCreateManifest = CreateManifestMultiArchTemplate({
   stage: "attestation",
-  job_suffix: "",
   artifacts_subdirectory: ".",
   needs: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
@@ -394,7 +395,7 @@ const bnmaSignManifest = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$MANIFEST_IMAGE_TAG",
-  job_suffix: "-manifest",
+  job_suffix: "$[[ inputs.job_suffix ]]-manifest",
   needs: [bnmaCreateManifest.name],
   dependencies: [bnmaCreateManifest.name],
 });
@@ -583,6 +584,10 @@ await ExportCIComponentsGitLab(templates, fileHeader, {
     },
   },
   "build-nix-multiarch": {
+    job_suffix: {
+      description: "Suffix appended to all job names — use when including this component multiple times in one pipeline (e.g. ':scanner')" as const,
+      default: "" as const,
+    },
     nix_target_amd64: {
       description: "Nix flake build target for amd64 (e.g. coreutils-amd64)" as const,
     },

@@ -115,6 +115,9 @@ spec:
     image:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
+    job_suffix:
+      description: Suffix appended to all job names — use when including this component multiple times in one pipeline (e.g. ':scanner')
+      default: ""
     create_root_manifest:
       default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
       description: Whether to also create a manifest without the branch ref in the tag.
@@ -131,7 +134,7 @@ spec:
 ---
 
 include: []
-devguard:extract_scanner-amd64:
+devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64:
   stage: .pre
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
@@ -142,7 +145,7 @@ devguard:extract_scanner-amd64:
   artifacts:
     paths:
       - devguard-scanner
-devguard:extract_scanner-arm64:
+devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64:
   stage: .pre
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
@@ -153,15 +156,15 @@ devguard:extract_scanner-arm64:
   artifacts:
     paths:
       - devguard-scanner
-devguard:generate_tag-amd64:
+devguard:generate_tag$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:extract_scanner-amd64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
   dependencies:
-    - devguard:extract_scanner-amd64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: fetch
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]
@@ -177,17 +180,17 @@ devguard:generate_tag-amd64:
       dotenv: generate_tag_$[[ inputs.upstream_version ]]_amd64.env
     paths:
       - generate_tag_$[[ inputs.upstream_version ]]_amd64.env
-devguard:build_oci_image-amd64:
+devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:extract_scanner-amd64
-    - devguard:generate_tag-amd64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
   dependencies:
-    - devguard:extract_scanner-amd64
-    - devguard:generate_tag-amd64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
     entrypoint:
@@ -230,17 +233,17 @@ devguard:build_oci_image-amd64:
       - image-digest.txt
       - build.provenance.json
     when: on_success
-devguard:container_scanning-amd64:
+devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
   stage: test
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-amd64
-    - devguard:build_oci_image-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
   dependencies:
-    - devguard:generate_tag-amd64
-    - devguard:build_oci_image-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: fetch
   image:
@@ -316,19 +319,19 @@ devguard:container_scanning-amd64:
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
       fi
-devguard:push_oci_image-amd64:
+devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
   stage: deploy
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-amd64
-    - devguard:build_oci_image-amd64
-    - devguard:container_scanning-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:container_scanning$[[ inputs.job_suffix ]]-amd64
   dependencies:
-    - devguard:generate_tag-amd64
-    - devguard:build_oci_image-amd64
-    - devguard:container_scanning-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:container_scanning$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: none
   image:
@@ -356,17 +359,17 @@ devguard:push_oci_image-amd64:
     /crane push image-amd64.tar "${IMAGE_REF}"
 
     /devguard-scanner intoto run --step=deploy --materials="image-amd64.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
-devguard:sign_oci_image-amd64:
+devguard:sign_oci_image$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-amd64
-    - devguard:push_oci_image-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
   dependencies:
-    - devguard:generate_tag-amd64
-    - devguard:push_oci_image-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: none
   image:
@@ -377,7 +380,7 @@ devguard:sign_oci_image-amd64:
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
-devguard:attest-amd64:
+devguard:attest$[[ inputs.job_suffix ]]-amd64:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
@@ -387,9 +390,9 @@ devguard:attest-amd64:
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-amd64
-    - devguard:build_oci_image-amd64
-    - devguard:push_oci_image-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: none
   script: |
@@ -476,15 +479,15 @@ devguard:attest-amd64:
 
     echo ""
     echo "All attestations completed"
-devguard:generate_tag-arm64:
+devguard:generate_tag$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:extract_scanner-arm64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:extract_scanner-arm64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: fetch
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]
@@ -500,17 +503,17 @@ devguard:generate_tag-arm64:
       dotenv: generate_tag_$[[ inputs.upstream_version ]]_arm64.env
     paths:
       - generate_tag_$[[ inputs.upstream_version ]]_arm64.env
-devguard:build_oci_image-arm64:
+devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:extract_scanner-arm64
-    - devguard:generate_tag-arm64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:extract_scanner-arm64
-    - devguard:generate_tag-arm64
+    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
     entrypoint:
@@ -553,17 +556,17 @@ devguard:build_oci_image-arm64:
       - image-digest.txt
       - build.provenance.json
     when: on_success
-devguard:container_scanning-arm64:
+devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
   stage: test
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-arm64
-    - devguard:build_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:generate_tag-arm64
-    - devguard:build_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: fetch
   image:
@@ -639,19 +642,19 @@ devguard:container_scanning-arm64:
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
       fi
-devguard:push_oci_image-arm64:
+devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
   stage: deploy
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-arm64
-    - devguard:build_oci_image-arm64
-    - devguard:container_scanning-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - devguard:container_scanning$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:generate_tag-arm64
-    - devguard:build_oci_image-arm64
-    - devguard:container_scanning-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - devguard:container_scanning$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: none
   image:
@@ -679,17 +682,17 @@ devguard:push_oci_image-arm64:
     /crane push image-arm64.tar "${IMAGE_REF}"
 
     /devguard-scanner intoto run --step=deploy --materials="image-arm64.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
-devguard:sign_oci_image-arm64:
+devguard:sign_oci_image$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-arm64
-    - devguard:push_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:generate_tag-arm64
-    - devguard:push_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: none
   image:
@@ -700,7 +703,7 @@ devguard:sign_oci_image-arm64:
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
-devguard:attest-arm64:
+devguard:attest$[[ inputs.job_suffix ]]-arm64:
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
@@ -710,9 +713,9 @@ devguard:attest-arm64:
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:generate_tag-arm64
-    - devguard:build_oci_image-arm64
-    - devguard:push_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: none
   script: |
@@ -799,19 +802,19 @@ devguard:attest-arm64:
 
     echo ""
     echo "All attestations completed"
-devguard:create_manifest_multi_arch:
+devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
   stage: attestation
   image: api.devguard.org/docker.io/library/docker:28.5.2@sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac
   needs:
-    - devguard:generate_tag-amd64
-    - devguard:generate_tag-arm64
-    - devguard:push_oci_image-amd64
-    - devguard:push_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:generate_tag-amd64
-    - devguard:generate_tag-arm64
-    - devguard:push_oci_image-amd64
-    - devguard:push_oci_image-arm64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   before_script:
     - apk add --no-cache bash
     - mkdir -p ~/.docker
@@ -853,14 +856,14 @@ devguard:create_manifest_multi_arch:
     reports:
       dotenv: manifest_image_tag.env
     expire_in: 1 week
-devguard:sign_oci_image-manifest:
+devguard:sign_oci_image$[[ inputs.job_suffix ]]-manifest:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:create_manifest_multi_arch
+    - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
   dependencies:
-    - devguard:create_manifest_multi_arch
+    - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   image:
