@@ -22,6 +22,14 @@ spec:
       description: Whether the job is allowed to fail without stopping the pipeline
       type: boolean
       default: false
+    needs:
+      description: List of jobs this attestation depends on
+      type: array
+      default: []
+    dependencies:
+      description: List of jobs to download artifacts from
+      type: array
+      default: []
     image_suffix:
       default: default
       description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
@@ -98,8 +106,8 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: $[[ inputs.build_stage ]]
   allow_failure: $[[ inputs.allow_failure ]]
-  needs: []
-  dependencies: []
+  needs: $[[ inputs.needs ]]
+  dependencies: $[[ inputs.dependencies ]]
   variables:
     GIT_STRATEGY: fetch
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]

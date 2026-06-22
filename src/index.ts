@@ -228,8 +228,6 @@ const clnAttest = AttestTemplate({
 const paGenerateTag = GenerateTagTemplate({
   stage: "$[[ inputs.build_stage ]]",
   git_strategy: "fetch",
-  needs: [] as string[],
-  dependencies: [] as string[],
 });
 const paPushOciImage = PushOciImageTemplate({
   stage: "$[[ inputs.build_stage ]]",
