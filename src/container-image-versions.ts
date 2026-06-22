@@ -1,6 +1,3 @@
-export const ACTIONS_CHECKOUT =
-  "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0"; // v6.0.3
-
 export enum ContainerImages {
   KANIKO = "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.1@sha256:2966ade3c7d565ae56c48cfa50d5df6e36a5371f4173606eb4de57558186433d",
   DEVGUARD_SCANNER = "ghcr.io/l3montree-dev/devguard/scanner:main",

@@ -1,7 +1,8 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 
 const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   stage: {
@@ -82,7 +83,7 @@ export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
         },
         {
           name: "Upload attestation artifacts",
-          uses: "actions/upload-artifact@v4",
+          uses: ACTIONS_UPLOAD_ARTIFACT,
           with: {
             name: "baseimage-attestations",
             path: `${inputValues.output}/attestation-*.json`,

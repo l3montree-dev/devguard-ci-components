@@ -171,7 +171,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
           install_url: ${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix-version) }}
           extra_nix_config: |-
@@ -181,40 +181,51 @@ jobs:
       - name: Install crane and devguard-scanner
         run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
       - name: In-Toto Provenance record start
-        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }}
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
+        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA
         continue-on-error: true
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
       - name: Build OCI image with Nix
-        run: nix build .#${{ inputs.nix-target }}
+        env:
+          NIX_TARGET: ${{ inputs.nix-target }}
+        run: nix build .#$NIX_TARGET
       - name: Push build results to Nix cache
         if: inputs.nix-cache-s3-endpoint != ''
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.nix-cache-aws-access-key-id }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.nix-cache-aws-secret-access-key }}
+          NIX_CACHE_S3_BUCKET: ${{ inputs.nix-cache-s3-bucket }}
+          NIX_CACHE_S3_ENDPOINT: ${{ inputs.nix-cache-s3-endpoint }}
+          NIX_CACHE_REGION: ${{ inputs.nix-cache-region }}
         run: |-
           mkdir -p ~/.aws
           echo "[profile nix-cache]" >> ~/.aws/config
           echo "s3.addressing_style = path" >> ~/.aws/config
           nix copy $(nix-store -qR $(readlink result)) \
-            --to 's3://${{ inputs.nix-cache-s3-bucket }}?endpoint=${{ inputs.nix-cache-s3-endpoint }}&region=${{ inputs.nix-cache-region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
+            --to "s3://$NIX_CACHE_S3_BUCKET?endpoint=$NIX_CACHE_S3_ENDPOINT&region=$NIX_CACHE_REGION&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem" || true
       - name: Prepare image.tar
         run: gunzip -c "$(readlink -f result)" > image.tar
       - name: Get image digest
         run: crane digest --tarball=image.tar > image-digest.txt
       - name: Upload oci-image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: image.tar
       - name: Set image tag
         id: set-image-tag
+        env:
+          IMAGE_NAME: ${{ inputs.image-name }}
+          ARCHITECTURE: ${{ inputs.architecture }}
         run: |-
           devguard-scanner generate-tag \
-            --imagePath='${{ inputs.image-name }}' \
-            --ref='${{ github.ref_name }}' \
-            --architecture='${{ inputs.architecture }}' \
+            --imagePath="$IMAGE_NAME" \
+            --ref="$GITHUB_REF_NAME" \
+            --architecture="$ARCHITECTURE" \
             >> image-tag-env.txt
           IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
           ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
@@ -225,30 +236,35 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
           echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
       - name: Upload image-tag artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: image-tag.txt
       - name: Upload image-digest artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: image-digest.txt
       - name: Upload artifact-purl artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: artifact-purl${{ inputs.image-suffix }}
           path: artifact-purl.txt
       - name: Upload artifact-purl-safe artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: artifact-purl-safe${{ inputs.image-suffix }}
           path: artifact-purl-safe.txt
       - name: In-Toto Provenance record stop
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          IS_TAG: ${{ github.ref_type == 'tag' }}
+        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME
         continue-on-error: true
       - name: Upload SLSA Provenance
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           path: build.provenance.json
           name: build${{ inputs.image-suffix }}.provenance.json
@@ -263,30 +279,32 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Download Docker image artifact (created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
         if: ${{ inputs.fetch-image-from-registry == 'false' }}
       - name: Download image-tag artifact (created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download artifact purl (created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl${{ inputs.image-suffix }}
         if: ${{ inputs.devguard-artifact-name == '' }}
       - name: Resolve artifact name
+        env:
+          DEVGUARD_ARTIFACT_NAME: ${{ inputs.devguard-artifact-name }}
         run: |-
-          if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
             echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
           else
-            echo "ARTIFACT_NAME=${{ inputs.devguard-artifact-name }}" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
           fi
       - name: Setup crane
-        uses: imjasonh/setup-crane@v0.1
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
         if: ${{ inputs.fetch-image-from-registry == 'true' }}
@@ -311,18 +329,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Download oci-image artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
         if: inputs.image-already-in-registry == false
       - name: Download image-tag artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download image-digest artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
@@ -335,7 +353,7 @@ jobs:
           args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
         continue-on-error: true
       - name: Setup crane
-        uses: imjasonh/setup-crane@v0.1
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
         run: crane push image.tar $(cat image-tag.txt)
         if: inputs.image-already-in-registry == false
@@ -354,12 +372,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Download image-tag artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download image-digest artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
@@ -379,29 +397,31 @@ jobs:
     if: inputs.should-deploy
     steps:
       - name: Download image-digest artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
         continue-on-error: true
       - name: Download image-tag artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download artifact purl (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl${{ inputs.image-suffix }}
         if: inputs.devguard-artifact-name == ''
       - name: Download safe-artifact (can be created by build-image)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl-safe${{ inputs.image-suffix }}
         if: inputs.devguard-artifact-name == ''
       - name: set artifact-name variable if it is empty
+        env:
+          DEVGUARD_ARTIFACT_NAME: ${{ inputs.devguard-artifact-name }}
         run: |-
-          if [ -z "${{ inputs.devguard-artifact-name }}" ] && [ -f artifact-purl.txt ]; then
+          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
             echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
             echo "Using artifact name from file: $ARTIFACT_NAME"
             # For API calls, use safe artifact name if it exists
@@ -412,12 +432,12 @@ jobs:
             fi
           else
             # make sure to url encode
-            echo "ARTIFACT_NAME=${{ inputs.devguard-artifact-name }}" >> $GITHUB_ENV
-            echo "API_ARTIFACT_NAME=$(echo -n "${{ inputs.devguard-artifact-name }}" | jq -s -R -r @uri)" >> $GITHUB_ENV
-            echo "Using provided artifact name: ${{ inputs.devguard-artifact-name }}"
+            echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
+            echo "API_ARTIFACT_NAME=$(echo -n "$DEVGUARD_ARTIFACT_NAME" | jq -s -R -r @uri)" >> $GITHUB_ENV
+            echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
             echo "Encoded: $API_ARTIFACT_NAME"
           fi
-          echo "Resolved artifact name for attestation: ${{ inputs.devguard-artifact-name }}"
+          echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"
       - name: Get and Attest SBOM
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
@@ -481,7 +501,7 @@ jobs:
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
       - name: Download and Attest build-provenance.json
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: build${{ inputs.image-suffix }}.provenance.json
       - name: Attest build-provenance.json

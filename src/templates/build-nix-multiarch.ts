@@ -2,7 +2,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION, DOCKER_LOGIN_ACTION } from "../actions-versions";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
@@ -137,7 +137,7 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
       },
       {
         name: "Install Nix",
-        uses: "cachix/install-nix-action@v31",
+        uses: CACHIX_INSTALL_NIX_ACTION,
         with: {
           install_url: `\${{ format('https://releases.nixos.org/nix/nix-{0}/install', inputs.nix_version) }}`,
           extra_nix_config: `experimental-features = nix-command flakes
@@ -151,7 +151,11 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
       },
       {
         name: "In-Toto Provenance record start",
-        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }}`,
+        env: {
+          DEVGUARD_API_URL: inputValues.devguard_api_url,
+          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
+        } as Record<string, string>,
+        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA`,
         "continue-on-error": true,
       },
       {
@@ -161,7 +165,10 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
       },
       {
         name: "Build OCI image with Nix",
-        run: `nix build .#\${{ matrix.nix_target }}`,
+        env: {
+          NIX_TARGET: `\${{ matrix.nix_target }}`,
+        } as Record<string, string>,
+        run: `nix build .#$NIX_TARGET`,
       },
       {
         name: "Push build results to Nix cache",
@@ -169,12 +176,15 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
         env: {
           AWS_ACCESS_KEY_ID: `\${{ secrets.nix-cache-aws-access-key-id }}`,
           AWS_SECRET_ACCESS_KEY: `\${{ secrets.nix-cache-aws-secret-access-key }}`,
-        },
+          NIX_CACHE_S3_BUCKET: `\${{ inputs.nix_cache_s3_bucket }}`,
+          NIX_CACHE_S3_ENDPOINT: `\${{ inputs.nix_cache_s3_endpoint }}`,
+          NIX_CACHE_REGION: `\${{ inputs.nix_cache_region }}`,
+        } as Record<string, string>,
         run: `mkdir -p ~/.aws
 echo "[profile nix-cache]" >> ~/.aws/config
 echo "s3.addressing_style = path" >> ~/.aws/config
 nix copy $(nix-store -qR $(readlink result)) \\
-  --to 's3://\${{ inputs.nix_cache_s3_bucket }}?endpoint=\${{ inputs.nix_cache_s3_endpoint }}&region=\${{ inputs.nix_cache_region }}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true`,
+  --to "s3://$NIX_CACHE_S3_BUCKET?endpoint=$NIX_CACHE_S3_ENDPOINT&region=$NIX_CACHE_REGION&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem" || true`,
       },
       {
         name: "Prepare image.tar",
@@ -186,10 +196,13 @@ nix copy $(nix-store -qR $(readlink result)) \\
       },
       {
         name: "Set image tag",
+        env: {
+          IMAGE_NAME: inputValues.image_name,
+        } as Record<string, string>,
         run: `devguard-scanner generate-tag \\
-  --imagePath='\${{ inputs.image_name }}' \\
-  --ref='\${{ github.ref_name }}' \\
-  --architecture='\${{ matrix.arch }}' \\
+  --imagePath="$IMAGE_NAME" \\
+  --ref="$GITHUB_REF_NAME" \\
+  --architecture="\${{ matrix.arch }}" \\
   >> image-tag-env.txt
 grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2- > image-tag.txt
 grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2- > artifact-purl.txt
@@ -197,7 +210,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload oci-image artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `oci-image\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
           path: "image.tar",
@@ -205,7 +218,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload image-tag artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
           path: "image-tag.txt",
@@ -213,7 +226,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "Upload image-digest artifact",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
           path: "image-digest.txt",
@@ -221,12 +234,18 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
       },
       {
         name: "In-Toto Provenance record stop",
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --generateSlsaProvenance --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+        env: {
+          DEVGUARD_API_URL: inputValues.devguard_api_url,
+          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
+          DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
+          IS_TAG: `\${{ github.ref_type == 'tag' }}`,
+        } as Record<string, string>,
+        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME`,
         "continue-on-error": true,
       },
       {
         name: "Upload SLSA Provenance",
-        uses: "actions/upload-artifact@v4",
+        uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
           name: `build\${{ inputs.image_suffix }}-\${{ matrix.arch }}.provenance.json`,
@@ -247,7 +266,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
     steps: [
       {
         name: "Download amd64 image-tag artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-amd64`,
           path: "amd64",
@@ -255,7 +274,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
       },
       {
         name: "Download arm64 image-tag artifact",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}-arm64`,
           path: "arm64",
@@ -263,7 +282,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
       },
       {
         name: "Log in to ghcr.io",
-        uses: "docker/login-action@v3",
+        uses: DOCKER_LOGIN_ACTION,
         with: {
           registry: "ghcr.io",
           username: `\${{ github.actor }}`,
@@ -272,6 +291,9 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
       },
       {
         name: "Create and push multi-arch manifest",
+        env: {
+          CREATE_ROOT_MANIFEST: `\${{ inputs.create_root_manifest }}`,
+        } as Record<string, string>,
         run: `AMD64_TAG=$(cat amd64/image-tag.txt)
 ARM64_TAG=$(cat arm64/image-tag.txt)
 
@@ -284,7 +306,7 @@ echo "Creating manifest: $BASE_TAG"
 docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
 docker manifest push "$BASE_TAG"
 
-if [ "\${{ inputs.create_root_manifest }}" = "true" ]; then
+if [ "$CREATE_ROOT_MANIFEST" = "true" ]; then
   ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-\${GITHUB_REF_NAME}//")
   if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
     echo "Creating root manifest: $ROOT_TAG"

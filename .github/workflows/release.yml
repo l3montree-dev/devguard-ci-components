@@ -38,10 +38,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
         continue-on-error: ${{ inputs.allow-failure }}
-        with:
-          tag_name: ${{ inputs.release-tag }}
-          name: ${{ inputs.release-name }}
-          body: ${{ inputs.release-description }}
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          RELEASE_NAME: ${{ inputs.release-name }}
+          RELEASE_DESCRIPTION: ${{ inputs.release-description }}
+        run: gh release create "$RELEASE_TAG" --title "$RELEASE_NAME" --notes "$RELEASE_DESCRIPTION"
     name: devguard:release

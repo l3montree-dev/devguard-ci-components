@@ -49,6 +49,7 @@ import {
   BuildNixMultiArchCreateManifestTemplateGitHub,
 } from "./templates/build-nix-multiarch";
 import { BuildNixTemplateGitHub } from "./templates/build-nix";
+import { ZizmorScanningTemplateGitHub } from "./templates/zizmor-scanning";
 
 // const fileHeader = `# Copyright 2025-${new Date().getFullYear()} l3montree GmbH.
 const fileHeader = `# Copyright 2025 l3montree GmbH.
@@ -764,6 +765,7 @@ const templatesGitHub: CIComponentGroupTemplateGitHub = {
   "create-manifest-multi-arch": [CreateManifestMultiArchTemplateGitHub({})],
   "discover-baseimage-attestations": [DiscoverBaseimageAttestationsTemplateGitHub({})],
   "sarif-upload": [SarifUploadTemplateGitHub({})],
+  "zizmor-scanning": [ZizmorScanningTemplateGitHub({})],
   "build-nix": [BuildNixTemplateGitHub({})],
   "build-nix-multiarch-build": [BuildNixMultiArchBuildImageTemplateGitHub({})],
   "build-nix-multiarch-manifest": [BuildNixMultiArchCreateManifestTemplateGitHub({})],

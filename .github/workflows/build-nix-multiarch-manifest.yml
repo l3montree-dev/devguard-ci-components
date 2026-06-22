@@ -90,22 +90,24 @@ jobs:
       packages: write
     steps:
       - name: Download amd64 image-tag artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}-amd64
           path: amd64
       - name: Download arm64 image-tag artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}-arm64
           path: arm64
       - name: Log in to ghcr.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Create and push multi-arch manifest
+        env:
+          CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}
         run: |-
           AMD64_TAG=$(cat amd64/image-tag.txt)
           ARM64_TAG=$(cat arm64/image-tag.txt)
@@ -119,7 +121,7 @@ jobs:
           docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
           docker manifest push "$BASE_TAG"
 
-          if [ "${{ inputs.create-root-manifest }}" = "true" ]; then
+          if [ "$CREATE_ROOT_MANIFEST" = "true" ]; then
             ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${GITHUB_REF_NAME}//")
             if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
               echo "Creating root manifest: $ROOT_TAG"

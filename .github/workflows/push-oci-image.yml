@@ -45,17 +45,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Download oci-image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
       - name: Download image-tag artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
       - name: Download image-digest artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
@@ -68,7 +68,7 @@ jobs:
             --user 53111:53111 \
             -v "${HOME}/.docker:/tmp/.docker" \
             ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane auth login ghcr.io -u ${{ github.actor }} -p ${{ github.token }}
+            crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
       - name: Push OCI image
         run: |-
           docker run --rm \

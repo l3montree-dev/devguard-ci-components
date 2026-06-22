@@ -8,73 +8,16 @@ on:
 permissions:
   packages: write
   contents: read
+  actions: read
+  security-events: write
 
 jobs:
-  devguard-scanner:
-    uses: ./.github/workflows/full.yml
+  zizmor-scanning:
+    uses: ./.github/workflows/zizmor-scanning.yml
     with:
-      asset-name: "l3montree-cybersecurity/projects/devguard/assets/devguard-action"
-      disable-artifact-registry-as-image-store: true
-      api-url: https://api.main.devguard.org
+      devguard-asset-name: l3montree-cybersecurity/projects/devguard/assets/devguard-ci-components
+      devguard-api-url: https://api.main.devguard.org
+      devguard-web-ui: https://main.devguard.org
+      allow-failure: false
     secrets:
       devguard-token: ${{ secrets.DEVGUARD_TOKEN }}
-
-   
-  devguard-scanner-with-artifact:
-    uses: ./.github/workflows/full.yml
-    with:
-      asset-name: "l3montree-cybersecurity/projects/devguard/assets/devguard-action"
-      disable-artifact-registry-as-image-store: true
-      api-url: https://api.main.devguard.org
-      artifact-name: "demo-artifact"
-      image-suffix: demo-artifact
-    secrets:
-      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}   
-
-
-  build-test-image:
-    uses: ./.github/workflows/build-image.yml
-    with:
-      artifact-name: "test"
-      asset-name: l3montree-cybersecurity/projects/devguard/assets/devguard-action
-      api-url: https://api.main.devguard.org
-      image-suffix: "test"
-    secrets:
-      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}  
-      build-args: "--context=. --dockerfile=Dockerfile-test"
-
-
-  container-scanning-test:
-    uses: ./.github/workflows/container-scanning.yml
-    needs: 
-    - build-test-image
-    with:
-      asset-name: l3montree-cybersecurity/projects/devguard/assets/devguard-action
-      api-url: https://api.main.devguard.org
-      artifact-name: "test"
-      image-suffix: "test"
-    secrets:
-      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}    
-    
-  deploy-test:
-    uses: ./.github/workflows/deploy.yml
-    needs: 
-    - container-scanning-test
-    with:
-      asset-name: l3montree-cybersecurity/projects/devguard/assets/devguard-action
-      api-url: https://api.main.devguard.org
-      image-suffix: "test"
-    secrets:
-      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}    
-
-  sbom-test:
-    uses: ./.github/workflows/dependency-risk-identification.yml
-    with:
-      asset-name: l3montree-cybersecurity/projects/devguard/assets/devguard-action
-      api-url: https://api.main.devguard.org
-      artifact-name: "source-code-sbom"
-      sbom-file: "sbom-in-repo.json"
-      fail-on-cvss: "none"
-      fail-on-risk: "none"
-    secrets:
-      devguard-token: ${{ secrets.DEVGUARD_TOKEN }}    

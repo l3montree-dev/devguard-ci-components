@@ -1,7 +1,8 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
 export const ContainerScanningJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
@@ -98,7 +99,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
       },
       {
         name: "Download Docker image artifact (created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `oci-image${inputValues.image_suffix}`,
           path: ".",
@@ -107,7 +108,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
       },
       {
         name: "Download image-tag artifact (created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag${inputValues.image_suffix}`,
           path: ".",
@@ -115,7 +116,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
       },
       {
         name: "Download artifact purl (created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `artifact-purl${inputValues.image_suffix}`,
         },
@@ -123,15 +124,18 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
       },
       {
         name: "Resolve artifact name",
-        run: `if [ -z "\${{ inputs.devguard_artifact_name }}" ] && [ -f artifact-purl.txt ]; then
+        env: {
+          DEVGUARD_ARTIFACT_NAME: `\${{ inputs.devguard_artifact_name }}`,
+        } as Record<string, string>,
+        run: `if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
   echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
 else
-  echo "ARTIFACT_NAME=\${{ inputs.devguard_artifact_name }}" >> $GITHUB_ENV
+  echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
 fi`,
       },
       {
         name: "Setup crane",
-        uses: "imjasonh/setup-crane@v0.1",
+        uses: IMJASONH_SETUP_CRANE,
       },
       {
         name: "Download OCI Image from registry",
@@ -147,7 +151,7 @@ fi`,
         },
         env: {
           ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
-        },
+        } as Record<string, string>,
       },
     ],
   },

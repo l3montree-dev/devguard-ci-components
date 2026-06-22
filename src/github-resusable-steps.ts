@@ -1,4 +1,4 @@
-import { ACTIONS_CHECKOUT } from "./container-image-versions";
+import { ACTIONS_CHECKOUT } from "./actions-versions";
 
 export class GitHubReusableSteps {
   static CheckoutCode = {

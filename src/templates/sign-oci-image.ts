@@ -1,7 +1,8 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs } from "./inputs";
-import { ContainerImages, ACTIONS_CHECKOUT } from "../container-image-versions";
+import { ContainerImages } from "../container-image-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 
 const SignOciImageConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -98,7 +99,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
       },
       {
         name: "Download image-tag artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-tag\${{ inputs.image_suffix }}`,
           path: ".",
@@ -106,7 +107,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
       },
       {
         name: "Download image-digest artifact (can be created by build-image)",
-        uses: "actions/download-artifact@v4",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `image-digest\${{ inputs.image_suffix }}`,
           path: ".",
