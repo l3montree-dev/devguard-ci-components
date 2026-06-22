@@ -295,8 +295,14 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
     tags: inputValues.runner_tags,
     stage: inputValues.stage,
     allow_failure: inputValues.allow_failure,
-    needs: [`devguard:extract_scanner${inputValues.job_suffix}`, inputValues.needs],
-    dependencies: [`devguard:extract_scanner${inputValues.job_suffix}`, inputValues.dependencies],
+    needs: [
+      `devguard:extract_scanner${inputValues.job_suffix}`,
+      ...(Array.isArray(inputValues.needs) ? inputValues.needs : inputValues.needs ? [inputValues.needs] : []),
+    ],
+    dependencies: [
+      `devguard:extract_scanner${inputValues.job_suffix}`,
+      ...(Array.isArray(inputValues.dependencies) ? inputValues.dependencies : inputValues.dependencies ? [inputValues.dependencies] : []),
+    ],
     image: {
       name: "nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1",
       entrypoint: ["/bin/sh", "-c"],

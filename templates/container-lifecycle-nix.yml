@@ -173,10 +173,10 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:extract_scanner$[[ inputs.job_suffix ]]
-    - - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
   dependencies:
     - devguard:extract_scanner$[[ inputs.job_suffix ]]
-    - - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
     entrypoint:

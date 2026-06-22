@@ -188,10 +188,10 @@ devguard:build_oci_image-amd64:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:extract_scanner-amd64
-    - - devguard:generate_tag-amd64
+    - devguard:generate_tag-amd64
   dependencies:
     - devguard:extract_scanner-amd64
-    - - devguard:generate_tag-amd64
+    - devguard:generate_tag-amd64
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
     entrypoint:
@@ -511,10 +511,10 @@ devguard:build_oci_image-arm64:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:extract_scanner-arm64
-    - - devguard:generate_tag-arm64
+    - devguard:generate_tag-arm64
   dependencies:
     - devguard:extract_scanner-arm64
-    - - devguard:generate_tag-arm64
+    - devguard:generate_tag-arm64
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
     entrypoint:
