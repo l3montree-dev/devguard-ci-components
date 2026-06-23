@@ -110,8 +110,8 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
       {
         name: "Build Docker image",
         env: {
-          IMAGE: `\${{ inputs.image }}`,
-          IMAGE_TAG: `\${{ inputs.image_tag }}`,
+          IMAGE: `${ inputValues.image }`,
+          IMAGE_TAG: `${ inputValues.image_tag }`,
         } as Record<string, string>,
         run: `BUILD_ARGS="\${{ secrets.build-args }}"
 if [ -z "$BUILD_ARGS" ]; then
@@ -122,7 +122,7 @@ docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG
       {
         name: "Get image digest",
         env: {
-          IMAGE: `\${{ inputs.image }}`,
+          IMAGE: `${ inputValues.image }`,
         } as Record<string, string>,
         run: `docker run --rm \\
   -v "$GITHUB_WORKSPACE:/workspace" \\
@@ -134,8 +134,8 @@ docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG
         name: "Push image to registry",
         if: "inputs.push_image == 'true'",
         env: {
-          IMAGE: `\${{ inputs.image }}`,
-          IMAGE_TAG: `\${{ inputs.image_tag }}`,
+          IMAGE: `${ inputValues.image }`,
+          IMAGE_TAG: `${ inputValues.image_tag }`,
         } as Record<string, string>,
         run: `docker load -i $IMAGE
 docker push $IMAGE_TAG`,
@@ -144,8 +144,8 @@ docker push $IMAGE_TAG`,
         name: "Upload oci-image artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `oci-image\${{ inputs.image_suffix }}`,
-          path: `\${{ inputs.image }}`,
+          name: `oci-image${ inputValues.image_suffix }`,
+          path: `${ inputValues.image }`,
         },
         if: "inputs.push_image != 'true'",
       },
@@ -153,7 +153,7 @@ docker push $IMAGE_TAG`,
         name: "Upload image-digest artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}`,
+          name: `image-digest${ inputValues.image_suffix }`,
           path: "image-digest.txt",
         },
       },
@@ -170,7 +170,7 @@ docker push $IMAGE_TAG`,
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
-          name: `build\${{ inputs.image_suffix }}.provenance.json`,
+          name: `build${ inputValues.image_suffix }.provenance.json`,
         },
       },
     ],

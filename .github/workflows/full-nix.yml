@@ -177,7 +177,7 @@ on:
         required: false
 jobs:
   devguard_build_nix_amd64:
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.runner-amd64 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -205,7 +205,7 @@ jobs:
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
       - name: Build OCI image with Nix
         env:
-          NIX_TARGET: ${{ inputs.nix-target }}
+          NIX_TARGET: ${{ inputs.nix-target-amd64 }}
         run: nix build .#$NIX_TARGET
       - name: Push build results to Nix cache
         if: inputs.nix-cache-s3-endpoint != ''
@@ -228,7 +228,7 @@ jobs:
       - name: Upload oci-image artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: oci-image${{ inputs.image-suffix }}
+          name: oci-image${{ inputs.artifact-name-suffix }}-amd64
           path: image.tar
       - name: Set image tag
         id: set-image-tag
@@ -252,22 +252,22 @@ jobs:
       - name: Upload image-tag artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
           path: image-tag.txt
       - name: Upload image-digest artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-amd64
           path: image-digest.txt
       - name: Upload artifact-purl artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: artifact-purl${{ inputs.image-suffix }}
+          name: artifact-purl${{ inputs.artifact-name-suffix }}-amd64
           path: artifact-purl.txt
       - name: Upload artifact-purl-safe artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: artifact-purl-safe${{ inputs.image-suffix }}
+          name: artifact-purl-safe${{ inputs.artifact-name-suffix }}-amd64
           path: artifact-purl-safe.txt
       - name: In-Toto Provenance record stop
         env:
@@ -281,10 +281,10 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           path: build.provenance.json
-          name: build${{ inputs.image-suffix }}.provenance.json
+          name: build${{ inputs.artifact-name-suffix }}-amd64.provenance.json
     name: devguard:build-nix-amd64
   devguard_build_nix_arm64:
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.runner-arm64 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -312,7 +312,7 @@ jobs:
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
       - name: Build OCI image with Nix
         env:
-          NIX_TARGET: ${{ inputs.nix-target }}
+          NIX_TARGET: ${{ inputs.nix-target-arm64 }}
         run: nix build .#$NIX_TARGET
       - name: Push build results to Nix cache
         if: inputs.nix-cache-s3-endpoint != ''
@@ -335,7 +335,7 @@ jobs:
       - name: Upload oci-image artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: oci-image${{ inputs.image-suffix }}
+          name: oci-image${{ inputs.artifact-name-suffix }}-arm64
           path: image.tar
       - name: Set image tag
         id: set-image-tag
@@ -359,22 +359,22 @@ jobs:
       - name: Upload image-tag artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
           path: image-tag.txt
       - name: Upload image-digest artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-arm64
           path: image-digest.txt
       - name: Upload artifact-purl artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: artifact-purl${{ inputs.image-suffix }}
+          name: artifact-purl${{ inputs.artifact-name-suffix }}-arm64
           path: artifact-purl.txt
       - name: Upload artifact-purl-safe artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: artifact-purl-safe${{ inputs.image-suffix }}
+          name: artifact-purl-safe${{ inputs.artifact-name-suffix }}-arm64
           path: artifact-purl-safe.txt
       - name: In-Toto Provenance record stop
         env:
@@ -388,7 +388,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           path: build.provenance.json
-          name: build${{ inputs.image-suffix }}.provenance.json
+          name: build${{ inputs.artifact-name-suffix }}-arm64.provenance.json
     name: devguard:build-nix-arm64
   devguard_container_scanning_amd64:
     runs-on: ubuntu-latest
@@ -501,18 +501,18 @@ jobs:
       - name: Download oci-image artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: oci-image${{ inputs.image-suffix }}
+          name: oci-image${{ inputs.artifact-name-suffix }}-amd64
           path: .
         if: inputs.image-already-in-registry == false
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
           path: .
       - name: Download image-digest artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-amd64
           path: .
       - name: Read image-digest.txt
         id: read-digest
@@ -544,18 +544,18 @@ jobs:
       - name: Download oci-image artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: oci-image${{ inputs.image-suffix }}
+          name: oci-image${{ inputs.artifact-name-suffix }}-arm64
           path: .
         if: inputs.image-already-in-registry == false
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
           path: .
       - name: Download image-digest artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-arm64
           path: .
       - name: Read image-digest.txt
         id: read-digest
@@ -582,12 +582,12 @@ jobs:
       - name: Download amd64 image-tag
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}-amd64
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
           path: amd64
       - name: Download arm64 image-tag
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}-arm64
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
           path: arm64
       - name: Log in to ghcr.io
         uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870
@@ -641,12 +641,12 @@ jobs:
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
           path: .
       - name: Download image-digest artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-amd64
           path: .
       - name: Set Image to be signed
         run: echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV
@@ -671,12 +671,12 @@ jobs:
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
           path: .
       - name: Download image-digest artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-arm64
           path: .
       - name: Set Image to be signed
         run: echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV
@@ -695,23 +695,23 @@ jobs:
       - name: Download image-digest artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-amd64
           path: .
         continue-on-error: true
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
           path: .
       - name: Download artifact purl (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: artifact-purl${{ inputs.image-suffix }}
+          name: artifact-purl${{ inputs.artifact-name-suffix }}-amd64
         if: inputs.devguard-artifact-name == ''
       - name: Download safe-artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: artifact-purl-safe${{ inputs.image-suffix }}
+          name: artifact-purl-safe${{ inputs.artifact-name-suffix }}-amd64
         if: inputs.devguard-artifact-name == ''
       - name: set artifact-name variable if it is empty
         env:
@@ -799,7 +799,7 @@ jobs:
       - name: Download and Attest build-provenance.json
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: build${{ inputs.image-suffix }}.provenance.json
+          name: build${{ inputs.artifact-name-suffix }}-amd64.provenance.json
       - name: Attest build-provenance.json
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: true
@@ -829,23 +829,23 @@ jobs:
       - name: Download image-digest artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-digest${{ inputs.image-suffix }}
+          name: image-digest${{ inputs.artifact-name-suffix }}-arm64
           path: .
         continue-on-error: true
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: image-tag${{ inputs.image-suffix }}
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
           path: .
       - name: Download artifact purl (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: artifact-purl${{ inputs.image-suffix }}
+          name: artifact-purl${{ inputs.artifact-name-suffix }}-arm64
         if: inputs.devguard-artifact-name == ''
       - name: Download safe-artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: artifact-purl-safe${{ inputs.image-suffix }}
+          name: artifact-purl-safe${{ inputs.artifact-name-suffix }}-arm64
         if: inputs.devguard-artifact-name == ''
       - name: set artifact-name variable if it is empty
         env:
@@ -933,7 +933,7 @@ jobs:
       - name: Download and Attest build-provenance.json
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
-          name: build${{ inputs.image-suffix }}.provenance.json
+          name: build${{ inputs.artifact-name-suffix }}-arm64.provenance.json
       - name: Attest build-provenance.json
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: true

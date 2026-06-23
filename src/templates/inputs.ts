@@ -67,6 +67,11 @@ export const Inputs = {
     type: "boolean" as const,
     default: false as const,
   },
+  prerelease: {
+    description: "Whether the release is a prerelease (GitHub only)" as const,
+    type: "boolean" as const,
+    default: false as const,
+  },
 
   /*
   Job Dependencies

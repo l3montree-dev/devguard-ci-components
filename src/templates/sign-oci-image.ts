@@ -101,7 +101,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
         name: "Download image-tag artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}`,
+          name: `image-tag${ inputValues.image_suffix }`,
           path: ".",
         },
       },
@@ -109,7 +109,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
         name: "Download image-digest artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}`,
+          name: `image-digest${ inputValues.image_suffix }`,
           path: ".",
         },
       },

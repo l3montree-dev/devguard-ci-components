@@ -184,7 +184,7 @@ else
   exit 1
 fi`,
         env: {
-          IMAGE_DESTINATION_PATH: `\${{ inputs.image_destination_path }}`,
+          IMAGE_DESTINATION_PATH: `${ inputValues.image_destination_path }`,
         } as Record<string, string>,
       },
       {
@@ -201,15 +201,15 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
   ${ContainerImages.DEVGUARD_SCANNER} \\
   crane digest --tarball="\${IMAGE_DESTINATION_PATH}" > image-digest.txt`,
         env: {
-          IMAGE_DESTINATION_PATH: `\${{ inputs.image_destination_path }}`,
+          IMAGE_DESTINATION_PATH: `${ inputValues.image_destination_path }`,
         },
       },
       {
         name: "Upload artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `oci-image\${{ inputs.image_suffix }}`,
-          path: `\${{ inputs.image_destination_path }}`,
+          name: `oci-image${ inputValues.image_suffix }`,
+          path: `${ inputValues.image_destination_path }`,
         },
         if: "inputs.disable_artifact_registry_as_image_store == false",
       },
@@ -217,8 +217,8 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
         name: "Set image tag",
         id: "set-image-tag",
         env: {
-          IMAGE_SUFFIX: `\${{ inputs.image_suffix }}`,
-          IMAGE: `\${{ inputs.image }}`,
+          IMAGE_SUFFIX: `${ inputValues.image_suffix }`,
+          IMAGE: `${ inputValues.image }`,
         },
         run: `if [ -n "$IMAGE" ]; then
   IMAGE_TAG="$IMAGE"
@@ -268,7 +268,7 @@ docker run --rm \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
   crane push "\${IMAGE_DESTINATION_PATH}" "$(cat image-tag.txt)"`,
         env: {
-          IMAGE_DESTINATION_PATH: `\${{ inputs.image_destination_path }}`,
+          IMAGE_DESTINATION_PATH: `${ inputValues.image_destination_path }`,
         } as Record<string, string>,
         if: "inputs.disable_artifact_registry_as_image_store == true",
       },
@@ -276,7 +276,7 @@ docker run --rm \\
         name: "Upload digest",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}`,
+          name: `image-digest${ inputValues.image_suffix }`,
           path: "image-digest.txt",
         },
       },
@@ -294,14 +294,14 @@ echo "$SAFE_PURL" > artifact-purl-safe.txt
 echo "PURL=$PURL" >> $GITHUB_ENV
 echo "Using artifact name: $PURL"`,
         env: {
-          ARTIFACT_NAME_INPUT: `\${{ inputs.devguard_artifact_name }}`,
+          ARTIFACT_NAME_INPUT: `${ inputValues.devguard_artifact_name }`,
         } as Record<string, string>,
       },
       {
         name: "Upload artifact purl",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `artifact-purl\${{ inputs.image_suffix }}`,
+          name: `artifact-purl${ inputValues.image_suffix }`,
           path: "artifact-purl.txt",
         },
       },
@@ -309,7 +309,7 @@ echo "Using artifact name: $PURL"`,
         name: "Upload safe artifact purl",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `artifact-purl-safe\${{ inputs.image_suffix }}`,
+          name: `artifact-purl-safe${ inputValues.image_suffix }`,
           path: "artifact-purl-safe.txt",
         },
       },
@@ -317,7 +317,7 @@ echo "Using artifact name: $PURL"`,
         name: "Upload image tag",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}`,
+          name: `image-tag${ inputValues.image_suffix }`,
           path: "image-tag.txt",
         },
       },
@@ -340,7 +340,7 @@ sudo chmod -R u+rw,g+r,o+r $GITHUB_WORKSPACE || true`,
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
-          name: `build\${{ inputs.image_suffix }}.provenance.json`,
+          name: `build${ inputValues.image_suffix }.provenance.json`,
         },
       },
     ],

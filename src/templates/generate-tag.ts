@@ -84,19 +84,19 @@ export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGit
 echo "Generated tag:"
 cat generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env`,
         env: {
-          IMAGE_SUFFIX: `\${{ inputs.image_suffix }}`,
-          IMAGE_VARIANT: `\${{ inputs.image_variant }}`,
-          ARCHITECTURE: `\${{ inputs.architecture }}`,
-          IMAGE_PATH: `\${{ inputs.image_path }}`,
-          UPSTREAM_VERSION: `\${{ inputs.upstream_version }}`,
+          IMAGE_SUFFIX: `${ inputValues.image_suffix }`,
+          IMAGE_VARIANT: `${ inputValues.image_variant }`,
+          ARCHITECTURE: `${ inputValues.architecture }`,
+          IMAGE_PATH: `${ inputValues.image_path }`,
+          UPSTREAM_VERSION: `${ inputValues.upstream_version }`,
         },
       },
       {
         name: "Upload generate-tag env artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `generate-tag-env\${{ inputs.image_suffix }}`,
-          path: `generate_tag_\${{ inputs.upstream_version }}_\${{ inputs.architecture }}.env`,
+          name: `generate-tag-env${ inputValues.image_suffix }`,
+          path: `generate_tag_${ inputValues.upstream_version }_${ inputValues.architecture }.env`,
         },
       },
     ],

@@ -46,7 +46,7 @@ export const SarifUploadTemplateGitHub = defineJobGitHub(SarifUploadJobInputsGit
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         "continue-on-error": inputValues.allow_failure as boolean,
         with: {
-          args: `devguard-scanner sarif \${{ inputs.sarif_file }} --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui}`,
+          args: `devguard-scanner sarif ${ inputValues.sarif_file } --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --webUI=${inputValues.devguard_web_ui}`,
         },
       },
     ],

@@ -84,7 +84,7 @@ export const SbomUploadTemplateGitHub = defineJobGitHub(SbomUploadJobInputsGitHu
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         "continue-on-error": inputValues.allow_failure as boolean,
         with: {
-          args: `devguard-scanner sbom \${{ inputs.sbom_file }} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --webUI=${inputValues.devguard_web_ui} --failOnRisk=${inputValues.fail_on_risk} --failOnCVSS=${inputValues.fail_on_cvss} --ignoreExternalReferences=${inputValues.ignore_external_references}`,
+          args: `devguard-scanner sbom ${ inputValues.sbom_file } --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --webUI=${inputValues.devguard_web_ui} --failOnRisk=${inputValues.fail_on_risk} --failOnCVSS=${inputValues.fail_on_cvss} --ignoreExternalReferences=${inputValues.ignore_external_references}`,
         },
       },
     ],

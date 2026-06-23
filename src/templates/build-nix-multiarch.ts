@@ -121,8 +121,8 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
     strategy: {
       matrix: {
         include: [
-          { arch: "amd64", runner: "ubuntu-latest", nix_target: `\${{ inputs.nix_target_amd64 }}` },
-          { arch: "arm64", runner: "ubuntu-24.04-arm", nix_target: `\${{ inputs.nix_target_arm64 }}` },
+          { arch: "amd64", runner: "ubuntu-latest", nix_target: `${ inputValues.nix_target_amd64 }` },
+          { arch: "arm64", runner: "ubuntu-24.04-arm", nix_target: `${ inputValues.nix_target_arm64 }` },
         ],
       },
     },
@@ -176,9 +176,9 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
         env: {
           AWS_ACCESS_KEY_ID: `\${{ secrets.nix-cache-aws-access-key-id }}`,
           AWS_SECRET_ACCESS_KEY: `\${{ secrets.nix-cache-aws-secret-access-key }}`,
-          NIX_CACHE_S3_BUCKET: `\${{ inputs.nix_cache_s3_bucket }}`,
-          NIX_CACHE_S3_ENDPOINT: `\${{ inputs.nix_cache_s3_endpoint }}`,
-          NIX_CACHE_REGION: `\${{ inputs.nix_cache_region }}`,
+          NIX_CACHE_S3_BUCKET: `${ inputValues.nix_cache_s3_bucket }`,
+          NIX_CACHE_S3_ENDPOINT: `${ inputValues.nix_cache_s3_endpoint }`,
+          NIX_CACHE_REGION: `${ inputValues.nix_cache_region }`,
         } as Record<string, string>,
         run: `mkdir -p ~/.aws
 echo "[profile nix-cache]" >> ~/.aws/config
@@ -212,7 +212,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
         name: "Upload oci-image artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `oci-image\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
+          name: `oci-image${ inputValues.image_suffix }-\${{ matrix.arch }}`,
           path: "image.tar",
         },
       },
@@ -220,7 +220,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
         name: "Upload image-tag artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
+          name: `image-tag${ inputValues.image_suffix }-\${{ matrix.arch }}`,
           path: "image-tag.txt",
         },
       },
@@ -228,7 +228,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
         name: "Upload image-digest artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}-\${{ matrix.arch }}`,
+          name: `image-digest${ inputValues.image_suffix }-\${{ matrix.arch }}`,
           path: "image-digest.txt",
         },
       },
@@ -248,7 +248,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
-          name: `build\${{ inputs.image_suffix }}-\${{ matrix.arch }}.provenance.json`,
+          name: `build${ inputValues.image_suffix }-\${{ matrix.arch }}.provenance.json`,
         },
       },
     ],
@@ -256,7 +256,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
 }));
 
 // GitHub: create multi-arch manifest after parallel builds complete
-export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (_inputValues) => ({
+export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-nix-manifest-multi-arch",
   job: {
     "runs-on": "ubuntu-latest",
@@ -268,7 +268,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
         name: "Download amd64 image-tag artifact",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}-amd64`,
+          name: `image-tag${ inputValues.image_suffix }-amd64`,
           path: "amd64",
         },
       },
@@ -276,7 +276,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
         name: "Download arm64 image-tag artifact",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}-arm64`,
+          name: `image-tag${ inputValues.image_suffix }-arm64`,
           path: "arm64",
         },
       },
@@ -292,7 +292,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
       {
         name: "Create and push multi-arch manifest",
         env: {
-          CREATE_ROOT_MANIFEST: `\${{ inputs.create_root_manifest }}`,
+          CREATE_ROOT_MANIFEST: `${ inputValues.create_root_manifest }`,
         } as Record<string, string>,
         run: `AMD64_TAG=$(cat amd64/image-tag.txt)
 ARM64_TAG=$(cat arm64/image-tag.txt)

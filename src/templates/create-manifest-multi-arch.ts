@@ -23,7 +23,7 @@ export const CreateManifestMultiArchJobInputsGitHub = defineInputsGitHub({
   image_suffix: Inputs.image_suffix,
 });
 
-export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManifestMultiArchJobInputsGitHub, (_inputValues) => ({
+export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManifestMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-manifest-multi-arch",
   job: {
     "runs-on": "ubuntu-latest",
@@ -35,7 +35,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         name: "Download amd64 image-tag",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}-amd64`,
+          name: `image-tag${ inputValues.image_suffix }-amd64`,
           path: "amd64",
         },
       },
@@ -43,7 +43,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         name: "Download arm64 image-tag",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}-arm64`,
+          name: `image-tag${ inputValues.image_suffix }-arm64`,
           path: "arm64",
         },
       },
@@ -59,7 +59,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       {
         name: "Create and push multi-arch manifest",
         env: {
-          CREATE_ROOT_MANIFEST: `\${{ inputs.create_root_manifest }}`,
+          CREATE_ROOT_MANIFEST: `${ inputValues.create_root_manifest }`,
         },
         run: `AMD64_TAG=$(cat amd64/image-tag.txt)
 ARM64_TAG=$(cat arm64/image-tag.txt)

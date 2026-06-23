@@ -587,7 +587,8 @@ await ExportCIComponentsGitLab(templates, fileHeader, {
   },
   "build-nix-multiarch": {
     job_suffix: {
-      description: "Suffix appended to all job names — use when including this component multiple times in one pipeline (e.g. ':scanner')" as const,
+      description:
+        "Suffix appended to all job names — use when including this component multiple times in one pipeline (e.g. ':scanner')" as const,
       default: "" as const,
     },
     nix_target_amd64: {

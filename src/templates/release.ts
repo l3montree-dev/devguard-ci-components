@@ -1,8 +1,8 @@
-import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
-import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { ACTIONS_CHECKOUT } from "../actions-versions";
 import { ContainerImages } from "../container-image-versions";
-import { ACTION_GH_RELEASE, ACTIONS_CHECKOUT } from "../actions-versions";
+import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
+import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
+import { Inputs } from "./inputs";
 
 export const ReleaseJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
@@ -30,6 +30,7 @@ export const ReleaseJobInputsGitHub = defineInputsGitHub({
   release_name: Inputs.release_name,
   release_description: Inputs.release_description,
   allow_failure: Inputs.allow_failure,
+  prerelease: Inputs.prerelease,
 });
 
 export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (inputValues) => ({
@@ -56,7 +57,11 @@ export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (in
           RELEASE_NAME: inputValues.release_name || `\${{ github.ref_name }}`,
           RELEASE_DESCRIPTION: inputValues.release_description,
         } as Record<string, string>,
-        run: `gh release create "$RELEASE_TAG" --title "$RELEASE_NAME" --notes "$RELEASE_DESCRIPTION"`,
+        run: `PRERELEASE_FLAG=""
+if [ "${ inputValues.prerelease }" = "true" ]; then
+PRERELEASE_FLAG="--prerelease"
+fi
+gh release create "$RELEASE_TAG" --title "$RELEASE_NAME" --notes "$RELEASE_DESCRIPTION" $PRERELEASE_FLAG`,
       },
     ],
   },

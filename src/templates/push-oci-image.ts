@@ -85,7 +85,7 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
         name: "Download oci-image artifact",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `oci-image\${{ inputs.image_suffix }}`,
+          name: `oci-image${ inputValues.image_suffix }`,
           path: ".",
         },
       },
@@ -93,7 +93,7 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
         name: "Download image-tag artifact",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}`,
+          name: `image-tag${ inputValues.image_suffix }`,
           path: ".",
         },
       },
@@ -101,7 +101,7 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
         name: "Download image-digest artifact",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}`,
+          name: `image-digest${ inputValues.image_suffix }`,
           path: ".",
         },
       },

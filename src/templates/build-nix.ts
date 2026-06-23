@@ -156,7 +156,7 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
     },
   },
   job: {
-    "runs-on": `\${{ inputs.runner }}`,
+    "runs-on": inputValues.runner,
     steps: [
       {
         name: "Checkout code",
@@ -197,7 +197,7 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
       {
         name: "Build OCI image with Nix",
         env: {
-          NIX_TARGET: `\${{ inputs.nix_target }}`,
+          NIX_TARGET: `${ inputValues.nix_target }`,
         } as Record<string, string>,
         run: `nix build .#$NIX_TARGET`,
       },
@@ -207,9 +207,9 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
         env: {
           AWS_ACCESS_KEY_ID: `\${{ secrets.nix-cache-aws-access-key-id }}`,
           AWS_SECRET_ACCESS_KEY: `\${{ secrets.nix-cache-aws-secret-access-key }}`,
-          NIX_CACHE_S3_BUCKET: `\${{ inputs.nix_cache_s3_bucket }}`,
-          NIX_CACHE_S3_ENDPOINT: `\${{ inputs.nix_cache_s3_endpoint }}`,
-          NIX_CACHE_REGION: `\${{ inputs.nix_cache_region }}`,
+          NIX_CACHE_S3_BUCKET: `${ inputValues.nix_cache_s3_bucket }`,
+          NIX_CACHE_S3_ENDPOINT: `${ inputValues.nix_cache_s3_endpoint }`,
+          NIX_CACHE_REGION: `${ inputValues.nix_cache_region }`,
         } as Record<string, string>,
         run: `mkdir -p ~/.aws
 echo "[profile nix-cache]" >> ~/.aws/config
@@ -229,7 +229,7 @@ nix copy $(nix-store -qR $(readlink result)) \\
         name: "Upload oci-image artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `oci-image\${{ inputs.image_suffix }}`,
+          name: `oci-image${ inputValues.image_suffix }`,
           path: "image.tar",
         },
       },
@@ -258,7 +258,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
         name: "Upload image-tag artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}`,
+          name: `image-tag${ inputValues.image_suffix }`,
           path: "image-tag.txt",
         },
       },
@@ -266,7 +266,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
         name: "Upload image-digest artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}`,
+          name: `image-digest${ inputValues.image_suffix }`,
           path: "image-digest.txt",
         },
       },
@@ -274,7 +274,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
         name: "Upload artifact-purl artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `artifact-purl\${{ inputs.image_suffix }}`,
+          name: `artifact-purl${ inputValues.image_suffix }`,
           path: "artifact-purl.txt",
         },
       },
@@ -282,7 +282,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
         name: "Upload artifact-purl-safe artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `artifact-purl-safe\${{ inputs.image_suffix }}`,
+          name: `artifact-purl-safe${ inputValues.image_suffix }`,
           path: "artifact-purl-safe.txt",
         },
       },
@@ -302,7 +302,7 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
-          name: `build\${{ inputs.image_suffix }}.provenance.json`,
+          name: `build${ inputValues.image_suffix }.provenance.json`,
         },
       },
     ],

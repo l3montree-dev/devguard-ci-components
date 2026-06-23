@@ -125,7 +125,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
       {
         name: "Resolve artifact name",
         env: {
-          DEVGUARD_ARTIFACT_NAME: `\${{ inputs.devguard_artifact_name }}`,
+          DEVGUARD_ARTIFACT_NAME: `${ inputValues.devguard_artifact_name }`,
         } as Record<string, string>,
         run: `if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
   echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV

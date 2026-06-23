@@ -130,7 +130,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
         name: "Download oci-image artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `oci-image\${{ inputs.image_suffix }}`,
+          name: `oci-image${ inputValues.image_suffix }`,
           path: ".",
         },
         if: "inputs.image_already_in_registry == false",
@@ -139,7 +139,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
         name: "Download image-tag artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-tag\${{ inputs.image_suffix }}`,
+          name: `image-tag${ inputValues.image_suffix }`,
           path: ".",
         },
       },
@@ -147,7 +147,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
         name: "Download image-digest artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
-          name: `image-digest\${{ inputs.image_suffix }}`,
+          name: `image-digest${ inputValues.image_suffix }`,
           path: ".",
         },
       },
