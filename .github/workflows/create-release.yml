@@ -1,0 +1,55 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  get-minor:
+    runs-on: ubuntu-latest
+    outputs:
+      minor: ${{ steps.minor.outputs.minor }}
+      tag: ${{ steps.minor.outputs.tag }}
+      prerelease: ${{ steps.minor.outputs.prerelease }}
+    steps:
+      - name: Extract minor version
+        id: minor
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          MINOR=$(echo "${TAG#v}" | cut -d. -f1-2)
+          echo "minor=${MINOR}" >> $GITHUB_OUTPUT
+          if echo "$TAG" | grep -qE '\-(rc|alpha|beta)'; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    needs: [get-minor]
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+    with:
+      release-tag: ${{ needs.get-minor.outputs.tag }}
+      release-name: "DevGuard CI Components ${{ needs.get-minor.outputs.tag }}"
+      prerelease: ${{ needs.get-minor.outputs.prerelease == 'true' }}
+      release-description: |
+        # DevGuard CI Components ${{ needs.get-minor.outputs.tag }}
+
+        Reusable GitHub Actions workflows for DevGuard-based CI/CD pipelines.
+
+        ## Versioning
+
+        All DevGuard components (`devguard`, `devguard-web`, `devguard-ci-component`, Helm chart) share the same **minor version**. Any `v${{ needs.get-minor.outputs.minor }}.*` release of one component is compatible with any `v${{ needs.get-minor.outputs.minor }}.*` release of another. Patch versions are released independently per component — you do not need to upgrade all components simultaneously as long as the minor version matches.
+
+        📖 See [VERSIONING.md](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md) for the full policy.
+        📋 [CI Component CHANGELOG](https://github.com/l3montree-dev/devguard-ci-component/blob/main/CHANGELOG.md) — what changed in the pipeline templates.
+        📋 [DevGuard CHANGELOG](https://github.com/l3montree-dev/devguard/blob/main/CHANGELOG.md) — API and web frontend changes.
+        📋 [Helm Chart CHANGELOG](https://github.com/l3montree-dev/devguard-helm-chart/blob/main/CHANGELOG.md) — Kubernetes deployment changes.
+
+        ---
+
+        🐛 Report Issues: https://github.com/l3montree-dev/devguard/issues
+        💬 Community: https://github.com/l3montree-dev/devguard/discussions

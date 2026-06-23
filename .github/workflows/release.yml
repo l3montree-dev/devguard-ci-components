@@ -20,6 +20,11 @@ on:
         type: string
         required: false
         default: ""
+      prerelease:
+        description: Whether this is a prerelease
+        type: boolean
+        required: false
+        default: false
       allow-failure:
         description: Whether the job is allowed to fail without stopping the pipeline
         type: boolean
@@ -43,5 +48,10 @@ jobs:
           RELEASE_TAG: ${{ inputs.release-tag }}
           RELEASE_NAME: ${{ inputs.release-name }}
           RELEASE_DESCRIPTION: ${{ inputs.release-description }}
-        run: gh release create "$RELEASE_TAG" --title "$RELEASE_NAME" --notes "$RELEASE_DESCRIPTION"
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          gh release create "$RELEASE_TAG" --title "$RELEASE_NAME" --notes "$RELEASE_DESCRIPTION" $PRERELEASE_FLAG
     name: devguard:release
