@@ -332,6 +332,27 @@ const bnmaAttestAmd64 = AttestTemplate({
   git_strategy: "none",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaPushAmd64.name],
+  attestations: [
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
+      predicate_type: "https://cyclonedx.org/bom",
+    },
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/",
+      predicate_type: "https://cyclonedx.org/vex",
+    },
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
+      predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
+    },
+    {
+      source: "build.provenance.json",
+      predicate_type: "https://slsa.dev/provenance/v1",
+    },
+  ],
 });
 
 const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
@@ -385,6 +406,27 @@ const bnmaAttestArm64 = AttestTemplate({
   git_strategy: "none",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaPushArm64.name],
+  attestations: [
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
+      predicate_type: "https://cyclonedx.org/bom",
+    },
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/",
+      predicate_type: "https://cyclonedx.org/vex",
+    },
+    {
+      source:
+        "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
+      predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
+    },
+    {
+      source: "build.provenance.json",
+      predicate_type: "https://slsa.dev/provenance/v1",
+    },
+  ],
 });
 
 const bnmaCreateManifest = CreateManifestMultiArchTemplate({

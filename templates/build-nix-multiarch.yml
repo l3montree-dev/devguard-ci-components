@@ -105,13 +105,6 @@ spec:
       default: []
       type: array
       description: The runner tags to use for the job
-    attestations:
-      description: |-
-        List of attestations to create. Each item should have:
-        - source: file path OR full URL (URLs are automatically detected and downloaded). Special string ARTIFACT_NAME will be replaced with URL-encoded artifact name.
-        - predicate_type: the predicate type URL
-      default: []
-      type: array
     image:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
@@ -411,9 +404,9 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo 'Attestations: $[[ inputs.attestations ]]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
 
-    ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
@@ -734,9 +727,9 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo 'Attestations: $[[ inputs.attestations ]]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
 
-    ATT_JSON_CLEAN=$(echo '$[[ inputs.attestations ]]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
