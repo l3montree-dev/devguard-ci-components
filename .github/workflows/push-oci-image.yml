@@ -76,7 +76,7 @@ jobs:
             -w /workspace \
             -v "${HOME}/.docker:/tmp/.docker:ro" \
             ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane push image.tar "$(cat image-tag.txt)"
+            crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"
       - name: In-Toto Provenance run
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:

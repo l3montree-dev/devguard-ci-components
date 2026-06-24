@@ -101,6 +101,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
     IMAGE_REF="$[[ inputs.image_tag ]]"
     IMAGE_REF="${IMAGE_REF%@*}"
+    IMAGE_REF=$(echo "${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
 
     echo "Image: $[[ inputs.image ]]"
     echo "Image Tag: ${IMAGE_REF}"

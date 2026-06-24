@@ -123,7 +123,7 @@ docker run --rm \\
   -w /workspace \\
   -v "\${HOME}/.docker:/tmp/.docker:ro" \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane push image.tar "$(cat image-tag.txt)"`,
+  crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"`,
       },
       {
         name: "In-Toto Provenance run",
@@ -172,6 +172,7 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
 # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
 IMAGE_REF="${inputValues.image_tag}"
 IMAGE_REF="\${IMAGE_REF%@*}"
+IMAGE_REF=$(echo "\${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
 
 echo "Image: ${inputValues.image}"
 echo "Image Tag: \${IMAGE_REF}"
