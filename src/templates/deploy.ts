@@ -170,7 +170,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
       },
       {
         name: "Push oci image to GitHub image Registry",
-        run: "crane push image.tar $(cat image-tag.txt)",
+        run: 'crane push image.tar "$(cat image-tag.txt)"',
         if: "inputs.image_already_in_registry == false",
       },
     ],

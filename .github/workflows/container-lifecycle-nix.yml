@@ -355,7 +355,7 @@ jobs:
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
-        run: crane push image.tar $(cat image-tag.txt)
+        run: crane push image.tar "$(cat image-tag.txt)"
         if: inputs.image-already-in-registry == false
     needs:
       - devguard_build_nix
