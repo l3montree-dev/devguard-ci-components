@@ -304,6 +304,7 @@ const bnmaContainerScanningAmd64 = ContainerScanningTemplate({
   git_strategy: "fetch",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   image_tar_path: "image-amd64.tar",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
   needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
@@ -332,7 +333,7 @@ const bnmaAttestAmd64 = AttestTemplate({
   git_strategy: "none",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   devguard_artifact_name: "$ARTIFACT_NAME",
-  needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaPushAmd64.name],
+  needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaContainerScanningAmd64.name, bnmaPushAmd64.name],
   attestations: [
     {
       source:
@@ -379,6 +380,7 @@ const bnmaContainerScanningArm64 = ContainerScanningTemplate({
   git_strategy: "fetch",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   image_tar_path: "image-arm64.tar",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
   needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
   dependencies: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
@@ -407,7 +409,7 @@ const bnmaAttestArm64 = AttestTemplate({
   git_strategy: "none",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   devguard_artifact_name: "$ARTIFACT_NAME",
-  needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaPushArm64.name],
+  needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaContainerScanningArm64.name, bnmaPushArm64.name],
   attestations: [
     {
       source:
