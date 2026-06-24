@@ -390,11 +390,11 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
     GIT_STRATEGY: none
   script: |
     echo "Attesting artifacts for $[[ inputs.image ]]"
-    echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
+    echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
     # URL encode artifact name for API calls
-    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
+    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
     # Slugify the commit ref (replace special characters with hyphens)
@@ -462,7 +462,7 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
           --token="$[[ inputs.devguard_token ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --assetName="$[[ inputs.devguard_asset_name ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]"
+          --artifactName="$ARTIFACT_NAME"
         echo "✓ Attestation created successfully"
       else
         echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
@@ -713,11 +713,11 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
     GIT_STRATEGY: none
   script: |
     echo "Attesting artifacts for $[[ inputs.image ]]"
-    echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
+    echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
     # URL encode artifact name for API calls
-    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
+    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
     # Slugify the commit ref (replace special characters with hyphens)
@@ -785,7 +785,7 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
           --token="$[[ inputs.devguard_token ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --assetName="$[[ inputs.devguard_asset_name ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]"
+          --artifactName="$ARTIFACT_NAME"
         echo "✓ Attestation created successfully"
       else
         echo "✗ Warning: File $FILE_PATH not found, skipping attestation"

@@ -331,6 +331,7 @@ const bnmaAttestAmd64 = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaPushAmd64.name],
   attestations: [
     {
@@ -405,6 +406,7 @@ const bnmaAttestArm64 = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaPushArm64.name],
   attestations: [
     {
