@@ -14,8 +14,12 @@ spec:
       description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
       default: ""
     image:
-      description: The image file to build (e.g. image.tar)
+      description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
+      default: ""
+    image_destination_path:
+      description: Destination of the image.tar file
       default: image.tar
+      type: string
     image_suffix:
       default: default
       description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
@@ -109,15 +113,15 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image ]]" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image_destination_path ]]" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
+    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image_destination_path ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
     - echo "Running DevGuard Intoto Build...stopping..."
     - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
     - echo "IMAGE_TAG=$[[ inputs.image_tag ]]@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:
-      - $[[ inputs.image ]]
+      - $[[ inputs.image_destination_path ]]
       - image-digest.txt
       - build.provenance.json
       - variables.env

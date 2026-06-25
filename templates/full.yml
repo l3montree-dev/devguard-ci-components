@@ -84,6 +84,10 @@ spec:
     upstream_version:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
+    image_destination_path:
+      description: Destination of the image.tar file
+      default: image.tar
+      type: string
     fetch_depth:
       type: number
       description: Number of commits to fetch. 0 indicates all history for all branches and tags.
@@ -241,15 +245,15 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image_destination_path ]]" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.small_artifact_registry ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
+    - /crane digest $([[ "$[[ inputs.small_artifact_registry ]]" == "false" ]] && echo "--tarball=$[[ inputs.image_destination_path ]]" || echo "$IMAGE_TAG" ) > image-digest.txt
     - echo "Running DevGuard Intoto Build...stopping..."
     - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
     - echo "IMAGE_TAG=$IMAGE_TAG@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:
-      - image.tar
+      - $[[ inputs.image_destination_path ]]
       - image-digest.txt
       - build.provenance.json
       - variables.env

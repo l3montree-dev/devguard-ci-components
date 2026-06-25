@@ -12,8 +12,13 @@ const BuildOciImageConfig = {
 
   image: {
     ...Inputs.image,
-    description: "The image file to build (e.g. image.tar)" as const,
-    default: "image.tar" as const,
+    description: "Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate." as const,
+    default: "" as const,
+  },
+  image_destination_path: {
+    description: "Destination of the image.tar file",
+    default: "image.tar",
+    type: "string" as const,
   },
   image_suffix: Inputs.image_suffix,
   fetch_depth: Inputs.fetch_depth,
@@ -76,11 +81,11 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
     ],
     script: [
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `/kaniko/executor ${inputValues.build_args} --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --tarPath ${inputValues.image}" )`,
+      `/kaniko/executor ${inputValues.build_args} --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --tarPath ${inputValues.image_destination_path}" )`,
 
       // kaniko might remove all files after building - thus a second login is necessary.
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
+      `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image_destination_path}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
 
       `echo "Running DevGuard Intoto Build...stopping..."`,
       `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
@@ -88,7 +93,7 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
     artifacts: {
-      paths: [inputValues.image, "image-digest.txt", "build.provenance.json", "variables.env"],
+      paths: [inputValues.image_destination_path, "image-digest.txt", "build.provenance.json", "variables.env"],
       reports: {
         dotenv: "variables.env",
       },
@@ -99,11 +104,6 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
 
 export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
   ...BuildOciImageConfig,
-  image_destination_path: {
-    description: "Destination of the image.tar file",
-    default: "image.tar",
-    type: "string" as const,
-  },
   disable_artifact_registry_as_image_store: {
     description:
       "If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.",

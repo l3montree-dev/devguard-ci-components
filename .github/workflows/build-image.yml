@@ -21,7 +21,12 @@ on:
         required: false
         default: ""
       image:
-        description: The image file to build (e.g. image.tar)
+        description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
+        type: string
+        required: false
+        default: ""
+      image-destination-path:
+        description: Destination of the image.tar file
         type: string
         required: false
         default: image.tar
@@ -35,11 +40,6 @@ on:
         type: number
         required: false
         default: 1
-      image-destination-path:
-        description: Destination of the image.tar file
-        type: string
-        required: false
-        default: image.tar
       disable-artifact-registry-as-image-store:
         description: If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.
         type: boolean
