@@ -241,11 +241,12 @@ nix copy $(nix-store -qR $(readlink result)) \\
         env: {
           IMAGE_NAME: inputValues.image_name,
           ARCHITECTURE: inputValues.architecture,
+          IS_TAG: inputValues.is_tag,
         } as Record<string, string>,
         run: `devguard-scanner generate-tag \\
   --imagePath="$IMAGE_NAME" \\
   --ref="$GITHUB_REF_NAME" \\
-  --isTag=${inputValues.is_tag} \\
+  --isTag=$IS_TAG \\
   --architecture="$ARCHITECTURE" \\
   >> image-tag-env.txt
 IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
@@ -295,8 +296,10 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
           DEVGUARD_API_URL: inputValues.devguard_api_url,
           DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
           DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
+          IS_TAG: inputValues.is_tag,
+          COMMIT_REF: inputValues.commit_ref,
         } as Record<string, string>,
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
+        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF`,
         "continue-on-error": true,
       },
       {

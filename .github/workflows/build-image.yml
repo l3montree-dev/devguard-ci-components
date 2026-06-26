@@ -148,6 +148,7 @@ jobs:
         env:
           IMAGE_SUFFIX: ${{ inputs.image-suffix }}
           IMAGE: ${{ inputs.image }}
+          IS_TAG: ${{ inputs.is-tag }}
         run: |-
           if [ -n "$IMAGE" ]; then
             IMAGE_TAG="$IMAGE"
@@ -166,7 +167,7 @@ jobs:
               devguard-scanner generate-tag \
                 --imagePath="$IMAGE_PATH" \
                 --ref="$GITHUB_REF_NAME" \
-                --isTag=${{ inputs.is-tag }} \
+                --isTag=$IS_TAG \
             >> image-tag-env.txt
             IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
             ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)

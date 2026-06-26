@@ -222,6 +222,7 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
         env: {
           IMAGE_SUFFIX: `${ inputValues.image_suffix }`,
           IMAGE: `${ inputValues.image }`,
+          IS_TAG: `${ inputValues.is_tag }`,
         },
         run: `if [ -n "$IMAGE" ]; then
   IMAGE_TAG="$IMAGE"
@@ -240,7 +241,7 @@ else
     devguard-scanner generate-tag \\
       --imagePath="$IMAGE_PATH" \\
       --ref="$GITHUB_REF_NAME" \\
-      --isTag=${inputValues.is_tag} \\
+      --isTag=$IS_TAG \\
   >> image-tag-env.txt
   IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
   ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)

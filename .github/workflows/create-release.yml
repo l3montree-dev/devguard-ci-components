@@ -5,9 +5,13 @@ on:
     tags:
       - '*'
 
+permissions: {}
+
 jobs:
   get-minor:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       minor: ${{ steps.minor.outputs.minor }}
       tag: ${{ steps.minor.outputs.tag }}

@@ -240,11 +240,12 @@ jobs:
         env:
           IMAGE_NAME: ${{ inputs.image-name }}
           ARCHITECTURE: ${{ inputs.architecture }}
+          IS_TAG: ${{ inputs.is-tag }}
         run: |-
           devguard-scanner generate-tag \
             --imagePath="$IMAGE_NAME" \
             --ref="$GITHUB_REF_NAME" \
-            --isTag=${{ inputs.is-tag }} \
+            --isTag=$IS_TAG \
             --architecture="$ARCHITECTURE" \
             >> image-tag-env.txt
           IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
@@ -280,7 +281,9 @@ jobs:
           DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
           DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
+          IS_TAG: ${{ inputs.is-tag }}
+          COMMIT_REF: ${{ inputs.commit-ref }}
+        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF
         continue-on-error: true
       - name: Upload SLSA Provenance
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
