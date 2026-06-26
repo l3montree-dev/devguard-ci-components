@@ -8,6 +8,8 @@ const SignOciImageConfig = {
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_artifact_name: Inputs.devguard_artifact_name,
+  registry: Inputs.registry,
+  registry_user: Inputs.registry_user,
 
   image: {
     ...Inputs.image,
@@ -83,6 +85,11 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
       description: "DevGuard API token",
       required: true,
     },
+    "registry-password": {
+      description: "Registry password for pulling the image.",
+      required: true,
+      default: "${{ github.token }}",
+    },
   },
   job: {
     "runs-on": "ubuntu-latest",
@@ -121,7 +128,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
         name: "DevGuard Image-Signing",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner sign -u \${{ github.actor }} -r ghcr.io -p \${{ secrets.GITHUB_TOKEN }} --token="\${{ secrets.devguard-token }}" \${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name}`,
+          args: `devguard-scanner sign -u ${inputValues.registry_user} -r ${inputValues.registry} -p \${{ secrets.registry-password }} --token="\${{ secrets.devguard-token }}" \${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name}`,
         },
       },
     ],

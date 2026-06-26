@@ -40,7 +40,7 @@ export const PushOciImageJobInputs = defineInputsGitLab({
       "The tag to use for the built image. Leave empty to use the generated tag from the 'generate-tag' component." as const,
   },
 
-  supplyChainId: Inputs.supplyChainId,
+  supply_chain_id: Inputs.supply_chain_id,
 
   default_ref: Inputs.default_ref,
   ref: Inputs.commit_ref,
@@ -53,7 +53,10 @@ export const PushOciImageJobInputsGitHub = defineInputsGitHub({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
   image_suffix: Inputs.image_suffix,
-  supplyChainId: Inputs.supplyChainId,
+  supply_chain_id: Inputs.supply_chain_id,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+  default_ref: Inputs.default_ref,
   should_deploy: {
     description: "Should the push job run",
     default: true,
@@ -129,7 +132,7 @@ docker run --rm \\
         name: "In-Toto Provenance run",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --supplyChainOutputDigest="$(cat image-digest.txt)" --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --supplyChainOutputDigest="$(cat image-digest.txt)" --defaultRef=${inputValues.default_ref} --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
         },
         "continue-on-error": true,
       },
@@ -179,7 +182,7 @@ echo "Image Tag: \${IMAGE_REF}"
 
 /crane push ${inputValues.image} "\${IMAGE_REF}"
 
-/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"
+/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"
 `,
   },
 }));

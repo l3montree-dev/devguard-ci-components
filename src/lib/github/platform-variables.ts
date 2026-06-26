@@ -16,8 +16,8 @@ const GITLAB_TO_GITHUB_VARIABLES: Record<string, string> = {
   $CI_COMMIT_SHA: "${{ github.sha }}",
   $CI_COMMIT_TAG: "${{ github.ref_type == 'tag' }}",
   $CI_PROJECT_DIR: "/github/workspace",
-  $CI_REGISTRY: "${{ secrets.REGISTRY_URL }}",
-  $CI_REGISTRY_USER: "${{ secrets.REGISTRY_USER }}",
+  $CI_REGISTRY: "ghcr.io",
+  $CI_REGISTRY_USER: "${{ github.actor }}",
   [GitLabIsTag]: "${{ github.ref_type == 'tag' }}",
 };
 

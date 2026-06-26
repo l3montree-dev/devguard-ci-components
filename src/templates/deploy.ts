@@ -28,6 +28,10 @@ export const DeployJobInputsGitHub = defineInputsGitHub({
     default: "",
     type: "string" as const,
   },
+  supply_chain_id: Inputs.supply_chain_id,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+  default_ref: Inputs.default_ref,
 });
 
 export const DeployJobInputsGitLab = defineInputsGitLab({
@@ -60,7 +64,7 @@ export const DeployJobInputsGitLab = defineInputsGitLab({
     default: "image.tar" as const,
   },
   image_tag: Inputs.image_tag,
-  supplyChainId: Inputs.supplyChainId,
+  supply_chain_id: Inputs.supply_chain_id,
 
   default_ref: Inputs.default_ref,
   commit_ref: Inputs.commit_ref,
@@ -100,7 +104,7 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
     script: [
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
       `/crane push ${inputValues.image} ${inputValues.image_tag}`,
-      `/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}"`,
+      `/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}"`,
     ],
   },
 }));
@@ -160,7 +164,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
         name: "In-Toto Provenance run",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --supplyChainOutputDigest="\${{ env.DIGEST }}" --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --supplyChainOutputDigest="\${{ env.DIGEST }}" --defaultRef=${inputValues.default_ref} --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
         },
         "continue-on-error": true,
       },

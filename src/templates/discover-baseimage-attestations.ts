@@ -4,7 +4,7 @@ import { Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 
-const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
+export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   stage: {
     ...Inputs.stage,
     default: "build" as const,
@@ -29,16 +29,9 @@ const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   },
 });
 
-const DiscoverBaseimageAttestationsJobInputsGitHub = defineInputsGitHub({
-  registry: {
-    ...Inputs.registry,
-    default: "ghcr.io" as const,
-  },
-  registry_user: {
-    ...Inputs.registry_user,
-    default: "" as const,
-    description: "Registry username. Defaults to github.actor when empty." as const,
-  },
+export const DiscoverBaseimageAttestationsJobInputsGitHub = defineInputsGitHub({
+  registry: Inputs.registry,
+  registry_user: Inputs.registry_user,
   predicate_type: Inputs.predicate_type,
   output: Inputs.output,
   path: {
@@ -60,6 +53,7 @@ export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
       "registry-password": {
         description: "Registry password for pulling the base image.",
         required: false,
+        default: "${{ github.token }}",
       },
     },
     job: {
@@ -78,7 +72,7 @@ export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
           uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
           "continue-on-error": inputValues.allow_failure as boolean,
           with: {
-            args: `devguard-scanner login -u \${{ inputs.registry_user || github.actor }} -p \${{ secrets.registry-password || github.token }} ${inputValues.registry} && devguard-scanner discover-baseimage-attestations --output "${inputValues.output}" --predicateType "${inputValues.predicate_type}" "${inputValues.path}"`,
+            args: `devguard-scanner login -u ${inputValues.registry_user} -p \${{ secrets.registry-password }} ${inputValues.registry} && devguard-scanner discover-baseimage-attestations --output "${inputValues.output}" --predicateType "${inputValues.predicate_type}" "${inputValues.path}"`,
           },
         },
         {

@@ -53,8 +53,8 @@ export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (in
         name: "Create GitHub Release",
         "continue-on-error": inputValues.allow_failure as boolean,
         env: {
-          RELEASE_TAG: inputValues.release_tag || `\${{ github.ref_name }}`,
-          RELEASE_NAME: inputValues.release_name || `\${{ github.ref_name }}`,
+          RELEASE_TAG: inputValues.release_tag,
+          RELEASE_NAME: inputValues.release_name,
           RELEASE_DESCRIPTION: inputValues.release_description,
         } as Record<string, string>,
         run: `PRERELEASE_FLAG=""

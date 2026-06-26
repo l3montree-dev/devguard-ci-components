@@ -174,7 +174,7 @@ export const Inputs = {
     description:
       "If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts." as const,
   },
-  supplyChainId: {
+  supply_chain_id: {
     default: "$CI_COMMIT_SHA" as const,
     description: "The supply chain ID to use for the in-toto attestation" as const,
   },

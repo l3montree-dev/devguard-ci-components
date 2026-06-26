@@ -39,7 +39,7 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   image_tag: Inputs.image_tag,
   build_args: Inputs.build_args,
   push_image: Inputs.push_image,
-  supplyChainId: Inputs.supplyChainId,
+  supply_chain_id: Inputs.supply_chain_id,
 
   default_ref: Inputs.default_ref,
   ref: Inputs.commit_ref,
@@ -49,6 +49,8 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
 export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
   devguard_artifact_name: Inputs.devguard_artifact_name,
 
   image: {
@@ -60,7 +62,8 @@ export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
   image_tag: Inputs.image_tag,
   build_args: Inputs.build_args,
   push_image: Inputs.push_image,
-  supplyChainId: Inputs.supplyChainId,
+  supply_chain_id: Inputs.supply_chain_id,
+  default_ref: Inputs.default_ref,
 });
 
 export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageWDockerJobInputsGitHub, (inputValues) => ({
@@ -103,7 +106,7 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
         name: "In-Toto Provenance record start",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }}`,
+          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id}`,
         },
         "continue-on-error": true,
       },
@@ -161,7 +164,7 @@ docker push $IMAGE_TAG`,
         name: "In-Toto Provenance record stop",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --generateSlsaProvenance --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --generateSlsaProvenance --defaultRef=${inputValues.default_ref} --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
         },
         "continue-on-error": true,
       },
@@ -210,7 +213,7 @@ export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDocker
     },
     before_script: [
       `echo "Uses Docker DIND to build Docker images inside a secured kata container.\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
-      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}"`,
+      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
     ],
     script: [
       `echo "$CI_JOB_TOKEN" | docker login $CI_REGISTRY -u gitlab-ci-token --password-stdin`,
@@ -220,7 +223,7 @@ export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDocker
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
       `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
       `echo "Running DevGuard Intoto Build...stopping..."`,
-      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
+      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
     artifacts: {

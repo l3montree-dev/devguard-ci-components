@@ -57,7 +57,7 @@ spec:
     image_tag:
       default: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
       description: The tag to use for the built image
-    supplyChainId:
+    supply_chain_id:
       default: $CI_COMMIT_SHA
       description: The supply chain ID to use for the in-toto attestation
     default_ref:
@@ -97,4 +97,4 @@ devguard:deploy$[[ inputs.job_suffix ]]:
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - /crane push $[[ inputs.image ]] $[[ inputs.image_tag ]]
-    - /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]"
+    - /devguard-scanner intoto run --step=deploy --materials="$[[ inputs.image ]]" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]"

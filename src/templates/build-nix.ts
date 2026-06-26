@@ -95,7 +95,7 @@ export const BuildNixJobInputs = defineInputsGitLab({
     ...Inputs.image,
     default: "image.tar" as const,
   },
-  supplyChainId: Inputs.supplyChainId,
+  supply_chain_id: Inputs.supply_chain_id,
   nix_target: Inputs.nix_target,
   nix_cache_substituter: Inputs.nix_cache_substituter,
   nix_cache_public_key: Inputs.nix_cache_public_key,
@@ -133,6 +133,8 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
     type: "string" as const,
   },
   allow_failure: Inputs.allow_failure,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
 });
 
 export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (inputValues) => ({
@@ -243,6 +245,7 @@ nix copy $(nix-store -qR $(readlink result)) \\
         run: `devguard-scanner generate-tag \\
   --imagePath="$IMAGE_NAME" \\
   --ref="$GITHUB_REF_NAME" \\
+  --isTag=${inputValues.is_tag} \\
   --architecture="$ARCHITECTURE" \\
   >> image-tag-env.txt
 IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
@@ -292,9 +295,8 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
           DEVGUARD_API_URL: inputValues.devguard_api_url,
           DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
           DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
-          IS_TAG: `\${{ github.ref_type == 'tag' }}`,
         } as Record<string, string>,
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME`,
+        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
         "continue-on-error": true,
       },
       {
@@ -335,12 +337,12 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
       `mkdir -p ~/.aws\necho "[profile nix-cache]" >> ~/.aws/config\necho "s3.addressing_style = path" >> ~/.aws/config`,
     ],
     script: [
-      `./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}"`,
+      `./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
       `nix build -L ".#${inputValues.nix_target}" --no-update-lock-file`,
       `gzip -cd result > "${inputValues.image}"`,
       `if [[ -n "${inputValues.nix_cache_s3_endpoint}" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then\n  export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"\n  export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"\n  nix copy $(nix-store -qR $(readlink result)) --to 's3://${inputValues.nix_cache_s3_bucket}?endpoint=${inputValues.nix_cache_s3_endpoint}&region=${inputValues.nix_cache_region}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true\nfi`,
       `nix run nixpkgs#crane -- digest --tarball="${inputValues.image}" > image-digest.txt`,
-      `./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance`,
+      `./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance`,
     ],
     artifacts: {
       paths: [inputValues.image, `image-digest.txt`, `build.provenance.json`],

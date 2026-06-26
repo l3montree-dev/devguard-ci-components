@@ -20,6 +20,11 @@ on:
         type: string
         required: false
         default: ""
+      supply-chain-id:
+        description: The supply chain ID to use for the in-toto attestation
+        type: string
+        required: false
+        default: ${{ github.sha }}
       image:
         description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
         type: string
@@ -40,6 +45,21 @@ on:
         type: number
         required: false
         default: 1
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
+      default-ref:
+        description: Default branch reference
+        type: string
+        required: false
+        default: ${{ github.event.repository.default_branch }}
       disable-artifact-registry-as-image-store:
         description: If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.
         type: boolean
@@ -84,7 +104,7 @@ jobs:
         id: in-toto-start
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }}
+          args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }}
         continue-on-error: true
       - name: Build Docker image with Kaniko
         id: build_image
@@ -146,6 +166,7 @@ jobs:
               devguard-scanner generate-tag \
                 --imagePath="$IMAGE_PATH" \
                 --ref="$GITHUB_REF_NAME" \
+                --isTag=${{ inputs.is-tag }} \
             >> image-tag-env.txt
             IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
             ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
@@ -215,7 +236,7 @@ jobs:
       - name: In-Toto Provenance record stop
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+          args: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --generateSlsaProvenance --defaultRef=${{ inputs.default-ref }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }}
         continue-on-error: true
       - name: Fix workspace permissions (after provenance)
         run: |-

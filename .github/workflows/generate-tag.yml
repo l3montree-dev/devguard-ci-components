@@ -30,6 +30,16 @@ on:
         type: string
         required: false
         default: "0"
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
       devguard-artifact-name:
         description: The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image
         type: string
@@ -53,6 +63,7 @@ jobs:
             -e ARCHITECTURE \
             -e IMAGE_PATH \
             -e GITHUB_REF_NAME \
+            -e IS_TAG \
             -e UPSTREAM_VERSION \
             ghcr.io/l3montree-dev/devguard/scanner:main \
             devguard-scanner generate-tag \
@@ -61,6 +72,7 @@ jobs:
               --architecture="$ARCHITECTURE" \
               --imagePath="$IMAGE_PATH" \
               --ref="$GITHUB_REF_NAME" \
+              --isTag="$IS_TAG" \
               --upstreamVersion="$UPSTREAM_VERSION" \
             >> generate_tag_${UPSTREAM_VERSION}_${ARCHITECTURE}.env
           echo "Generated tag:"
@@ -71,6 +83,7 @@ jobs:
           ARCHITECTURE: ${{ inputs.architecture }}
           IMAGE_PATH: ${{ inputs.image-path }}
           UPSTREAM_VERSION: ${{ inputs.upstream-version }}
+          IS_TAG: ${{ inputs.is-tag }}
       - name: Upload generate-tag env artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

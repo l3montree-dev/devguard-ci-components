@@ -15,6 +15,16 @@ on:
         type: string
         required: false
         default: $DEVGUARD_ASSET_NAME
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
       devguard-artifact-name:
         description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
         type: string
@@ -45,11 +55,16 @@ on:
         type: string
         required: false
         default: "false"
-      supplyChainId:
+      supply-chain-id:
         description: The supply chain ID to use for the in-toto attestation
         type: string
         required: false
         default: ${{ github.sha }}
+      default-ref:
+        description: Default branch reference
+        type: string
+        required: false
+        default: ${{ github.event.repository.default_branch }}
     secrets:
       devguard-token:
         description: DevGuard API token
@@ -78,7 +93,7 @@ jobs:
       - name: In-Toto Provenance record start
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }}
+          args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }}
         continue-on-error: true
       - name: Build Docker image
         env:
@@ -121,7 +136,7 @@ jobs:
       - name: In-Toto Provenance record stop
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner intoto stop --step=build --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --generateSlsaProvenance --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+          args: devguard-scanner intoto stop --step=build --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --generateSlsaProvenance --defaultRef=${{ inputs.default-ref }} --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
         continue-on-error: true
       - name: Upload SLSA Provenance
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

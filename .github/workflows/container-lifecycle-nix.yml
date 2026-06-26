@@ -73,6 +73,16 @@ on:
         type: boolean
         required: false
         default: false
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
       devguard-artifact-name:
         description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
         type: string
@@ -103,16 +113,6 @@ on:
         type: string
         required: false
         default: ${{ github.event.repository.default_branch }}
-      commit-ref:
-        description: Current commit reference
-        type: string
-        required: false
-        default: ${{ github.ref_name }}
-      is-tag:
-        description: Is the current commit a tag
-        type: string
-        required: false
-        default: ${{ github.ref_type == 'tag' }}
       fail-on-risk:
         description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
         type: string
@@ -148,6 +148,21 @@ on:
         type: string
         required: false
         default: ""
+      supply-chain-id:
+        description: The supply chain ID to use for the in-toto attestation
+        type: string
+        required: false
+        default: ${{ github.sha }}
+      registry:
+        description: Container registry URL
+        type: string
+        required: false
+        default: ghcr.io
+      registry-user:
+        description: Container registry username
+        type: string
+        required: false
+        default: ${{ github.actor }}
     secrets:
       devguard-token:
         description: DevGuard API token
@@ -161,6 +176,10 @@ on:
       nix-cache-aws-secret-access-key:
         description: AWS secret access key for the Nix S3 cache.
         required: false
+      registry-password:
+        description: Registry password for pulling the image.
+        required: true
+        default: ${{ github.token }}
 jobs:
   devguard_build_nix:
     runs-on: ${{ inputs.runner }}
@@ -225,6 +244,7 @@ jobs:
           devguard-scanner generate-tag \
             --imagePath="$IMAGE_NAME" \
             --ref="$GITHUB_REF_NAME" \
+            --isTag=${{ inputs.is-tag }} \
             --architecture="$ARCHITECTURE" \
             >> image-tag-env.txt
           IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
@@ -260,8 +280,7 @@ jobs:
           DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
           DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          IS_TAG: ${{ github.ref_type == 'tag' }}
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME
+        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
         continue-on-error: true
       - name: Upload SLSA Provenance
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -350,7 +369,7 @@ jobs:
       - name: In-Toto Provenance run
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ github.sha }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ github.event.repository.default_branch }} --isTag=${{ github.ref_type == 'tag' }} --ref=${{ github.ref_name }}
+          args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ inputs.default-ref }} --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
         continue-on-error: true
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
@@ -386,7 +405,7 @@ jobs:
       - name: DevGuard Image-Signing
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner sign -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
+          args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p ${{ secrets.registry-password }} --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     needs:
       - devguard_build_nix
       - devguard_container_scanning
@@ -443,17 +462,17 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ github.ref_name }}) &&
+              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
               artifact_name="$ARTIFACT_NAME" &&
               echo 'Fetching SBOM for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/sbom.json &&
               echo 'SBOM downloaded to /tmp/sbom.json' &&
               if [ -f image-digest.txt ]; then
                 echo 'Attesting SBOM with image digest present' &&
-                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p ${{ secrets.registry-password }} /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               else
                 echo 'Attesting SBOM without image digest' &&
-                devguard-scanner attest /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               fi
             "
         env:
@@ -464,17 +483,17 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ github.ref_name }}) &&
+              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
               artifact_name="$ARTIFACT_NAME" &&
               echo 'Fetching VeX for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/vex.json &&
               echo 'VeX downloaded to /tmp/vex.json' &&
               if [ -f image-digest.txt ]; then
                 echo 'Attesting VeX with image digest present' &&
-                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/vex.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --token='${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p ${{ secrets.registry-password }} /tmp/vex.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --token='${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               else
                 echo 'Attesting VeX without image digest' &&
-                devguard-scanner attest /tmp/vex.json --predicateType='https://cyclonedx.org/vex' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest /tmp/vex.json --predicateType='https://cyclonedx.org/vex' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               fi
             "
         env:
@@ -485,17 +504,17 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ github.ref_name }}) &&
+              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
               artifact_name="$ARTIFACT_NAME" &&
               echo 'Fetching SAST results for artifact:' '${{ env.ARTIFACT_NAME }}' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/sarif.json' --token='${{ secrets.devguard-token }}' > /tmp/sarif.json &&
               echo 'SAST results downloaded to /tmp/sarif.json' &&
               if [ -f image-digest.txt ]; then
                 echo 'Attesting SAST results with image digest present' &&
-                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/sarif.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} /tmp/sarif.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               else
                 echo 'Attesting SAST results without image digest' &&
-                devguard-scanner attest /tmp/sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest /tmp/sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               fi
             "
         env:
@@ -514,10 +533,10 @@ jobs:
               echo 'Building provenance attestation for artifact:' '${{ env.ARTIFACT_NAME }}' &&
               if [ -f image-digest.txt ]; then
                 echo 'Attesting provenance with image digest present' &&
-                devguard-scanner attest -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} build.provenance.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} build.provenance.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               else
                 echo 'Attesting provenance without image digest' &&
-                devguard-scanner attest build.provenance.json --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --predicateType='https://slsa.dev/provenance/v1' --assetName=${{ inputs.devguard-asset-name }} --ref=${{ github.ref_name }} --artifactName="$artifact_name"
+                devguard-scanner attest build.provenance.json --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --predicateType='https://slsa.dev/provenance/v1' --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
               fi
             "
         env:

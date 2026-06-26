@@ -21,10 +21,19 @@ export const CreateManifestMultiArchJobInputsGitHub = defineInputsGitHub({
   upstream_version: Inputs.upstream_version,
   create_root_manifest: Inputs.create_root_manifest,
   image_suffix: Inputs.image_suffix,
+  registry: Inputs.registry,
+  registry_user: Inputs.registry_user,
 });
 
 export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManifestMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-manifest-multi-arch",
+  secrets: {
+    "registry-password": {
+        description: "Registry password for pulling the image.",
+        required: true,
+        default: "${{ github.token }}",
+    },
+  },
   job: {
     "runs-on": "ubuntu-latest",
     permissions: {
@@ -51,9 +60,9 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         name: "Log in to ghcr.io",
         uses: DOCKER_LOGIN_ACTION,
         with: {
-          registry: "ghcr.io",
-          username: `\${{ github.actor }}`,
-          password: `\${{ github.token }}`,
+          registry: inputValues.registry,
+          username: `${inputValues.registry_user}`,
+          password:  `\${{ secrets.registry-password }}`,
         },
       },
       {

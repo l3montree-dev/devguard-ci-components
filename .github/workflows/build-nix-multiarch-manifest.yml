@@ -19,6 +19,26 @@ on:
         description: Full OCI image name without tag (e.g. ghcr.io/org/repo/image)
         type: string
         required: false
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
+      is-tag:
+        description: Is the current commit a tag
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
+      registry:
+        description: Container registry URL
+        type: string
+        required: false
+        default: ghcr.io
+      registry-user:
+        description: Container registry username
+        type: string
+        required: false
+        default: ${{ github.actor }}
       image-suffix:
         description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
         type: string
@@ -82,7 +102,11 @@ on:
         type: string
         required: false
         default: critical
-    secrets: {}
+    secrets:
+      registry-password:
+        description: Registry password for pulling the image.
+        required: true
+        default: ${{ github.token }}
 jobs:
   devguard_create_nix_manifest_multi_arch:
     runs-on: ubuntu-latest
@@ -102,9 +126,9 @@ jobs:
       - name: Log in to ghcr.io
         uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+          registry: ${{ inputs.registry }}
+          username: ${{ inputs.registry-user }}
+          password: ${{ secrets.registry-password }}
       - name: Create and push multi-arch manifest
         env:
           CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}

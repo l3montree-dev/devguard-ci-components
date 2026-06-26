@@ -13,6 +13,12 @@ spec:
     devguard_artifact_name:
       description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
       default: ""
+    registry:
+      description: Container registry URL
+      default: $CI_REGISTRY
+    registry_user:
+      description: Container registry username
+      default: $CI_REGISTRY_USER
     image:
       description: The container image to sign (e.g., registry.example.com/project/image:tag)
       default: $CI_REGISTRY_IMAGE:latest
@@ -51,12 +57,6 @@ spec:
       description: List of jobs to download artifacts from
       type: array
       default: []
-    registry:
-      description: Container registry URL
-      default: $CI_REGISTRY
-    registry_user:
-      description: Container registry username
-      default: $CI_REGISTRY_USER
     registry_password:
       description: Container registry password
       default: $CI_REGISTRY_PASSWORD

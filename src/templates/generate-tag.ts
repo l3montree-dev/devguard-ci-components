@@ -39,6 +39,8 @@ const GenerateTagConfig = {
   architecture: Inputs.architecture,
   image_path: Inputs.image_path,
   upstream_version: Inputs.upstream_version,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
   devguard_artifact_name: {
     ...Inputs.devguard_artifact_name,
     description:
@@ -71,6 +73,7 @@ export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGit
   -e ARCHITECTURE \\
   -e IMAGE_PATH \\
   -e GITHUB_REF_NAME \\
+  -e IS_TAG \\
   -e UPSTREAM_VERSION \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
   devguard-scanner generate-tag \\
@@ -79,6 +82,7 @@ export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGit
     --architecture="$ARCHITECTURE" \\
     --imagePath="$IMAGE_PATH" \\
     --ref="$GITHUB_REF_NAME" \\
+    --isTag="$IS_TAG" \\
     --upstreamVersion="$UPSTREAM_VERSION" \\
   >> generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env
 echo "Generated tag:"
@@ -89,6 +93,7 @@ cat generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env`,
           ARCHITECTURE: `${ inputValues.architecture }`,
           IMAGE_PATH: `${ inputValues.image_path }`,
           UPSTREAM_VERSION: `${ inputValues.upstream_version }`,
+          IS_TAG: `${ inputValues.is_tag }`,
         },
       },
       {

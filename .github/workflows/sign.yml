@@ -20,6 +20,16 @@ on:
         type: string
         required: false
         default: ""
+      registry:
+        description: Container registry URL
+        type: string
+        required: false
+        default: ghcr.io
+      registry-user:
+        description: Container registry username
+        type: string
+        required: false
+        default: ${{ github.actor }}
       image:
         description: The container image to sign (e.g., registry.example.com/project/image:tag)
         type: string
@@ -39,6 +49,10 @@ on:
       devguard-token:
         description: DevGuard API token
         required: true
+      registry-password:
+        description: Registry password for pulling the image.
+        required: true
+        default: ${{ github.token }}
 jobs:
   devguard_sign:
     runs-on: ubuntu-latest
@@ -65,5 +79,5 @@ jobs:
       - name: DevGuard Image-Signing
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner sign -u ${{ github.actor }} -r ghcr.io -p ${{ secrets.GITHUB_TOKEN }} --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
+          args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p ${{ secrets.registry-password }} --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     name: devguard:sign

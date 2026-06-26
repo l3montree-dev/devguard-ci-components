@@ -67,6 +67,10 @@ export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
     description: "Full OCI image name without tag (e.g. ghcr.io/org/repo/image)" as const,
     type: "string" as const,
   },
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+  registry: Inputs.registry,
+  registry_user: Inputs.registry_user,
   image_suffix: {
     ...Inputs.image_suffix,
     default: "" as const,
@@ -201,7 +205,8 @@ nix copy $(nix-store -qR $(readlink result)) \\
         } as Record<string, string>,
         run: `devguard-scanner generate-tag \\
   --imagePath="$IMAGE_NAME" \\
-  --ref="$GITHUB_REF_NAME" \\
+  --ref=${inputValues.commit_ref} \\
+  --isTag=${inputValues.is_tag} \\
   --architecture="\${{ matrix.arch }}" \\
   >> image-tag-env.txt
 grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2- > image-tag.txt
@@ -238,9 +243,8 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
           DEVGUARD_API_URL: inputValues.devguard_api_url,
           DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
           DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
-          IS_TAG: `\${{ github.ref_type == 'tag' }}`,
         } as Record<string, string>,
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$GITHUB_REF_NAME`,
+        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
         "continue-on-error": true,
       },
       {
@@ -258,6 +262,13 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
 // GitHub: create multi-arch manifest after parallel builds complete
 export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-nix-manifest-multi-arch",
+  secrets: {
+    "registry-password": {
+        description: "Registry password for pulling the image.",
+        required: true,
+        default: "${{ github.token }}",
+    },
+  },
   job: {
     "runs-on": "ubuntu-latest",
     permissions: {
@@ -284,9 +295,9 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
         name: "Log in to ghcr.io",
         uses: DOCKER_LOGIN_ACTION,
         with: {
-          registry: "ghcr.io",
-          username: `\${{ github.actor }}`,
-          password: `\${{ github.token }}`,
+          registry: inputValues.registry,
+          username: inputValues.registry_user,
+          password: `\${{ secrets.registry-password }}`,
         },
       },
       {

@@ -11,10 +11,10 @@ on:
         required: false
         default: ghcr.io
       registry-user:
-        description: Registry username. Defaults to github.actor when empty.
+        description: Container registry username
         type: string
         required: false
-        default: ""
+        default: ${{ github.actor }}
       predicate-type:
         description: The predicate type to discover. If empty, all attestations will be discovered.
         type: string
@@ -39,6 +39,7 @@ on:
       registry-password:
         description: Registry password for pulling the base image.
         required: false
+        default: ${{ github.token }}
 jobs:
   devguard_discover_baseimage_attestations:
     runs-on: ubuntu-latest
@@ -52,7 +53,7 @@ jobs:
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
         with:
-          args: devguard-scanner login -u ${{ inputs.registry-user || github.actor }} -p ${{ secrets.registry-password || github.token }} ${{ inputs.registry }} && devguard-scanner discover-baseimage-attestations --output "${{ inputs.output }}" --predicateType "${{ inputs.predicate-type }}" "${{ inputs.path }}"
+          args: devguard-scanner login -u ${{ inputs.registry-user }} -p ${{ secrets.registry-password }} ${{ inputs.registry }} && devguard-scanner discover-baseimage-attestations --output "${{ inputs.output }}" --predicateType "${{ inputs.predicate-type }}" "${{ inputs.path }}"
       - name: Upload attestation artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

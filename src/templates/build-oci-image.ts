@@ -10,6 +10,8 @@ const BuildOciImageConfig = {
   devguard_asset_name: Inputs.devguard_asset_name,
   devguard_artifact_name: Inputs.devguard_artifact_name,
 
+  supply_chain_id: Inputs.supply_chain_id,
+
   image: {
     ...Inputs.image,
     description: "Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate." as const,
@@ -52,8 +54,6 @@ export const BuildOciImageJobInputs = defineInputsGitLab({
   build_args: Inputs.build_args,
   push_image: Inputs.push_image,
 
-  supplyChainId: Inputs.supplyChainId,
-
   default_ref: Inputs.default_ref,
   ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
@@ -77,7 +77,7 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
     },
     before_script: [
       `echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
-      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}"`,
+      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
     ],
     script: [
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
@@ -88,7 +88,7 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
       `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image_destination_path}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
 
       `echo "Running DevGuard Intoto Build...stopping..."`,
-      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supplyChainId}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
+      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
 
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
@@ -104,6 +104,9 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
 
 export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
   ...BuildOciImageConfig,
+  commit_ref: Inputs.commit_ref,
+  is_tag: Inputs.is_tag,
+    default_ref: Inputs.default_ref,
   disable_artifact_registry_as_image_store: {
     description:
       "If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.",
@@ -161,7 +164,7 @@ sudo chmod -R u+rwX $GITHUB_WORKSPACE || true`,
         id: "in-toto-start",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }}`,
+          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id}`,
         },
         "continue-on-error": true,
       },
@@ -237,6 +240,7 @@ else
     devguard-scanner generate-tag \\
       --imagePath="$IMAGE_PATH" \\
       --ref="$GITHUB_REF_NAME" \\
+      --isTag=${inputValues.is_tag} \\
   >> image-tag-env.txt
   IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
   ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
@@ -325,7 +329,7 @@ echo "Using artifact name: $PURL"`,
         name: "In-Toto Provenance record stop",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=\${{ github.sha }} --generateSlsaProvenance --defaultRef=\${{ github.event.repository.default_branch }} --isTag=\${{ github.ref_type == 'tag' }} --ref=\${{ github.ref_name }}`,
+          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --generateSlsaProvenance --defaultRef=${inputValues.default_ref} --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag}`,
         },
         "continue-on-error": true,
       },

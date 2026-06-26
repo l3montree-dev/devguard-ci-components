@@ -54,7 +54,7 @@ spec:
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
-    supplyChainId:
+    supply_chain_id:
       default: $CI_COMMIT_SHA
       description: The supply chain ID to use for the in-toto attestation
     nix_target:
@@ -202,7 +202,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
       echo "[profile nix-cache]" >> ~/.aws/config
       echo "s3.addressing_style = path" >> ~/.aws/config
   script:
-    - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]"
+    - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
     - nix build -L ".#$[[ inputs.nix_target ]]" --no-update-lock-file
     - gzip -cd result > "image.tar"
     - |-
@@ -212,7 +212,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         nix copy $(nix-store -qR $(readlink result)) --to 's3://$[[ inputs.nix_cache_s3_bucket ]]?endpoint=$[[ inputs.nix_cache_s3_endpoint ]]&region=$[[ inputs.nix_cache_region ]]&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
       fi
     - nix run nixpkgs#crane -- digest --tarball="image.tar" > image-digest.txt
-    - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --generateSlsaProvenance
+    - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
   artifacts:
     paths:
       - image.tar
@@ -343,7 +343,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
 
     /crane push image.tar "${IMAGE_REF}"
 
-    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supplyChainId ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
+    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
@@ -451,6 +451,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
           $[[ inputs.image ]] \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
+          --isTag="$[[ inputs.is_tag ]]" \
           --token="$[[ inputs.devguard_token ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --assetName="$[[ inputs.devguard_asset_name ]]" \
