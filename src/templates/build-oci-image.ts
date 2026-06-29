@@ -1,13 +1,12 @@
 
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
 const BuildOciImageConfig = {
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   devguard_artifact_name: Inputs.devguard_artifact_name,
 
   supply_chain_id: Inputs.supply_chain_id,
@@ -30,7 +29,6 @@ export const BuildOciImageJobInputs = defineInputsGitLab({
   ...BuildOciImageConfig,
   devguard_token: Inputs.devguard_token,
 
-  runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
     default: "oci-image" as const,
@@ -41,13 +39,9 @@ export const BuildOciImageJobInputs = defineInputsGitLab({
     ...Inputs.git_strategy,
     default: "fetch" as const,
   },
-  pull_policy: Inputs.pull_policy,
-  allow_failure: Inputs.allow_failure,
-  needs: Inputs.needs,
-  dependencies: Inputs.dependencies,
+  ...InputGroups.jobControl,
 
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   registry_password: Inputs.registry_password,
 
   image_tag: Inputs.image_tag,
@@ -104,9 +98,7 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
 
 export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
   ...BuildOciImageConfig,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
-    default_ref: Inputs.default_ref,
+  ...InputGroups.ref,
   disable_artifact_registry_as_image_store: {
     description:
       "If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.",
@@ -118,10 +110,7 @@ export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
 export const BuildOciImageTemplateGitHub = defineJobGitHub(BuildOciImageJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-oci-image",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
     "build-args": {
       description: "Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.",
       required: false,

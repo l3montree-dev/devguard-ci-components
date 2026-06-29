@@ -34,7 +34,6 @@ on:
       registry-password:
         description: Registry password for pulling the image.
         required: true
-        default: ${{ github.token }}
 jobs:
   devguard_create_manifest_multi_arch:
     runs-on: ubuntu-latest

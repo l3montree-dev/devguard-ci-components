@@ -155,7 +155,6 @@ on:
       registry-password:
         description: Registry password for pulling the image.
         required: true
-        default: ${{ github.token }}
 jobs:
   devguard_secret_scanning:
     runs-on: ubuntu-latest

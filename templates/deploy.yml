@@ -13,10 +13,6 @@ spec:
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
-    runner_tags:
-      default: []
-      type: array
-      description: The runner tags to use for the job
     stage:
       default: deploy
       description: The pipeline stage for the job
@@ -27,6 +23,10 @@ spec:
     git_strategy:
       description: The Git strategy to use for the job
       default: none
+    runner_tags:
+      default: []
+      type: array
+      description: The runner tags to use for the job
     pull_policy:
       description: The pull policy for the container image (can be [always, if-not-present, never])
       default: always

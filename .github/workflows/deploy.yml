@@ -40,6 +40,11 @@ on:
         type: string
         required: false
         default: ${{ github.sha }}
+      default-ref:
+        description: Default branch reference
+        type: string
+        required: false
+        default: ${{ github.event.repository.default_branch }}
       commit-ref:
         description: Current commit reference
         type: string
@@ -50,11 +55,6 @@ on:
         type: string
         required: false
         default: ${{ github.ref_type == 'tag' }}
-      default-ref:
-        description: Default branch reference
-        type: string
-        required: false
-        default: ${{ github.event.repository.default_branch }}
     secrets:
       devguard-token:
         description: DevGuard API token

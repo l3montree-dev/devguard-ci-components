@@ -15,16 +15,16 @@ on:
         type: string
         required: false
         default: $DEVGUARD_ASSET_NAME
-      devguard-artifact-name:
-        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-        type: string
-        required: false
-        default: ""
       devguard-web-ui:
         description: The DevGuard Web-UI Instance URL
         type: string
         required: false
         default: https://app.devguard.org
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+        type: string
+        required: false
+        default: ""
       devguard-origin:
         description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
         type: string

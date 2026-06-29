@@ -335,3 +335,63 @@ export const Inputs = {
     description: "Directory to store generated artifacts in (relative to project root)." as const,
   },
 } satisfies ConfigInputs;
+
+export const InputGroups = {
+  gitlabJob: {
+    stage: Inputs.stage,
+    job_suffix: Inputs.job_suffix,
+    git_strategy: Inputs.git_strategy,
+  },
+  jobControl: {
+    runner_tags: Inputs.runner_tags,
+    pull_policy: Inputs.pull_policy,
+    allow_failure: Inputs.allow_failure,
+    needs: Inputs.needs,
+    dependencies: Inputs.dependencies,
+  },
+  devguardCore: {
+    devguard_api_url: Inputs.devguard_api_url,
+    devguard_asset_name: Inputs.devguard_asset_name,
+  },
+  devguardScanOutput: {
+    devguard_web_ui: Inputs.devguard_web_ui,
+    devguard_artifact_name: Inputs.devguard_artifact_name,
+  },
+  ref: {
+    default_ref: Inputs.default_ref,
+    commit_ref: Inputs.commit_ref,
+    is_tag: Inputs.is_tag,
+  },
+  registry: {
+    registry: Inputs.registry,
+    registry_user: Inputs.registry_user,
+  },
+  failThresholds: {
+    fail_on_risk: Inputs.fail_on_risk,
+    fail_on_cvss: Inputs.fail_on_cvss,
+  },
+  supplyChain: {
+    supply_chain_id: Inputs.supply_chain_id,
+    default_ref: Inputs.default_ref,
+    commit_ref: Inputs.commit_ref,
+    is_tag: Inputs.is_tag,
+  },
+  nixCache: {
+    nix_cache_substituter: Inputs.nix_cache_substituter,
+    nix_cache_public_key: Inputs.nix_cache_public_key,
+    nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
+    nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
+    nix_cache_region: Inputs.nix_cache_region,
+  },
+};
+
+export const Secrets = {
+  "devguard-token": {
+    description: "DevGuard API token",
+    required: true,
+  },
+  "registry-password": {
+    description: "Registry password for pulling the image.",
+    required: true,
+  },
+};

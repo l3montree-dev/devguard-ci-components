@@ -1,17 +1,14 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
 export const ContainerScanningJobInputs = defineInputsGitLab({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   devguard_token: Inputs.devguard_token,
   devguard_origin: Inputs.devguard_origin,
-  devguard_web_ui: Inputs.devguard_web_ui,
-  devguard_artifact_name: Inputs.devguard_artifact_name,
+  ...InputGroups.devguardScanOutput,
 
-  runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
     default: "oci-image" as const,
@@ -21,16 +18,11 @@ export const ContainerScanningJobInputs = defineInputsGitLab({
     ...Inputs.git_strategy,
     default: "fetch" as const,
   },
-  pull_policy: Inputs.pull_policy,
-  allow_failure: Inputs.allow_failure,
-  needs: Inputs.needs,
-  dependencies: Inputs.dependencies,
+  ...InputGroups.jobControl,
 
-  default_ref: Inputs.default_ref,
-  commit_ref: Inputs.commit_ref,
+  ...InputGroups.ref,
 
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   registry_password: Inputs.registry_password,
 
   image_tar_path: Inputs.image_tar_path,
@@ -41,9 +33,7 @@ export const ContainerScanningJobInputs = defineInputsGitLab({
       "The (remote) OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path.",
   },
 
-  fail_on_risk: Inputs.fail_on_risk,
-  fail_on_cvss: Inputs.fail_on_cvss,
-  is_tag: Inputs.is_tag,
+  ...InputGroups.failThresholds,
   ignore_external_references: Inputs.ignore_external_references,
   ignore_upstream_attestations: Inputs.ignore_upstream_attestations,
 
@@ -51,10 +41,8 @@ export const ContainerScanningJobInputs = defineInputsGitLab({
 });
 
 const ContainerScanningConfig = {
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
-  devguard_artifact_name: Inputs.devguard_artifact_name,
-  devguard_web_ui: Inputs.devguard_web_ui,
+  ...InputGroups.devguardCore,
+  ...InputGroups.devguardScanOutput,
   devguard_origin: Inputs.devguard_origin,
 
   allow_failure: Inputs.allow_failure,
@@ -63,12 +51,9 @@ const ContainerScanningConfig = {
   fetch_image_from_registry: Inputs.fetch_image_from_registry,
   image_suffix: Inputs.image_suffix,
 
-  default_ref: Inputs.default_ref,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
+  ...InputGroups.ref,
 
-  fail_on_risk: Inputs.fail_on_risk,
-  fail_on_cvss: Inputs.fail_on_cvss,
+  ...InputGroups.failThresholds,
   ignore_external_references: Inputs.ignore_external_references,
   ignore_upstream_attestations: Inputs.ignore_upstream_attestations,
 };
@@ -80,10 +65,7 @@ export const ContainerScanningJobInputsGitHub = defineInputsGitHub({
 export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanningJobInputsGitHub, (inputValues) => ({
   name: "devguard:container-scanning",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
   },
   job: {
     "runs-on": "ubuntu-latest",

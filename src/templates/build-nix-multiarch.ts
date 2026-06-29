@@ -1,7 +1,7 @@
 
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION, DOCKER_LOGIN_ACTION } from "../actions-versions";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
@@ -36,11 +36,7 @@ export const BuildNixMultiArchJobInputs = defineInputsGitLab({
     default: "" as const,
   },
 
-  nix_cache_substituter: Inputs.nix_cache_substituter,
-  nix_cache_public_key: Inputs.nix_cache_public_key,
-  nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
-  nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
-  nix_cache_region: Inputs.nix_cache_region,
+  ...InputGroups.nixCache,
 
   version: {
     default: "main" as const,
@@ -53,8 +49,7 @@ export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   },
   pull_policy: Inputs.pull_policy,
   allow_failure: Inputs.allow_failure,
-  fail_on_risk: Inputs.fail_on_risk,
-  fail_on_cvss: Inputs.fail_on_cvss,
+  ...InputGroups.failThresholds,
 });
 
 export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
@@ -69,8 +64,7 @@ export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
   },
   commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   image_suffix: {
     ...Inputs.image_suffix,
     default: "" as const,
@@ -84,29 +78,21 @@ export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
     description: "Nix flake build target for arm64 (e.g. coreutils-arm64)" as const,
     type: "string" as const,
   },
-  nix_cache_substituter: Inputs.nix_cache_substituter,
-  nix_cache_public_key: Inputs.nix_cache_public_key,
-  nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
-  nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
-  nix_cache_region: Inputs.nix_cache_region,
+  ...InputGroups.nixCache,
   nix_version: {
     description: "Pinned Nix version for deterministic builds" as const,
     default: "2.34.4" as const,
     type: "string" as const,
   },
   allow_failure: Inputs.allow_failure,
-  fail_on_risk: Inputs.fail_on_risk,
-  fail_on_cvss: Inputs.fail_on_cvss,
+  ...InputGroups.failThresholds,
 });
 
 // GitHub: builds amd64 + arm64 in parallel using matrix strategy
 export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-nix-multiarch",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: false,
-    },
+    "devguard-token": { ...Secrets["devguard-token"], required: false as const },
     "nix-cache-secret-key": {
       description: "Nix binary cache signing secret key.",
       required: false,
@@ -267,11 +253,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
 export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-nix-manifest-multi-arch",
   secrets: {
-    "registry-password": {
-        description: "Registry password for pulling the image.",
-        required: true,
-        default: "${{ github.token }}",
-    },
+    "registry-password": Secrets["registry-password"],
   },
   job: {
     "runs-on": "ubuntu-latest",

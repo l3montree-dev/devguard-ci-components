@@ -1,18 +1,16 @@
 
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, DOCKER_SETUP_BUILDX_ACTION } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   devguard_token: Inputs.devguard_token,
 
   docker_buildkit: Inputs.docker_buildkit,
 
-  runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
     default: "oci-image" as const,
@@ -22,13 +20,9 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
     ...Inputs.git_strategy,
     default: "fetch" as const,
   },
-  pull_policy: Inputs.pull_policy,
-  allow_failure: Inputs.allow_failure,
-  needs: Inputs.needs,
-  dependencies: Inputs.dependencies,
+  ...InputGroups.jobControl,
 
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   registry_password: Inputs.registry_password,
 
   image: {
@@ -47,10 +41,8 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
 });
 
 export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
+  ...InputGroups.devguardCore,
+  ...InputGroups.ref,
   devguard_artifact_name: Inputs.devguard_artifact_name,
 
   image: {
@@ -69,10 +61,7 @@ export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
 export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageWDockerJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-oci-image-w-docker",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
     "build-args": {
       description: "Build arguments passed to docker buildx build.",
       required: false,
@@ -81,10 +70,7 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
       description: "Registry username for pushing the image.",
       required: false,
     },
-    "registry-password": {
-      description: "Registry password for pushing the image.",
-      required: false,
-    },
+    "registry-password": { ...Secrets["registry-password"], description: "Registry password for pushing the image.", required: false as const },
   },
   job: {
     "runs-on": "ubuntu-latest",

@@ -52,7 +52,6 @@ on:
       registry-password:
         description: Registry password for pulling the image.
         required: true
-        default: ${{ github.token }}
 jobs:
   devguard_sign:
     runs-on: ubuntu-latest

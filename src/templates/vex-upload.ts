@@ -1,6 +1,6 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT } from "../actions-versions";
 
@@ -56,10 +56,7 @@ export const VexUploadJobInputsGitHub = defineInputsGitHub({
 export const VexUploadTemplateGitHub = defineJobGitHub(VexUploadJobInputsGitHub, (inputValues) => ({
   name: "devguard:vex-upload",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
   },
   job: {
     "runs-on": "ubuntu-latest",

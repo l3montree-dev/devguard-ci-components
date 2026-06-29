@@ -1,12 +1,11 @@
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
 
 export const DeployJobInputsGitHub = defineInputsGitHub({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   image_suffix: {
     description:
       "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty.",
@@ -29,17 +28,13 @@ export const DeployJobInputsGitHub = defineInputsGitHub({
     type: "string" as const,
   },
   supply_chain_id: Inputs.supply_chain_id,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
-  default_ref: Inputs.default_ref,
+  ...InputGroups.ref,
 });
 
 export const DeployJobInputsGitLab = defineInputsGitLab({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   devguard_token: Inputs.devguard_token,
 
-  runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
     default: "deploy" as const,
@@ -49,13 +44,9 @@ export const DeployJobInputsGitLab = defineInputsGitLab({
     ...Inputs.git_strategy,
     default: "none" as const,
   },
-  pull_policy: Inputs.pull_policy,
-  allow_failure: Inputs.allow_failure,
-  needs: Inputs.needs,
-  dependencies: Inputs.dependencies,
+  ...InputGroups.jobControl,
 
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   registry_password: Inputs.registry_password,
 
   image: {
@@ -66,9 +57,7 @@ export const DeployJobInputsGitLab = defineInputsGitLab({
   image_tag: Inputs.image_tag,
   supply_chain_id: Inputs.supply_chain_id,
 
-  default_ref: Inputs.default_ref,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
+  ...InputGroups.ref,
   disable_job: Inputs.disable_job,
 });
 
@@ -112,10 +101,7 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
 export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inputValues) => ({
   name: "devguard:deploy",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
   },
   job: {
     "runs-on": "ubuntu-latest",

@@ -65,6 +65,9 @@ spec:
     commit_ref:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
+    is_tag:
+      description: Is the current commit a tag
+      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
     registry:
       description: Container registry URL
       default: $CI_REGISTRY
@@ -83,9 +86,6 @@ spec:
     fail_on_cvss:
       description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
       default: critical
-    is_tag:
-      description: Is the current commit a tag
-      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
     ignore_external_references:
       description: Whether to ignore external references in any discovered attestations. This is useful when you are using this component to scan your own built images which have a valid vex attestation.
       default: "false"

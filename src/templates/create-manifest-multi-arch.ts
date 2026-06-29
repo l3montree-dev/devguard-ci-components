@@ -1,6 +1,6 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "../actions-versions";
 
@@ -21,18 +21,13 @@ export const CreateManifestMultiArchJobInputsGitHub = defineInputsGitHub({
   upstream_version: Inputs.upstream_version,
   create_root_manifest: Inputs.create_root_manifest,
   image_suffix: Inputs.image_suffix,
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
 });
 
 export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManifestMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-manifest-multi-arch",
   secrets: {
-    "registry-password": {
-        description: "Registry password for pulling the image.",
-        required: true,
-        default: "${{ github.token }}",
-    },
+    "registry-password": Secrets["registry-password"],
   },
   job: {
     "runs-on": "ubuntu-latest",

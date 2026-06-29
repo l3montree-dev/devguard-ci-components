@@ -1,6 +1,6 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 
@@ -81,15 +81,8 @@ export const SignJobInputsGitHub = defineInputsGitHub({
 export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputValues) => ({
   name: "devguard:sign",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
-    "registry-password": {
-      description: "Registry password for pulling the image.",
-      required: true,
-      default: "${{ github.token }}",
-    },
+    "devguard-token": Secrets["devguard-token"],
+    "registry-password": Secrets["registry-password"],
   },
   job: {
     "runs-on": "ubuntu-latest",

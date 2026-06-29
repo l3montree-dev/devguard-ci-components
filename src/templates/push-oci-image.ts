@@ -1,5 +1,5 @@
 
-import { Inputs } from "./inputs";
+import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
@@ -67,10 +67,7 @@ export const PushOciImageJobInputsGitHub = defineInputsGitHub({
 export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsGitHub, (inputValues) => ({
   name: "devguard:push-oci-image",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
   },
   job: {
     "runs-on": "ubuntu-latest",

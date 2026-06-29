@@ -1,6 +1,6 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
@@ -79,8 +79,7 @@ export const BuildNixGenerateTagTemplate = defineJobGitLab(BuildNixGenerateTagJo
 
 // Job 3: build OCI image using Nix (dockerTools.buildLayeredImage)
 export const BuildNixJobInputs = defineInputsGitLab({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   devguard_token: Inputs.devguard_token,
   runner_tags: Inputs.runner_tags,
   stage: {
@@ -97,11 +96,7 @@ export const BuildNixJobInputs = defineInputsGitLab({
   },
   supply_chain_id: Inputs.supply_chain_id,
   nix_target: Inputs.nix_target,
-  nix_cache_substituter: Inputs.nix_cache_substituter,
-  nix_cache_public_key: Inputs.nix_cache_public_key,
-  nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
-  nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
-  nix_cache_region: Inputs.nix_cache_region,
+  ...InputGroups.nixCache,
 });
 
 export const BuildNixJobInputsGitHub = defineInputsGitHub({
@@ -113,11 +108,7 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
   },
   image_suffix: Inputs.image_suffix,
   nix_target: Inputs.nix_target,
-  nix_cache_substituter: Inputs.nix_cache_substituter,
-  nix_cache_public_key: Inputs.nix_cache_public_key,
-  nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
-  nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
-  nix_cache_region: Inputs.nix_cache_region,
+  ...InputGroups.nixCache,
   nix_version: {
     description: "Pinned Nix version for deterministic builds (must match other CI systems)" as const,
     default: "2.34.4" as const,
@@ -140,10 +131,7 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
 export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-nix",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: false,
-    },
+    "devguard-token": { ...Secrets["devguard-token"], required: false as const },
     "nix-cache-secret-key": {
       description: "Nix binary cache signing secret key.",
       required: false,

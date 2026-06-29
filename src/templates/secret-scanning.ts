@@ -1,5 +1,5 @@
 
-import { Inputs } from "./inputs";
+import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { GitHubReusableSteps } from "../github-resusable-steps";
@@ -69,10 +69,7 @@ export const SecretScanningJobInputsGitHub = defineInputsGitHub({
 export const SecretScanningTemplateGitHub = defineJobGitHub(SecretScanningJobInputsGitHub, (inputValues) => ({
   name: `devguard:secret-scanning${inputValues.job_suffix}`,
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
+    "devguard-token": Secrets["devguard-token"],
   },
   job: {
     "runs-on": "ubuntu-latest",

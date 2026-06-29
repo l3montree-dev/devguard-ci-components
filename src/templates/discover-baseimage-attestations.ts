@@ -1,6 +1,6 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 
@@ -18,8 +18,7 @@ export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   needs: Inputs.needs,
   dependencies: Inputs.dependencies,
 
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   registry_password: Inputs.registry_password,
 
   predicate_type: Inputs.predicate_type,
@@ -50,11 +49,7 @@ export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
   (inputValues) => ({
     name: "devguard:discover-baseimage-attestations",
     secrets: {
-      "registry-password": {
-        description: "Registry password for pulling the base image.",
-        required: false,
-        default: "${{ github.token }}",
-      },
+      "registry-password": { ...Secrets["registry-password"], description: "Registry password for pulling the base image.", required: false as const },
     },
     job: {
       "runs-on": "ubuntu-latest",

@@ -64,16 +64,16 @@ on:
         type: string
         required: false
         default: ${{ github.ref_type == 'tag' }}
-      devguard-artifact-name:
-        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-        type: string
-        required: false
-        default: ""
       devguard-web-ui:
         description: The DevGuard Web-UI Instance URL
         type: string
         required: false
         default: https://app.devguard.org
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+        type: string
+        required: false
+        default: ""
       devguard-origin:
         description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
         type: string
@@ -193,7 +193,6 @@ on:
       registry-password:
         description: Registry password for pulling the image.
         required: true
-        default: ${{ github.token }}
 jobs:
   devguard_build_nix_amd64:
     runs-on: ${{ inputs.runner-amd64 }}

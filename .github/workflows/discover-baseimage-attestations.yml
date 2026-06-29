@@ -39,7 +39,6 @@ on:
       registry-password:
         description: Registry password for pulling the base image.
         required: false
-        default: ${{ github.token }}
 jobs:
   devguard_discover_baseimage_attestations:
     runs-on: ubuntu-latest

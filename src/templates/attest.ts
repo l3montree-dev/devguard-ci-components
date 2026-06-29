@@ -1,18 +1,16 @@
-import { Inputs } from "./inputs";
+import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 
 const AttestConfig = {
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
+  ...InputGroups.devguardCore,
   devguard_artifact_name: Inputs.devguard_artifact_name,
   image_suffix: Inputs.image_suffix,
   is_tag: Inputs.is_tag,
   commit_ref: Inputs.commit_ref,
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
 };
 
 const should_deploy = {
@@ -36,12 +34,9 @@ export const AttestJobInputs = defineInputsGitLab({
   allow_failure: Inputs.allow_failure,
   needs: Inputs.needs,
 
-  default_ref: Inputs.default_ref,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
+  ...InputGroups.ref,
 
-  registry: Inputs.registry,
-  registry_user: Inputs.registry_user,
+  ...InputGroups.registry,
   registry_password: Inputs.registry_password,
 
   attestations: Inputs.attestations,
@@ -159,15 +154,8 @@ export const AttestJobInputsGitHub = defineInputsGitHub({
 export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inputValues) => ({
   name: "devguard:attest",
   secrets: {
-    "devguard-token": {
-      description: "DevGuard API token",
-      required: true,
-    },
-    "registry-password": {
-        description: "Registry password for pulling the image.",
-        required: true,
-        default: "${{ github.token }}",
-    },
+    "devguard-token": Secrets["devguard-token"],
+    "registry-password": Secrets["registry-password"],
   },
   job: {
     "runs-on": "ubuntu-latest",
