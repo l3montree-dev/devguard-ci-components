@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const CreateManifestMultiArchJobInputs = defineInputsGitLab({
   stage: {
@@ -35,6 +36,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       packages: "write",
     },
     steps: [
+      GitHubReusableSteps.ResolveRegistryPassword,
       {
         name: "Download amd64 image-tag",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
@@ -57,7 +59,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         with: {
           registry: inputValues.registry,
           username: `${inputValues.registry_user}`,
-          password:  `\${{ secrets.registry-password }}`,
+          password: "${{ env.REGISTRY_PASSWORD }}",
         },
       },
       {

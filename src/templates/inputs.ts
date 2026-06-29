@@ -392,6 +392,6 @@ export const Secrets = {
   },
   "registry-password": {
     description: "Registry password for pulling the image.",
-    required: true,
+    required: false,
   },
 };

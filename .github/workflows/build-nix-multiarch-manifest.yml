@@ -105,13 +105,22 @@ on:
     secrets:
       registry-password:
         description: Registry password for pulling the image.
-        required: true
+        required: false
 jobs:
   devguard_create_nix_manifest_multi_arch:
     runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
+      - name: Resolve registry password
+        run: |-
+          if [ -n "$SECRET_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "REGISTRY_PASSWORD=${{ github.token }}" >> $GITHUB_ENV
+          fi
+        env:
+          SECRET_PASSWORD: ${{ secrets.registry-password }}
       - name: Download amd64 image-tag artifact
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -127,7 +136,7 @@ jobs:
         with:
           registry: ${{ inputs.registry }}
           username: ${{ inputs.registry-user }}
-          password: ${{ secrets.registry-password }}
+          password: ${{ env.REGISTRY_PASSWORD }}
       - name: Create and push multi-arch manifest
         env:
           CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}

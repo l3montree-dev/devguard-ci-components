@@ -51,12 +51,21 @@ on:
         required: true
       registry-password:
         description: Registry password for pulling the image.
-        required: true
+        required: false
 jobs:
   devguard_sign:
     runs-on: ubuntu-latest
     if: inputs.should-deploy
     steps:
+      - name: Resolve registry password
+        run: |-
+          if [ -n "$SECRET_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "REGISTRY_PASSWORD=${{ github.token }}" >> $GITHUB_ENV
+          fi
+        env:
+          SECRET_PASSWORD: ${{ secrets.registry-password }}
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -78,5 +87,5 @@ jobs:
       - name: DevGuard Image-Signing
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
-          args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p ${{ secrets.registry-password }} --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
+          args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     name: devguard:sign

@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const SignOciImageConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -88,6 +89,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
     "runs-on": "ubuntu-latest",
     if: "inputs.should_deploy",
     steps: [
+      GitHubReusableSteps.ResolveRegistryPassword,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,
@@ -121,7 +123,7 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
         name: "DevGuard Image-Signing",
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
-          args: `devguard-scanner sign -u ${inputValues.registry_user} -r ${inputValues.registry} -p \${{ secrets.registry-password }} --token="\${{ secrets.devguard-token }}" \${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name}`,
+          args: `devguard-scanner sign -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" --token="\${{ secrets.devguard-token }}" \${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name}`,
         },
       },
     ],

@@ -3,6 +3,7 @@ import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const AttestConfig = {
   ...InputGroups.devguardCore,
@@ -161,6 +162,7 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
     "runs-on": "ubuntu-latest",
     if: "inputs.should_deploy",
     steps: [
+      GitHubReusableSteps.ResolveRegistryPassword,
       {
         name: "Download image-digest artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
@@ -229,7 +231,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   echo 'SBOM downloaded to /tmp/sbom.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting SBOM with image digest present' &&
-    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p \${{ secrets.registry-password }} /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
   else
     echo 'Attesting SBOM without image digest' &&
     devguard-scanner attest /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
@@ -253,7 +255,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   echo 'VeX downloaded to /tmp/vex.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting VeX with image digest present' &&
-    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p \${{ secrets.registry-password }} /tmp/vex.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --token='\${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/vex.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --token='\${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
   else
     echo 'Attesting VeX without image digest' &&
     devguard-scanner attest /tmp/vex.json --predicateType='https://cyclonedx.org/vex' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
