@@ -2,7 +2,7 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION, DOCKER_LOGIN_ACTION } from "../actions-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
@@ -279,15 +279,7 @@ export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(Bui
           path: "arm64",
         },
       },
-      {
-        name: "Log in to ghcr.io",
-        uses: DOCKER_LOGIN_ACTION,
-        with: {
-          registry: inputValues.registry,
-          username: inputValues.registry_user,
-          password: "${{ env.REGISTRY_PASSWORD }}",
-        },
-      },
+      GitHubReusableSteps.DockerLogin(inputValues.registry, inputValues.registry_user),
       {
         name: "Create and push multi-arch manifest",
         env: {

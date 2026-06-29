@@ -163,23 +163,8 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
     if: "inputs.should_deploy",
     steps: [
       GitHubReusableSteps.ResolveRegistryPassword,
-      {
-        name: "Download image-digest artifact (can be created by build-image)",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `image-digest${ inputValues.image_suffix }`,
-          path: ".",
-        },
-        "continue-on-error": true,
-      },
-      {
-        name: "Download image-tag artifact (can be created by build-image)",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `image-tag${ inputValues.image_suffix }`,
-          path: ".",
-        },
-      },
+      GitHubReusableSteps.DownloadImageDigest(inputValues.image_suffix, true),
+      GitHubReusableSteps.DownloadImageTag(inputValues.image_suffix),
       {
         name: "Download artifact purl (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,

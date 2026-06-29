@@ -1,4 +1,4 @@
-import { ACTIONS_CHECKOUT } from "./actions-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "./actions-versions";
 
 export class GitHubReusableSteps {
   static CheckoutCode = {
@@ -24,4 +24,39 @@ fi`,
       SECRET_PASSWORD: "${{ secrets.registry-password }}",
     } as Record<string, string>,
   };
+
+  static DownloadImageTag(imageSuffix: string) {
+    return {
+      name: "Download image-tag artifact",
+      uses: ACTIONS_DOWNLOAD_ARTIFACT,
+      with: {
+        name: `image-tag${imageSuffix}`,
+        path: ".",
+      },
+    };
+  }
+
+  static DownloadImageDigest(imageSuffix: string, continueOnError = false) {
+    return {
+      name: "Download image-digest artifact",
+      uses: ACTIONS_DOWNLOAD_ARTIFACT,
+      with: {
+        name: `image-digest${imageSuffix}`,
+        path: ".",
+      },
+      ...(continueOnError ? { "continue-on-error": true } : {}),
+    };
+  }
+
+  static DockerLogin(registry: string, username: string) {
+    return {
+      name: "Log in to registry",
+      uses: DOCKER_LOGIN_ACTION,
+      with: {
+        registry,
+        username,
+        password: "${{ env.REGISTRY_PASSWORD }}",
+      },
+    };
+  }
 }

@@ -2,7 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
+import { ACTIONS_CHECKOUT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const SignOciImageConfig = {
@@ -99,22 +99,8 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
           "persist-credentials": true,
         },
       },
-      {
-        name: "Download image-tag artifact (can be created by build-image)",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `image-tag${ inputValues.image_suffix }`,
-          path: ".",
-        },
-      },
-      {
-        name: "Download image-digest artifact (can be created by build-image)",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `image-digest${ inputValues.image_suffix }`,
-          path: ".",
-        },
-      },
+      GitHubReusableSteps.DownloadImageTag(inputValues.image_suffix),
+      GitHubReusableSteps.DownloadImageDigest(inputValues.image_suffix),
       {
         name: "Set Image to be signed",
         run: `echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV`,

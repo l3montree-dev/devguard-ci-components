@@ -434,12 +434,12 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           persist-credentials: true
-      - name: Download image-tag artifact (can be created by build-image)
+      - name: Download image-tag artifact
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
-      - name: Download image-digest artifact (can be created by build-image)
+      - name: Download image-digest artifact
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
@@ -468,13 +468,13 @@ jobs:
           fi
         env:
           SECRET_PASSWORD: ${{ secrets.registry-password }}
-      - name: Download image-digest artifact (can be created by build-image)
+      - name: Download image-digest artifact
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
         continue-on-error: true
-      - name: Download image-tag artifact (can be created by build-image)
+      - name: Download image-tag artifact
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: image-tag${{ inputs.image-suffix }}

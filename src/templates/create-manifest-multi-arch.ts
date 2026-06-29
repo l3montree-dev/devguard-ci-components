@@ -53,15 +53,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
           path: "arm64",
         },
       },
-      {
-        name: "Log in to ghcr.io",
-        uses: DOCKER_LOGIN_ACTION,
-        with: {
-          registry: inputValues.registry,
-          username: `${inputValues.registry_user}`,
-          password: "${{ env.REGISTRY_PASSWORD }}",
-        },
-      },
+      GitHubReusableSteps.DockerLogin(inputValues.registry, inputValues.registry_user),
       {
         name: "Create and push multi-arch manifest",
         env: {

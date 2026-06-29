@@ -59,7 +59,7 @@ jobs:
         with:
           name: image-tag${{ inputs.image-suffix }}-arm64
           path: arm64
-      - name: Log in to ghcr.io
+      - name: Log in to registry
         uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870
         with:
           registry: ${{ inputs.registry }}
