@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+---
+
+## [v1.8.0] — 2026-07-06
+
+First release adhering to the [DevGuard Versioning Policy](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md) — major/minor version now synchronized across all DevGuard components. This release also introduces a single TypeScript source that generates both the GitHub Actions and GitLab CI components.
+
 ### Added
 
 - `artifacts_subdirectory` input to allow saving scanner output to a subdirectory
