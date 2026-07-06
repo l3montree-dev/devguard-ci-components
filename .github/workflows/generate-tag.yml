@@ -65,7 +65,7 @@ jobs:
             -e GITHUB_REF_NAME \
             -e IS_TAG \
             -e UPSTREAM_VERSION \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.8.0 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             devguard-scanner generate-tag \
               --imageSuffix="$IMAGE_SUFFIX" \
               --imageVariant="$IMAGE_VARIANT" \

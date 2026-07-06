@@ -237,7 +237,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
@@ -364,7 +364,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-amd64:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -373,7 +373,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-amd64:
     - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
 devguard:attest$[[ inputs.job_suffix ]]-amd64:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -563,7 +563,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
@@ -690,7 +690,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-arm64:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -699,7 +699,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-arm64:
     - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
 devguard:attest$[[ inputs.job_suffix ]]-arm64:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -863,7 +863,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-manifest:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""

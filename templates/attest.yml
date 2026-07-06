@@ -77,7 +77,7 @@ spec:
 include: []
 devguard:attest$[[ inputs.job_suffix ]]:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.8.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
