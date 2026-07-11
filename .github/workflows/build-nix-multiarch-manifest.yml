@@ -82,6 +82,11 @@ on:
         type: string
         required: false
         default: ""
+      nix-impure:
+        description: Whether to allow impure builds (e.g., reading environment variables during build).
+        type: string
+        required: false
+        default: "false"
       nix-version:
         description: Pinned Nix version for deterministic builds
         type: string

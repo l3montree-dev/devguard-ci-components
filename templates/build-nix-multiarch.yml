@@ -53,6 +53,9 @@ spec:
     nix_cache_region:
       default: ""
       description: S3 region for the cache bucket.
+    nix_impure:
+      default: "false"
+      description: Whether to allow impure builds (e.g., reading environment variables during build).
     devguard_origin:
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
       default: DEFAULT
@@ -207,7 +210,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
       echo "s3.addressing_style = path" >> ~/.aws/config
   script:
     - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
-    - nix build -L ".#$[[ inputs.nix_target_amd64 ]]" --no-update-lock-file
+    - nix build -L ".#$[[ inputs.nix_target_amd64 ]]" --no-update-lock-file $([[ "$[[ inputs.nix_impure ]]" == "true" ]] && echo --impure)
     - gzip -cd result > "image-amd64.tar"
     - |-
       if [[ -n "$[[ inputs.nix_cache_s3_endpoint ]]" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then
@@ -533,7 +536,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
       echo "s3.addressing_style = path" >> ~/.aws/config
   script:
     - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
-    - nix build -L ".#$[[ inputs.nix_target_arm64 ]]" --no-update-lock-file
+    - nix build -L ".#$[[ inputs.nix_target_arm64 ]]" --no-update-lock-file $([[ "$[[ inputs.nix_impure ]]" == "true" ]] && echo --impure)
     - gzip -cd result > "image-arm64.tar"
     - |-
       if [[ -n "$[[ inputs.nix_cache_s3_endpoint ]]" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then

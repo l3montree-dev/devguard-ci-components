@@ -50,6 +50,7 @@ export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   },
   pull_policy: Inputs.pull_policy,
   allow_failure: Inputs.allow_failure,
+
   ...InputGroups.failThresholds,
 });
 
@@ -158,8 +159,9 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
         name: "Build OCI image with Nix",
         env: {
           NIX_TARGET: `\${{ matrix.nix_target }}`,
+          NIX_IMPURE: `${ inputValues.nix_impure }`,
         } as Record<string, string>,
-        run: `nix build .#$NIX_TARGET`,
+        run: `nix build .#$NIX_TARGET $([ "$NIX_IMPURE" = "true" ] && echo --impure)`,
       },
       {
         name: "Push build results to Nix cache",
@@ -348,6 +350,7 @@ export const BuildNixMultiArchBuildImageTemplate = defineJobGitLab(BuildNixMulti
             nix_cache_s3_endpoint: inputValues.nix_cache_s3_endpoint,
             nix_cache_s3_bucket: inputValues.nix_cache_s3_bucket,
             nix_cache_region: inputValues.nix_cache_region,
+            nix_impure: inputValues.nix_impure,
           },
         },
         {

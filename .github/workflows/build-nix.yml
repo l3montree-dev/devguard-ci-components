@@ -53,6 +53,11 @@ on:
         type: string
         required: false
         default: ""
+      nix-impure:
+        description: Whether to allow impure builds (e.g., reading environment variables during build).
+        type: string
+        required: false
+        default: "false"
       nix-version:
         description: Pinned Nix version for deterministic builds (must match other CI systems)
         type: string
@@ -127,7 +132,8 @@ jobs:
       - name: Build OCI image with Nix
         env:
           NIX_TARGET: ${{ inputs.nix-target }}
-        run: nix build .#$NIX_TARGET
+          NIX_IMPURE: ${{ inputs.nix-impure }}
+        run: nix build .#$NIX_TARGET $([ "$NIX_IMPURE" = "true" ] && echo --impure)
       - name: Push build results to Nix cache
         if: inputs.nix-cache-s3-endpoint != ''
         env:

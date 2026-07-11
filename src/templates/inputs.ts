@@ -249,6 +249,11 @@ export const Inputs = {
     description: "S3 region for the cache bucket." as const,
   },
 
+  nix_impure: {
+    default: "false" as const,
+    description: "Whether to allow impure builds (e.g., reading environment variables during build)." as const,
+  },
+
   /*
   Upload inputs
   */
@@ -382,6 +387,7 @@ export const InputGroups = {
     nix_cache_s3_endpoint: Inputs.nix_cache_s3_endpoint,
     nix_cache_s3_bucket: Inputs.nix_cache_s3_bucket,
     nix_cache_region: Inputs.nix_cache_region,
+    nix_impure: Inputs.nix_impure,
   },
 };
 

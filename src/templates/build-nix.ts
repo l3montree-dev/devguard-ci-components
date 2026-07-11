@@ -188,8 +188,9 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
         name: "Build OCI image with Nix",
         env: {
           NIX_TARGET: `${ inputValues.nix_target }`,
+          NIX_IMPURE: `${ inputValues.nix_impure }`,
         } as Record<string, string>,
-        run: `nix build .#$NIX_TARGET`,
+        run: `nix build .#$NIX_TARGET $([ "$NIX_IMPURE" = "true" ] && echo --impure)`,
       },
       {
         name: "Push build results to Nix cache",
@@ -329,7 +330,7 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
     ],
     script: [
       `./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
-      `nix build -L ".#${inputValues.nix_target}" --no-update-lock-file`,
+      `nix build -L ".#${inputValues.nix_target}" --no-update-lock-file $([[ "${inputValues.nix_impure}" == "true" ]] && echo --impure)`,
       `gzip -cd result > "${inputValues.image}"`,
       `if [[ -n "${inputValues.nix_cache_s3_endpoint}" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then\n  export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"\n  export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"\n  nix copy $(nix-store -qR $(readlink result)) --to 's3://${inputValues.nix_cache_s3_bucket}?endpoint=${inputValues.nix_cache_s3_endpoint}&region=${inputValues.nix_cache_region}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true\nfi`,
       `nix run nixpkgs#crane -- digest --tarball="${inputValues.image}" > image-digest.txt`,
