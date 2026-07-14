@@ -130,7 +130,7 @@ jobs:
         run: crane pull $(cat image-tag.txt) image.tar
         if: ${{ inputs.fetch-image-from-registry == 'true' }}
       - name: DevGuard Container-Scanning
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.9.0
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           args: devguard-scanner container-scanning --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.image-tar-path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="${{ env.ARTIFACT_NAME }}" --webUI="${{ inputs.devguard-web-ui }}" --failOnRisk="${{ inputs.fail-on-risk }}" --failOnCVSS="${{ inputs.fail-on-cvss }}" --ignoreExternalReferences=${{ inputs.ignore-external-references }} --ignoreUpstreamAttestations=${{ inputs.ignore-upstream-attestations }}

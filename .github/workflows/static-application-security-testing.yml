@@ -60,7 +60,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: DevGuard Static application security testing
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.9.0
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           args: devguard-scanner sast --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }}

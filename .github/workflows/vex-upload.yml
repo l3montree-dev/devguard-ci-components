@@ -69,7 +69,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: DevGuard VeX Upload
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.9.0
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           args: devguard-scanner vex ${{ inputs.vex-file }} --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="${{ inputs.devguard-artifact-name }}" --ignoreExternalReferences=${{ inputs.ignore-external-references }}
