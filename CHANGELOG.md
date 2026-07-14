@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.9.0] — 2026-07-14
+
+### Added
+
+- `nix-impure` input and `--impure` flag support for Nix-based builds, allowing values to be read from environment variables
+
+
+---
+
 ## [v1.8.0] — 2026-07-06
 
 First release adhering to the [DevGuard Versioning Policy](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md) — major/minor version now synchronized across all DevGuard components. This release also introduces a single TypeScript source that generates both the GitHub Actions and GitLab CI components.
