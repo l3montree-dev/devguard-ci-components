@@ -174,6 +174,7 @@ const clSignOciImage = SignOciImageTemplate({
 const clAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
+  image: "$IMAGE_TAG",
   needs: [clGenerateTag.name, clPushOciImage.name, clBuildOciImage.name, clContainerScanning.name],
 });
 
@@ -214,6 +215,7 @@ const clnSignOciImage = SignOciImageTemplate({
 const clnAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
+  image: "$IMAGE_TAG",
   needs: [clnGenerateTag.name, clnPushOciImage.name, clnBuildOciImage.name, clnContainerScanning.name],
 });
 
@@ -240,6 +242,7 @@ const paSignOciImage = SignOciImageTemplate({
 const paAttest = AttestTemplate({
   stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
+  image: "$IMAGE_TAG",
   needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", paPushOciImage.name],
 });
 
@@ -272,6 +275,7 @@ const csaSignOciImage = SignOciImageTemplate({
 const csaAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
+  image: "$IMAGE_TAG",
   needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]", csaContainerScanning.name, csaPushOciImage.name],
 });
 
@@ -492,6 +496,7 @@ const clbiSignOciImage = SignOciImageTemplate({
 const clbiAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
+  image: "$IMAGE_TAG",
   needs: [clbiGenerateTag.name, clbiPushOciImage.name, clbiBuildOciImage.name, clbiContainerScanning.name],
 });
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
