@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.9.1] — 2026-07-15
+
+### Fixed
+
+- `attest` jobs in `container-lifecycle`, `container-lifecycle-nix`, `push-and-attest`, and `container-scanning-and-attest` now attest the actual generated image tag (`$IMAGE_TAG`) instead of the static `image` input, which defaulted to `$CI_REGISTRY_IMAGE` (i.e. always the latest image)
+
+---
+
 ## [v1.9.0] — 2026-07-14
 
 ### Added
