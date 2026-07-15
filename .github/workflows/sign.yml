@@ -85,7 +85,7 @@ jobs:
       - name: Set Image to be signed
         run: echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV
       - name: DevGuard Image-Signing
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.9.2
         with:
           args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     name: devguard:sign
