@@ -63,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload SARIF to DevGuard
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.10.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           args: devguard-scanner sarif zizmor.sarif --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --webUI=${{ inputs.devguard-web-ui }}

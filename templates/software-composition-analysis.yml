@@ -84,7 +84,7 @@ devguard:software_composition_analysis$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.10.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard SCA (based on the Trivy Project)..."

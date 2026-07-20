@@ -66,7 +66,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     DEVGUARD_ARTIFACT_NAME: $[[ inputs.devguard_artifact_name ]]
     ENV_FILENAME: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.10.0
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script: |
     echo "Running generate-tag job..."
