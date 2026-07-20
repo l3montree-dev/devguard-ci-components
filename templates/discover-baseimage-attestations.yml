@@ -49,7 +49,7 @@ include: []
 devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   stage: $[[ inputs.stage ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.10.0
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
