@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.11.0] — 2026-07-24
+
+
+Version bump to stay in sync with the DevGuard [Versioning Policy](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md)
+
+
+---
+
 ## [v1.10.0] — 2026-07-20
 
 Version bump to stay in sync with the DevGuard [Versioning Policy](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md)
