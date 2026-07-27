@@ -449,6 +449,16 @@ jobs:
   devguard_container_scanning_amd64:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -498,6 +508,16 @@ jobs:
   devguard_container_scanning_arm64:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -548,6 +568,16 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.should-deploy
     steps:
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -591,6 +621,16 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.should-deploy
     steps:
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -706,6 +746,16 @@ jobs:
           fi
         env:
           SECRET_PASSWORD: ${{ secrets.registry-password }}
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -745,6 +795,16 @@ jobs:
           fi
         env:
           SECRET_PASSWORD: ${{ secrets.registry-password }}
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:

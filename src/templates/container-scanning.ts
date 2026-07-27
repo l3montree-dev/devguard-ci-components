@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 export const ContainerScanningJobInputs = defineInputsGitLab({
   ...InputGroups.devguardCore,
   devguard_token: Inputs.devguard_token,
@@ -66,10 +67,12 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
   name: "devguard:container-scanning",
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

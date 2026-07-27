@@ -70,10 +70,12 @@ export const SecretScanningTemplateGitHub = defineJobGitHub(SecretScanningJobInp
   name: `devguard:secret-scanning${inputValues.job_suffix}`,
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       GitHubReusableSteps.CheckoutCode,
       {
         name: "Run DevGuard Secret Scanning",

@@ -1,8 +1,9 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
-import { Inputs } from "./inputs";
+import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const GenerateTagJobInputs = defineInputsGitLab({
   devguard_artifact_name: {
@@ -54,15 +55,20 @@ export const GenerateTagJobInputsGitHub = defineInputsGitHub({
 
 export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGitHub, (inputValues) => ({
   name: "devguard:generate-tag",
+  secrets: {
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
+  },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": false,
+          submodules: "recursive",
         },
       },
       {

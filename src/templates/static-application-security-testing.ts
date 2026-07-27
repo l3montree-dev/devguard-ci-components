@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const SASTConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -41,10 +42,12 @@ export const StaticApplicationSecurityTestingTemplateGitHub = defineJobGitHub(SA
   name: "devguard:static-application-security-testing",
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

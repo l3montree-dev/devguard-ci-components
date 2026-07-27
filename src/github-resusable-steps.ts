@@ -1,6 +1,19 @@
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "./actions-versions";
 
 export class GitHubReusableSteps {
+  static SetupSubmoduleSsh = {
+    name: "Set up SSH for private git submodules",
+    env: {
+      SUBMODULE_SSH_KEY: "${{ secrets.submodule-ssh-key }}",
+    },
+    run: `if [ -n "$SUBMODULE_SSH_KEY" ]; then
+  mkdir -p ~/.ssh
+  echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+  chmod 600 ~/.ssh/id_ed25519
+  ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+fi`,
+  };
+
   static CheckoutCode = {
     name: "Checkout code",
     uses: ACTIONS_CHECKOUT,

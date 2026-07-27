@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const VexUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -57,16 +58,19 @@ export const VexUploadTemplateGitHub = defineJobGitHub(VexUploadJobInputsGitHub,
   name: "devguard:vex-upload",
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": false,
+          submodules: "recursive",
         },
       },
       {

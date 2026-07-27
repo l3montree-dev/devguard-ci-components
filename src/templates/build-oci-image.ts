@@ -4,6 +4,7 @@ import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const BuildOciImageConfig = {
   ...InputGroups.devguardCore,
@@ -130,18 +131,7 @@ fi
 
 echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar" >> $GITHUB_ENV`,
       },
-      {
-        name: "Set up SSH for private git submodules",
-        env: {
-          SUBMODULE_SSH_KEY: `\${{ secrets.submodule-ssh-key }}`,
-        } as Record<string, string>,
-        run: `if [ -n "$SUBMODULE_SSH_KEY" ]; then
-  mkdir -p ~/.ssh
-  echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
-  chmod 600 ~/.ssh/id_ed25519
-  ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
-fi`,
-      },
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

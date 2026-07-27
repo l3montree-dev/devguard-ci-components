@@ -2,6 +2,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const ZizmorScanningConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -23,6 +24,7 @@ export const ZizmorScanningTemplateGitHub = defineJobGitHub(ZizmorScanningJobInp
   name: "devguard:zizmor-scanning",
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
@@ -32,11 +34,13 @@ export const ZizmorScanningTemplateGitHub = defineJobGitHub(ZizmorScanningJobInp
       actions: "read",
     },
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout repository",
         uses: ACTIONS_CHECKOUT,
         with: {
           "persist-credentials": false,
+          submodules: "recursive",
         },
       },
       {

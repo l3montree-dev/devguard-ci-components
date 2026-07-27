@@ -4,6 +4,7 @@ import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const PushOciImageJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -68,17 +69,20 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
   name: "devguard:push-oci-image",
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     if: "inputs.should_deploy",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": true,
+          submodules: "recursive",
         },
       },
       {

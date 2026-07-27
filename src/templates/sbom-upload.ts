@@ -4,6 +4,7 @@ import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const SbomUploadJobInputs = defineInputsGitLab({
   devguard_api_url: Inputs.devguard_api_url,
@@ -64,16 +65,19 @@ export const SbomUploadTemplateGitHub = defineJobGitHub(SbomUploadJobInputsGitHu
   name: "devguard:sbom-upload",
   secrets: {
     "devguard-token": Secrets["devguard-token"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": false,
+          submodules: "recursive",
         },
       },
       {

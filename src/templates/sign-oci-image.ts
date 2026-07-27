@@ -84,12 +84,14 @@ export const SignTemplateGitHub = defineJobGitHub(SignJobInputsGitHub, (inputVal
   secrets: {
     "devguard-token": Secrets["devguard-token"],
     "registry-password": Secrets["registry-password"],
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     if: "inputs.should_deploy",
     steps: [
       GitHubReusableSteps.ResolveRegistryPassword,
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

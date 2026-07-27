@@ -2,6 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
 export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
@@ -149,18 +150,7 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
   job: {
     "runs-on": inputValues.runner,
     steps: [
-      {
-        name: "Set up SSH for private git submodules",
-        env: {
-          SUBMODULE_SSH_KEY: `\${{ secrets.submodule-ssh-key }}`,
-        } as Record<string, string>,
-        run: `if [ -n "$SUBMODULE_SSH_KEY" ]; then
-  mkdir -p ~/.ssh
-  echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
-  chmod 600 ~/.ssh/id_ed25519
-  ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
-fi`,
-      },
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

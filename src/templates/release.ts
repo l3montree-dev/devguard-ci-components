@@ -2,7 +2,8 @@ import { ACTIONS_CHECKOUT } from "../actions-versions";
 import { ContainerImages } from "../container-image-versions";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
-import { Inputs } from "./inputs";
+import { Inputs, Secrets } from "./inputs";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const ReleaseJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
@@ -35,18 +36,23 @@ export const ReleaseJobInputsGitHub = defineInputsGitHub({
 
 export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (inputValues) => ({
   name: "devguard:release",
+  secrets: {
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
+  },
   job: {
     "runs-on": "ubuntu-latest",
     permissions: {
       contents: "write",
     },
     steps: [
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,
         with: {
           "fetch-depth": 0,
           "persist-credentials": true,
+          submodules: "recursive",
         },
       },
       {

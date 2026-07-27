@@ -30,18 +30,32 @@ on:
         type: boolean
         required: false
         default: false
-    secrets: {}
+    secrets:
+      submodule-ssh-key:
+        description: SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.
+        required: false
 jobs:
   devguard_release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           persist-credentials: true
+          submodules: recursive
       - name: Create GitHub Release
         continue-on-error: ${{ inputs.allow-failure }}
         env:

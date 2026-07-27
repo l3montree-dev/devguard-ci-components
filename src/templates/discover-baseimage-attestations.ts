@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   stage: {
@@ -50,16 +51,19 @@ export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
     name: "devguard:discover-baseimage-attestations",
     secrets: {
       "registry-password": { ...Secrets["registry-password"], description: "Registry password for pulling the base image.", required: false as const },
+      "submodule-ssh-key": Secrets["submodule-ssh-key"],
     },
     job: {
       "runs-on": "ubuntu-latest",
       steps: [
+        GitHubReusableSteps.SetupSubmoduleSsh,
         {
           name: "Checkout code",
           uses: ACTIONS_CHECKOUT,
           with: {
             "fetch-depth": 0,
             "persist-credentials": false,
+            submodules: "recursive",
           },
         },
         {

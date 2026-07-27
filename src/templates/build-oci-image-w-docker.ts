@@ -4,6 +4,7 @@ import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, DOCKER_SETUP_BUILDX_ACTION } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
+import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   ...InputGroups.devguardCore,
@@ -76,18 +77,7 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
-      {
-        name: "Set up SSH for private git submodules",
-        env: {
-          SUBMODULE_SSH_KEY: `\${{ secrets.submodule-ssh-key }}`,
-        } as Record<string, string>,
-        run: `if [ -n "$SUBMODULE_SSH_KEY" ]; then
-  mkdir -p ~/.ssh
-  echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
-  chmod 600 ~/.ssh/id_ed25519
-  ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
-fi`,
-      },
+      GitHubReusableSteps.SetupSubmoduleSsh,
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

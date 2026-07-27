@@ -120,6 +120,9 @@ on:
       nix-cache-aws-secret-access-key:
         description: AWS secret access key for the Nix S3 cache.
         required: false
+      submodule-ssh-key:
+        description: SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.
+        required: false
 jobs:
   devguard_build_nix_multiarch:
     runs-on: ${{ matrix.runner }}
@@ -133,11 +136,22 @@ jobs:
             runner: ubuntu-24.04-arm
             nix_target: ${{ inputs.nix-target-arm64 }}
     steps:
+      - name: Set up SSH for private git submodules
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
+        run: |-
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           persist-credentials: false
+          submodules: recursive
       - name: Install Nix
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
