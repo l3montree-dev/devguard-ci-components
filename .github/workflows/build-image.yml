@@ -89,12 +89,15 @@ jobs:
 
           echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar" >> $GITHUB_ENV
       - name: Set up SSH for private git submodules
-        if: secrets.submodule-ssh-key != ''
+        env:
+          SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
         run: |-
-          mkdir -p ~/.ssh
-          echo "${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          if [ -n "$SUBMODULE_SSH_KEY" ]; then
+            mkdir -p ~/.ssh
+            echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+          fi
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:

@@ -132,11 +132,15 @@ echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar
       },
       {
         name: "Set up SSH for private git submodules",
-        if: `secrets.submodule-ssh-key != ''`,
-        run: `mkdir -p ~/.ssh
-echo "\${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
-chmod 600 ~/.ssh/id_ed25519
-ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts`,
+        env: {
+          SUBMODULE_SSH_KEY: `\${{ secrets.submodule-ssh-key }}`,
+        } as Record<string, string>,
+        run: `if [ -n "$SUBMODULE_SSH_KEY" ]; then
+  mkdir -p ~/.ssh
+  echo "$SUBMODULE_SSH_KEY" > ~/.ssh/id_ed25519
+  chmod 600 ~/.ssh/id_ed25519
+  ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
+fi`,
       },
       {
         name: "Checkout code",
