@@ -71,10 +71,19 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
       required: false,
     },
     "registry-password": { ...Secrets["registry-password"], description: "Registry password for pushing the image.", required: false as const },
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
     steps: [
+      {
+        name: "Set up SSH for private git submodules",
+        if: `secrets.submodule-ssh-key != ''`,
+        run: `mkdir -p ~/.ssh
+echo "\${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
+chmod 600 ~/.ssh/id_ed25519
+ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts`,
+      },
       {
         name: "Checkout code",
         uses: ACTIONS_CHECKOUT,

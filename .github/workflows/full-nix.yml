@@ -195,6 +195,9 @@ on:
       nix-cache-aws-secret-access-key:
         description: AWS secret access key for the Nix S3 cache.
         required: false
+      submodule-ssh-key:
+        description: SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.
+        required: false
       registry-password:
         description: Registry password for pulling the image.
         required: false
@@ -202,11 +205,19 @@ jobs:
   devguard_build_nix_amd64:
     runs-on: ${{ inputs.runner-amd64 }}
     steps:
+      - name: Set up SSH for private git submodules
+        if: secrets.submodule-ssh-key != ''
+        run: |-
+          mkdir -p ~/.ssh
+          echo "${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           persist-credentials: false
+          submodules: recursive
       - name: Install Nix
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
@@ -313,11 +324,19 @@ jobs:
   devguard_build_nix_arm64:
     runs-on: ${{ inputs.runner-arm64 }}
     steps:
+      - name: Set up SSH for private git submodules
+        if: secrets.submodule-ssh-key != ''
+        run: |-
+          mkdir -p ~/.ssh
+          echo "${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           persist-credentials: false
+          submodules: recursive
       - name: Install Nix
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:

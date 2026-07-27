@@ -72,6 +72,9 @@ on:
       build-args:
         description: Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.
         required: false
+      submodule-ssh-key:
+        description: SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.
+        required: false
 jobs:
   devguard_build_oci_image:
     runs-on: ubuntu-latest
@@ -85,6 +88,13 @@ jobs:
           fi
 
           echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar" >> $GITHUB_ENV
+      - name: Set up SSH for private git submodules
+        if: secrets.submodule-ssh-key != ''
+        run: |-
+          mkdir -p ~/.ssh
+          echo "${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:

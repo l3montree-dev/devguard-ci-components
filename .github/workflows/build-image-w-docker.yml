@@ -78,10 +78,20 @@ on:
       registry-password:
         description: Registry password for pushing the image.
         required: false
+      submodule-ssh-key:
+        description: SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.
+        required: false
 jobs:
   devguard_build_oci_image_w_docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up SSH for private git submodules
+        if: secrets.submodule-ssh-key != ''
+        run: |-
+          mkdir -p ~/.ssh
+          echo "${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:

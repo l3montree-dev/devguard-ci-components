@@ -115,6 +115,7 @@ export const BuildOciImageTemplateGitHub = defineJobGitHub(BuildOciImageJobInput
       description: "Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.",
       required: false,
     },
+    "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
     "runs-on": "ubuntu-latest",
@@ -128,6 +129,14 @@ else
 fi
 
 echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar" >> $GITHUB_ENV`,
+      },
+      {
+        name: "Set up SSH for private git submodules",
+        if: `secrets.submodule-ssh-key != ''`,
+        run: `mkdir -p ~/.ssh
+echo "\${{ secrets.submodule-ssh-key }}" > ~/.ssh/id_ed25519
+chmod 600 ~/.ssh/id_ed25519
+ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts`,
       },
       {
         name: "Checkout code",

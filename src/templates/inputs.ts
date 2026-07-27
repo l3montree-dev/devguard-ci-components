@@ -400,4 +400,8 @@ export const Secrets = {
     description: "Registry password for pulling the image.",
     required: false,
   },
+  "submodule-ssh-key": {
+    description: "SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.",
+    required: false,
+  },
 };
