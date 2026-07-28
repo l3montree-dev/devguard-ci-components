@@ -31,10 +31,11 @@ fi`,
     run: `if [ -n "$SECRET_PASSWORD" ]; then
   echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
 else
-  echo "REGISTRY_PASSWORD=\${{ github.token }}" >> $GITHUB_ENV
+  echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
 fi`,
     env: {
       SECRET_PASSWORD: "${{ secrets.registry-password }}",
+      FALLBACK_TOKEN: "${{ github.token }}",
     } as Record<string, string>,
   };
 

@@ -457,10 +457,11 @@ jobs:
           if [ -n "$SECRET_PASSWORD" ]; then
             echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
           else
-            echo "REGISTRY_PASSWORD=${{ github.token }}" >> $GITHUB_ENV
+            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
           fi
         env:
           SECRET_PASSWORD: ${{ secrets.registry-password }}
+          FALLBACK_TOKEN: ${{ github.token }}
       - name: Set up SSH for private git submodules
         env:
           SUBMODULE_SSH_KEY: ${{ secrets.submodule-ssh-key }}
@@ -507,10 +508,11 @@ jobs:
           if [ -n "$SECRET_PASSWORD" ]; then
             echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
           else
-            echo "REGISTRY_PASSWORD=${{ github.token }}" >> $GITHUB_ENV
+            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
           fi
         env:
           SECRET_PASSWORD: ${{ secrets.registry-password }}
+          FALLBACK_TOKEN: ${{ github.token }}
       - name: Download image-digest artifact
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
