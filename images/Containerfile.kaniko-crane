@@ -1,15 +1,15 @@
-FROM ghcr.io/l3montree-dev/devguard/scanner:v1.3.1@sha256:9eb855f1f27194e18f0a2a27d9dcbf5c4475a80d17b5bc46020a926bdd71b0aa AS devguard-scanner
+FROM ghcr.io/l3montree-dev/devguard/scanner:v1.11.0@sha256:0db8953e9e54206cfe5d94fbac93b1010794e692a88cfed25fc6f576f03eb1c1 AS devguard-scanner
 # https://github.com/l3montree-dev/devguard
 
 # checkov:skip=CKV_DOCKER_2
 # checkov:skip=CKV_DOCKER_3
 
-FROM registry.opencode.de/oci-community/images/l3montree/kaniko:v1.27.3-main-debug@sha256:449a1f0d88d5a7444709724b85f6b801b8dde9ff36ea2d1c1223bb385707ff54
+FROM registry.opencode.de/oci-community/images/l3montree/kaniko:v1.28.0-debug@sha256:605d840167fafa811646c98b6df210cdddbe5ded85c5abe5b05f09fd5868f9c0
 # https://github.com/osscontainertools/kaniko
 # https://gitlab.opencode.de/oci-community/images/l3montree/kaniko
 
-COPY --from=devguard-scanner /nix/store/3pidi30fdmvfwq2l4jwd1vxw36h3j9fj-crane-0.21.3/bin/crane /crane
-COPY --from=devguard-scanner /nix/store/zzx6y1a0xcamldrv9wrd6sms3b7fp26w-devguard-scanner-ab2a655/bin/devguard-scanner /devguard-scanner
+COPY --from=devguard-scanner /nix/store/7ixdp2z6jda9vh491xf2x8l4r2nkan02-crane-0.21.5/bin/crane /crane
+COPY --from=devguard-scanner /nix/store/4ks8m1x56zqq2x0jaqqcymm2598ddzhn-devguard-scanner-v1.11.0/bin/devguard-scanner /devguard-scanner
 
 WORKDIR /workspace
 

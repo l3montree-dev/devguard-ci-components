@@ -193,7 +193,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.1@sha256:2966ade3c7d565ae56c48cfa50d5df6e36a5371f4173606eb4de57558186433d
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.0-devguard-scanner-v1.11.0@sha256:dfeba5cc570ffda5111af4666c63567209306686ac155e4f1229c76303460bcd
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -315,7 +315,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.27.3-devguard-scanner-v1.3.1@sha256:2966ade3c7d565ae56c48cfa50d5df6e36a5371f4173606eb4de57558186433d
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.0-devguard-scanner-v1.11.0@sha256:dfeba5cc570ffda5111af4666c63567209306686ac155e4f1229c76303460bcd
     entrypoint:
       - ""
   rules:
