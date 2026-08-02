@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.12.0] — 2026-08-02
+
+### Added
+
+- Support for private submodules via a reusable setup-submodule SSH step, used across all workflow templates that check out the repository
+
+### Changed
+
+- Bumped the GitLab kaniko builder image and included devguard-scanner version
+- Switched from GitHub Actions `if:` conditionals to shell-level `if` checks in several build steps
+- Reusable steps now read values from environment variables instead of inline `run` statements
+
+---
+
 ## [v1.11.0] — 2026-07-24
 
 
