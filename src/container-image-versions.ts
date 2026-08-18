@@ -1,5 +1,5 @@
 export enum ContainerImages {
-  KANIKO = "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.0-devguard-scanner-v1.11.0@sha256:dfeba5cc570ffda5111af4666c63567209306686ac155e4f1229c76303460bcd",
+  KANIKO = "registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350",
   DEVGUARD_SCANNER = "ghcr.io/l3montree-dev/devguard/scanner:main",
   GITLAB_RELEASE_CLI = "registry.gitlab.com/gitlab-org/release-cli:latest",
   DOCKER_KRANE = "registry.opencode.de/plain/oci/valkey/dockerkrane:latest@sha256:4fbbf08bcfa3f9911b093842f730c12902eb009e0716888174cc2cc7ecaaeee6",
