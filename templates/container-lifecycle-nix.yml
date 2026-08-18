@@ -319,7 +319,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.0-devguard-scanner-v1.11.0@sha256:dfeba5cc570ffda5111af4666c63567209306686ac155e4f1229c76303460bcd
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
     entrypoint:
       - ""
   rules:
