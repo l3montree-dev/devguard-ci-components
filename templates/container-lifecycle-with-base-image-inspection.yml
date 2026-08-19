@@ -346,7 +346,8 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
-    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+    - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
+      optional: true
   dependencies:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - devguard:push_oci_image$[[ inputs.job_suffix ]]
@@ -371,7 +372,8 @@ devguard:attest$[[ inputs.job_suffix ]]:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
-    - devguard:push_oci_image$[[ inputs.job_suffix ]]
+    - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
+      optional: true
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:container_scanning$[[ inputs.job_suffix ]]
   variables:

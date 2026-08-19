@@ -168,14 +168,19 @@ const clSignOciImage = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [clGenerateTag.name, clPushOciImage.name],
+  needs: [clGenerateTag.name, { job: clPushOciImage.name, optional: true }],
   dependencies: [clGenerateTag.name, clPushOciImage.name],
 });
 const clAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [clGenerateTag.name, clPushOciImage.name, clBuildOciImage.name, clContainerScanning.name],
+  needs: [
+    clGenerateTag.name,
+    { job: clPushOciImage.name, optional: true },
+    clBuildOciImage.name,
+    clContainerScanning.name,
+  ],
 });
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
@@ -209,14 +214,19 @@ const clnSignOciImage = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [clnGenerateTag.name, clnPushOciImage.name],
+  needs: [clnGenerateTag.name, { job: clnPushOciImage.name, optional: true }],
   dependencies: [clnGenerateTag.name, clnPushOciImage.name],
 });
 const clnAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [clnGenerateTag.name, clnPushOciImage.name, clnBuildOciImage.name, clnContainerScanning.name],
+  needs: [
+    clnGenerateTag.name,
+    { job: clnPushOciImage.name, optional: true },
+    clnBuildOciImage.name,
+    clnContainerScanning.name,
+  ],
 });
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
@@ -236,14 +246,18 @@ const paSignOciImage = SignOciImageTemplate({
   stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [paGenerateTag.name, paPushOciImage.name],
+  needs: [paGenerateTag.name, { job: paPushOciImage.name, optional: true }],
   dependencies: [paGenerateTag.name, paPushOciImage.name],
 });
 const paAttest = AttestTemplate({
   stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", paPushOciImage.name],
+  needs: [
+    paGenerateTag.name,
+    "$[[ inputs.build_job_name ]]",
+    { job: paPushOciImage.name, optional: true },
+  ],
 });
 
 // ── container-scanning-and-attest ─────────────────────────────────────────────
@@ -269,14 +283,19 @@ const csaSignOciImage = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [csaGenerateTag.name, csaPushOciImage.name],
+  needs: [csaGenerateTag.name, { job: csaPushOciImage.name, optional: true }],
   dependencies: [csaGenerateTag.name, csaPushOciImage.name],
 });
 const csaAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]", csaContainerScanning.name, csaPushOciImage.name],
+  needs: [
+    csaGenerateTag.name,
+    "$[[ inputs.build_job_name ]]",
+    csaContainerScanning.name,
+    { job: csaPushOciImage.name, optional: true },
+  ],
 });
 
 // ── build-nix-multiarch ───────────────────────────────────────────────────────
@@ -329,7 +348,7 @@ const bnmaSignAmd64 = SignOciImageTemplate({
   image: "$IMAGE_TAG",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
-  needs: [bnmaGenerateTagAmd64.name, bnmaPushAmd64.name],
+  needs: [bnmaGenerateTagAmd64.name, { job: bnmaPushAmd64.name, optional: true }],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaPushAmd64.name],
 });
 const bnmaAttestAmd64 = AttestTemplate({
@@ -338,7 +357,12 @@ const bnmaAttestAmd64 = AttestTemplate({
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   devguard_artifact_name: "$ARTIFACT_NAME",
   image: "$IMAGE_TAG",
-  needs: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name, bnmaContainerScanningAmd64.name, bnmaPushAmd64.name],
+  needs: [
+    bnmaGenerateTagAmd64.name,
+    bnmaBuildAmd64.name,
+    bnmaContainerScanningAmd64.name,
+    { job: bnmaPushAmd64.name, optional: true },
+  ],
   attestations: [
     {
       source:
@@ -406,7 +430,7 @@ const bnmaSignArm64 = SignOciImageTemplate({
   image: "$IMAGE_TAG",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
-  needs: [bnmaGenerateTagArm64.name, bnmaPushArm64.name],
+  needs: [bnmaGenerateTagArm64.name, { job: bnmaPushArm64.name, optional: true }],
   dependencies: [bnmaGenerateTagArm64.name, bnmaPushArm64.name],
 });
 const bnmaAttestArm64 = AttestTemplate({
@@ -415,7 +439,12 @@ const bnmaAttestArm64 = AttestTemplate({
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   devguard_artifact_name: "$ARTIFACT_NAME",
   image: "$IMAGE_TAG",
-  needs: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name, bnmaContainerScanningArm64.name, bnmaPushArm64.name],
+  needs: [
+    bnmaGenerateTagArm64.name,
+    bnmaBuildArm64.name,
+    bnmaContainerScanningArm64.name,
+    { job: bnmaPushArm64.name, optional: true },
+  ],
   attestations: [
     {
       source:
@@ -442,7 +471,12 @@ const bnmaAttestArm64 = AttestTemplate({
 const bnmaCreateManifest = CreateManifestMultiArchTemplate({
   stage: "attestation",
   artifacts_subdirectory: ".",
-  needs: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
+  needs: [
+    bnmaGenerateTagAmd64.name,
+    bnmaGenerateTagArm64.name,
+    { job: bnmaPushAmd64.name, optional: true },
+    { job: bnmaPushArm64.name, optional: true },
+  ],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
 });
 const bnmaSignManifest = SignOciImageTemplate({
@@ -490,14 +524,19 @@ const clbiSignOciImage = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [clbiGenerateTag.name, clbiPushOciImage.name],
+  needs: [clbiGenerateTag.name, { job: clbiPushOciImage.name, optional: true }],
   dependencies: [clbiGenerateTag.name, clbiPushOciImage.name],
 });
 const clbiAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [clbiGenerateTag.name, clbiPushOciImage.name, clbiBuildOciImage.name, clbiContainerScanning.name],
+  needs: [
+    clbiGenerateTag.name,
+    { job: clbiPushOciImage.name, optional: true },
+    clbiBuildOciImage.name,
+    clbiContainerScanning.name,
+  ],
 });
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
 const clbiSbomUpload = SbomUploadTemplate({
