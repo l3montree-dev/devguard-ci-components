@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.12.1] — 2026-08-19
+
+### Changed
+
+- Bumped the GitLab kaniko builder image to `kaniko-v1.28.3-devguard-scanner-v1.12.4`
+
+---
+
 ## [v1.12.0] — 2026-08-02
 
 ### Added
