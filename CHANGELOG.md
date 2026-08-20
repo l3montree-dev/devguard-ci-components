@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.12.4] — 2026-08-20
+
+### Changed
+
+- Marked the `push_oci_image` job as `optional: true` in downstream `needs` across all container lifecycle and attestation templates, so signing and attestation jobs can run even when the push job is skipped
+
+---
+
 ## [v1.12.1] — 2026-08-19
 
 ### Changed
