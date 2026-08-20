@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
           submodules: recursive
       - name: Discover base image attestations
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.12.5
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           args: devguard-scanner login -u ${{ inputs.registry-user }} -p ${{ secrets.registry-password }} ${{ inputs.registry }} && devguard-scanner discover-baseimage-attestations --output "${{ inputs.output }}" --predicateType "${{ inputs.predicate-type }}" "${{ inputs.path }}"
