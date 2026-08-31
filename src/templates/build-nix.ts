@@ -127,6 +127,7 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
   allow_failure: Inputs.allow_failure,
   commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
+  upstream_version: Inputs.upstream_version,
 });
 
 export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (inputValues) => ({
@@ -235,12 +236,14 @@ nix copy $(nix-store -qR $(readlink result)) \\
           IMAGE_NAME: inputValues.image_name,
           ARCHITECTURE: inputValues.architecture,
           IS_TAG: inputValues.is_tag,
+          UPSTREAM_VERSION: inputValues.upstream_version,
         } as Record<string, string>,
         run: `devguard-scanner generate-tag \\
   --imagePath="$IMAGE_NAME" \\
   --ref="$GITHUB_REF_NAME" \\
   --isTag=$IS_TAG \\
   --architecture="$ARCHITECTURE" \\
+  --upstreamVersion="$UPSTREAM_VERSION" \\
   >> image-tag-env.txt
 IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
 ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)

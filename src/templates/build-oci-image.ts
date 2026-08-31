@@ -100,6 +100,7 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
 export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
   ...BuildOciImageConfig,
   ...InputGroups.ref,
+  upstream_version: Inputs.upstream_version,
   disable_artifact_registry_as_image_store: {
     description:
       "If the artifact size is too big for your github usage quota, set this to true. This will push the image directly to the registry instead of uploading it as artifact.",
@@ -215,6 +216,7 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
           IMAGE_SUFFIX: `${ inputValues.image_suffix }`,
           IMAGE: `${ inputValues.image }`,
           IS_TAG: `${ inputValues.is_tag }`,
+          UPSTREAM_VERSION: `${ inputValues.upstream_version }`,
         },
         run: `if [ -n "$IMAGE" ]; then
   IMAGE_TAG="$IMAGE"
@@ -229,11 +231,13 @@ else
   docker run --rm \\
     -e IMAGE_PATH \\
     -e GITHUB_REF_NAME \\
+    -e UPSTREAM_VERSION \\
     ${ContainerImages.DEVGUARD_SCANNER} \\
     devguard-scanner generate-tag \\
       --imagePath="$IMAGE_PATH" \\
       --ref="$GITHUB_REF_NAME" \\
       --isTag=$IS_TAG \\
+      --upstreamVersion="$UPSTREAM_VERSION" \\
   >> image-tag-env.txt
   IMAGE_TAG=$(grep '^IMAGE_TAG=' image-tag-env.txt | cut -d= -f2-)
   ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' image-tag-env.txt | cut -d= -f2-)
