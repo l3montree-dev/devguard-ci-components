@@ -509,8 +509,9 @@ const clbiContainerScanning = ContainerScanningTemplate({
   stage: "oci-image",
   git_strategy: "fetch",
   image_tar_path: "image.tar",
-  needs: [clbiBuildOciImage.name],
-  dependencies: [clbiBuildOciImage.name],
+  devguard_artifact_name: "$ARTIFACT_NAME",
+  needs: [clbiGenerateTag.name, clbiBuildOciImage.name],
+  dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name],
 });
 const clbiPushOciImage = PushOciImageTemplate({
   stage: "oci-image",
