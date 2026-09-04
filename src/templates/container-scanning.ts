@@ -37,6 +37,7 @@ export const ContainerScanningJobInputs = defineInputsGitLab({
   ...InputGroups.failThresholds,
   ignore_external_references: Inputs.ignore_external_references,
   ignore_upstream_attestations: Inputs.ignore_upstream_attestations,
+  extra_args: Inputs.extra_args,
 
   fetch_image_from_registry: Inputs.fetch_image_from_registry,
 });
@@ -57,6 +58,7 @@ const ContainerScanningConfig = {
   ...InputGroups.failThresholds,
   ignore_external_references: Inputs.ignore_external_references,
   ignore_upstream_attestations: Inputs.ignore_upstream_attestations,
+  extra_args: Inputs.extra_args,
 };
 
 export const ContainerScanningJobInputsGitHub = defineInputsGitHub({
@@ -110,7 +112,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
       {
         name: "Resolve artifact name",
         env: {
-          DEVGUARD_ARTIFACT_NAME: `${ inputValues.devguard_artifact_name }`,
+          DEVGUARD_ARTIFACT_NAME: `${inputValues.devguard_artifact_name}`,
         } as Record<string, string>,
         run: `if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
   echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
@@ -132,7 +134,7 @@ fi`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         "continue-on-error": inputValues.allow_failure as boolean,
         with: {
-          args: `devguard-scanner container-scanning --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --path="${inputValues.image_tar_path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="\${{ env.ARTIFACT_NAME }}" --webUI="${inputValues.devguard_web_ui}" --failOnRisk="${inputValues.fail_on_risk}" --failOnCVSS="${inputValues.fail_on_cvss}" --ignoreExternalReferences=${inputValues.ignore_external_references} --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations}`,
+          args: `devguard-scanner container-scanning --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --path="${inputValues.image_tar_path}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="\${{ env.ARTIFACT_NAME }}" --webUI="${inputValues.devguard_web_ui}" --failOnRisk="${inputValues.fail_on_risk}" --failOnCVSS="${inputValues.fail_on_cvss}" --ignoreExternalReferences=${inputValues.ignore_external_references} --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations} -- ${inputValues.extra_args}`,
         },
         env: {
           ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
@@ -192,7 +194,8 @@ if [ "${inputValues.fetch_image_from_registry}" = "true" ]; then
         --failOnRisk="${inputValues.fail_on_risk}" \\
         --failOnCVSS="${inputValues.fail_on_cvss}" \\
         --ignoreExternalReferences=${inputValues.ignore_external_references} \\
-        --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations}
+        --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations} \\
+        -- ${inputValues.extra_args}
 elif [ -n "${inputValues.image_tag}" ]; then
   echo "Scanning remote image: ${inputValues.image_tag}"
   devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
@@ -210,7 +213,8 @@ elif [ -n "${inputValues.image_tag}" ]; then
     --failOnRisk="${inputValues.fail_on_risk}" \\
     --failOnCVSS="${inputValues.fail_on_cvss}" \\
     --ignoreExternalReferences=${inputValues.ignore_external_references} \\
-    --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations}
+    --ignoreUpstreamAttestations=${inputValues.ignore_upstream_attestations} \\
+    -- ${inputValues.extra_args}
 else
   echo "Scanning local tar file: ${inputValues.image_tar_path}"
   devguard-scanner container-scanning \\
@@ -225,7 +229,8 @@ else
     --artifactName="${inputValues.devguard_artifact_name}" \\
     --webUI="${inputValues.devguard_web_ui}" \\
     --failOnRisk="${inputValues.fail_on_risk}" \\
-    --failOnCVSS="${inputValues.fail_on_cvss}"
+    --failOnCVSS="${inputValues.fail_on_cvss}" \\
+    -- ${inputValues.extra_args}
 fi`,
     ],
   },

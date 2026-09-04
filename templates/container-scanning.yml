@@ -87,6 +87,9 @@ spec:
     ignore_upstream_attestations:
       default: "false"
       description: Whether to ignore upstream attestations when scanning the image.
+    extra_args:
+      default: ""
+      description: Extra arguments passed straight through to the underlying scanner invocation (after a '--' separator).
     fetch_image_from_registry:
       default: "false"
       description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
@@ -139,7 +142,8 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
               --failOnRisk="$[[ inputs.fail_on_risk ]]" \
               --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
               --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
-              --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
+              --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]] \
+              -- $[[ inputs.extra_args ]]
       elif [ -n "$[[ inputs.image_tag ]]" ]; then
         echo "Scanning remote image: $[[ inputs.image_tag ]]"
         devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
@@ -157,7 +161,8 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
           --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
           --ignoreExternalReferences=$[[ inputs.ignore_external_references ]] \
-          --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]]
+          --ignoreUpstreamAttestations=$[[ inputs.ignore_upstream_attestations ]] \
+          -- $[[ inputs.extra_args ]]
       else
         echo "Scanning local tar file: $[[ inputs.image_tar_path ]]"
         devguard-scanner container-scanning \
@@ -172,5 +177,6 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
           --artifactName="$[[ inputs.devguard_artifact_name ]]" \
           --webUI="$[[ inputs.devguard_web_ui ]]" \
           --failOnRisk="$[[ inputs.fail_on_risk ]]" \
-          --failOnCVSS="$[[ inputs.fail_on_cvss ]]"
+          --failOnCVSS="$[[ inputs.fail_on_cvss ]]" \
+          -- $[[ inputs.extra_args ]]
       fi

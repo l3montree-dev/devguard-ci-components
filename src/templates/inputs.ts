@@ -123,6 +123,11 @@ export const Inputs = {
     default: "false" as const,
     description: "Whether to ignore upstream attestations when scanning the image." as const,
   },
+  extra_args: {
+    default: "" as const,
+    description:
+      "Extra arguments passed straight through to the underlying scanner invocation (after a '--' separator)." as const,
+  },
 
   /*
   Container Registry inputs
