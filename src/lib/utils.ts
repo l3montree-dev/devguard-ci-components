@@ -205,9 +205,7 @@ export async function ExportGitHubOrchestratorWorkflows(
             ...job,
             ...(job.with
               ? {
-                  with: Object.fromEntries(
-                    Object.entries(job.with).map(([k, v]) => [snakeToKebab(k), v]),
-                  ),
+                  with: Object.fromEntries(Object.entries(job.with).map(([k, v]) => [snakeToKebab(k), v])),
                 }
               : {}),
           },

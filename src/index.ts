@@ -253,11 +253,7 @@ const paAttest = AttestTemplate({
   stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   image: "$IMAGE_TAG",
-  needs: [
-    paGenerateTag.name,
-    "$[[ inputs.build_job_name ]]",
-    { job: paPushOciImage.name, optional: true },
-  ],
+  needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", { job: paPushOciImage.name, optional: true }],
 });
 
 // ── container-scanning-and-attest ─────────────────────────────────────────────

@@ -32,7 +32,7 @@ jobs:
 
   release:
     needs: [get-minor]
-    uses: ./.github/workflows/release.yml
+    uses: $/.github/workflows/release.yml
     permissions:
       contents: write
     with:

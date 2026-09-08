@@ -53,9 +53,7 @@ Version bump to stay in sync with the DevGuard [Versioning Policy](https://githu
 
 ## [v1.11.0] — 2026-07-24
 
-
 Version bump to stay in sync with the DevGuard [Versioning Policy](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md)
-
 
 ---
 
@@ -78,7 +76,6 @@ Version bump to stay in sync with the DevGuard [Versioning Policy](https://githu
 ### Added
 
 - `nix-impure` input and `--impure` flag support for Nix-based builds, allowing values to be read from environment variables
-
 
 ---
 
