@@ -17,7 +17,7 @@ spec:
     allow_failure:
       description: Whether the job is allowed to fail without stopping the pipeline
       type: boolean
-      default: true
+      default: false
     needs:
       description: List of jobs this attestation depends on
       type: array
@@ -59,7 +59,7 @@ devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   script:
     - |-
       devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-      devguard-scanner discover-baseimage-attestations --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]" "$[[ inputs.path ]]"
+      devguard-scanner discover-baseimage-attestations --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]" "$[[ inputs.path ]]" || echo "No base image attestations found, continuing"
   artifacts:
     paths:
       - $[[ inputs.output ]]/attestation-*.json

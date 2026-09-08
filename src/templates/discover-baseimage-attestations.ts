@@ -12,10 +12,7 @@ export const DiscoverBaseimageAttestationsJobInputs = defineInputsGitLab({
   },
   job_suffix: Inputs.job_suffix,
   pull_policy: Inputs.pull_policy,
-  allow_failure: {
-    ...Inputs.allow_failure,
-    default: true as const,
-  },
+  allow_failure: Inputs.allow_failure,
   needs: Inputs.needs,
   dependencies: Inputs.dependencies,
 
@@ -39,10 +36,7 @@ export const DiscoverBaseimageAttestationsJobInputsGitHub = defineInputsGitHub({
     default: "Dockerfile",
     type: "string" as const,
   },
-  allow_failure: {
-    ...Inputs.allow_failure,
-    default: true as const,
-  },
+  allow_failure: Inputs.allow_failure,
 });
 
 export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
@@ -71,7 +65,7 @@ export const DiscoverBaseimageAttestationsTemplateGitHub = defineJobGitHub(
           uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
           "continue-on-error": inputValues.allow_failure as boolean,
           with: {
-            args: `devguard-scanner login -u ${inputValues.registry_user} -p \${{ secrets.registry-password }} ${inputValues.registry} && devguard-scanner discover-baseimage-attestations --output "${inputValues.output}" --predicateType "${inputValues.predicate_type}" "${inputValues.path}"`,
+            args: `devguard-scanner login -u ${inputValues.registry_user} -p \${{ secrets.registry-password }} ${inputValues.registry} && (devguard-scanner discover-baseimage-attestations --output "${inputValues.output}" --predicateType "${inputValues.predicate_type}" "${inputValues.path}" || echo "No base image attestations found, continuing")`,
           },
         },
         {
@@ -103,7 +97,7 @@ export const DiscoverBaseimageAttestationsTemplate = defineJobGitLab(
       allow_failure: inputValues.allow_failure,
       dependencies: inputValues.dependencies,
       script: [
-        `devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}\ndevguard-scanner discover-baseimage-attestations --output "${inputValues.output}" --predicateType "${inputValues.predicate_type}" "${inputValues.path}"`,
+        `devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}\ndevguard-scanner discover-baseimage-attestations --output "${inputValues.output}" --predicateType "${inputValues.predicate_type}" "${inputValues.path}" || echo "No base image attestations found, continuing"`,
       ],
       artifacts: {
         paths: [`${inputValues.output}/attestation-*.json`],

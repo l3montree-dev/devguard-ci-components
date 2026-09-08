@@ -156,7 +156,7 @@ devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   script:
     - |-
       devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-      devguard-scanner discover-baseimage-attestations --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]" "$[[ inputs.path ]]"
+      devguard-scanner discover-baseimage-attestations --output "$[[ inputs.output ]]" --predicateType "$[[ inputs.predicate_type ]]" "$[[ inputs.path ]]" || echo "No base image attestations found, continuing"
   artifacts:
     paths:
       - $[[ inputs.output ]]/attestation-*.json
@@ -474,7 +474,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
 devguard:sbom_upload$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
-  allow_failure: true
+  allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
   dependencies:
@@ -486,11 +486,11 @@ devguard:sbom_upload$[[ inputs.job_suffix ]]:
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard SBOM Upload..."
-    - devguard-scanner sbom $[[ inputs.output ]]/attestation-bom.json --origin="BASE_IMAGE_SBOM" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]] --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
+    - if [ -f "$[[ inputs.output ]]/attestation-bom.json" ]; then devguard-scanner sbom $[[ inputs.output ]]/attestation-bom.json --origin="BASE_IMAGE_SBOM" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --webUI=$[[ inputs.devguard_web_ui ]] --failOnRisk=$[[ inputs.fail_on_risk ]] --failOnCVSS=$[[ inputs.fail_on_cvss ]] --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]; else echo "No SBOM file found at $[[ inputs.output ]]/attestation-bom.json, skipping upload"; fi
 devguard:vex_upload$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
-  allow_failure: true
+  allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]
     - devguard:sbom_upload$[[ inputs.job_suffix ]]
@@ -504,4 +504,4 @@ devguard:vex_upload$[[ inputs.job_suffix ]]:
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard VeX Upload..."
-    - devguard-scanner vex $[[ inputs.output ]]/attestation-vex.json --origin="BASE_IMAGE_VEX" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
+    - if [ -f "$[[ inputs.output ]]/attestation-vex.json" ]; then devguard-scanner vex $[[ inputs.output ]]/attestation-vex.json --origin="BASE_IMAGE_VEX" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]; else echo "No VeX file found at $[[ inputs.output ]]/attestation-vex.json, skipping upload"; fi

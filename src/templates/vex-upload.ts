@@ -78,7 +78,7 @@ export const VexUploadTemplateGitHub = defineJobGitHub(VexUploadJobInputsGitHub,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         "continue-on-error": inputValues.allow_failure as boolean,
         with: {
-          args: `devguard-scanner vex ${ inputValues.vex_file } --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --ignoreExternalReferences=${inputValues.ignore_external_references}`,
+          args: `sh -c 'if [ -f "${inputValues.vex_file}" ]; then devguard-scanner vex ${inputValues.vex_file} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="\${{ secrets.devguard-token }}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --ignoreExternalReferences=${inputValues.ignore_external_references}; else echo "No VeX file found at ${inputValues.vex_file}, skipping upload"; fi'`,
         },
       },
     ],
@@ -102,7 +102,7 @@ export const VexUploadTemplate = defineJobGitLab(VexUploadJobInputs, (inputValue
     },
     script: [
       `echo "Running DevGuard VeX Upload..."`,
-      `devguard-scanner vex ${inputValues.vex_file} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --ignoreExternalReferences=${inputValues.ignore_external_references}`,
+      `if [ -f "${inputValues.vex_file}" ]; then devguard-scanner vex ${inputValues.vex_file} --origin="${inputValues.devguard_origin}" --assetName="${inputValues.devguard_asset_name}" --apiUrl="${inputValues.devguard_api_url}" --token="${inputValues.devguard_token}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}" --ignoreExternalReferences=${inputValues.ignore_external_references}; else echo "No VeX file found at ${inputValues.vex_file}, skipping upload"; fi`,
     ],
   },
 }));

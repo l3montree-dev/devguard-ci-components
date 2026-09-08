@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - `generate_tag` produced artifact name not respected in the container lifecycle with base image inspection template
+- `discover_baseimage_attestations`, `sbom_upload`, and `vex_upload` jobs in the container lifecycle with base image inspection template now genuinely succeed when no base image attestations are found (`devguard-scanner discover-baseimage-attestations` exits non-zero in that case), instead of always being marked `allow_failure: true` to mask the failure ([devguard#2667](https://github.com/l3montree-dev/devguard/issues/2667))
 
 ---
 

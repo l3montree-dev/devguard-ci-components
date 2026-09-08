@@ -79,4 +79,4 @@ devguard:vex_upload$[[ inputs.job_suffix ]]:
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard VeX Upload..."
-    - devguard-scanner vex $[[ inputs.vex_file ]] --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]
+    - if [ -f "$[[ inputs.vex_file ]]" ]; then devguard-scanner vex $[[ inputs.vex_file ]] --origin="$[[ inputs.devguard_origin ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --token="$[[ inputs.devguard_token ]]" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]" --ignoreExternalReferences=$[[ inputs.ignore_external_references ]]; else echo "No VeX file found at $[[ inputs.vex_file ]], skipping upload"; fi

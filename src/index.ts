@@ -538,7 +538,6 @@ const clbiAttest = AttestTemplate({
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
 const clbiSbomUpload = SbomUploadTemplate({
   stage: "attestation",
-  allow_failure: true,
   git_strategy: "none",
   sbom_file: "$[[ inputs.output ]]/attestation-bom.json",
   devguard_origin: "BASE_IMAGE_SBOM",
@@ -547,7 +546,6 @@ const clbiSbomUpload = SbomUploadTemplate({
 });
 const clbiVexUpload = VexUploadTemplate({
   stage: "attestation",
-  allow_failure: true,
   git_strategy: "none",
   vex_file: "$[[ inputs.output ]]/attestation-vex.json",
   devguard_origin: "BASE_IMAGE_VEX",
