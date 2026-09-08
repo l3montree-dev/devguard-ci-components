@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `extra_args` input for container scanning, allowing additional arguments to be passed to the DevGuard scanner across container lifecycle and scanning templates
+- Support for passing an upstream version to `full-nix`, `full`, and container lifecycle templates
+
+### Fixed
+
+- `generate_tag` produced artifact name not respected in the container lifecycle with base image inspection template
+
 ---
 
 ## [v1.13.0] — 2026-08-24
