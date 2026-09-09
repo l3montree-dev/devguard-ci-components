@@ -145,6 +145,11 @@ on:
         type: string
         required: false
         default: ${{ github.actor }}
+      create-root-manifest:
+        description: Whether to also create a manifest without the branch ref in the tag.
+        type: string
+        required: false
+        default: ${{ github.ref_type == 'tag' }}
     secrets:
       devguard-token:
         description: DevGuard API token
@@ -512,6 +517,104 @@ jobs:
       - devguard_container_scanning
       - devguard_deploy
     name: devguard:sign
+  devguard_create_root_tag:
+    runs-on: ubuntu-latest
+    if: inputs.create-root-manifest == 'true' || inputs.create-root-manifest == true
+    permissions:
+      packages: write
+    steps:
+      - name: Resolve registry password
+        run: |-
+          if [ -n "$SECRET_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
+          fi
+        env:
+          SECRET_PASSWORD: ${{ secrets.registry-password }}
+          FALLBACK_TOKEN: ${{ github.token }}
+      - name: Download image-tag artifact
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-tag${{ inputs.image-suffix }}
+          path: .
+      - name: Setup crane
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+      - name: Log in to registry
+        run: crane auth login ${{ inputs.registry }} -u ${{ inputs.registry-user }} -p "${{ env.REGISTRY_PASSWORD }}"
+      - name: Create and sign floating root tag
+        env:
+          DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
+        run: |-
+          IMAGE_TAG=$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')
+          ROOT_TAG=$(echo "$IMAGE_TAG" | sed "s/-${GITHUB_REF_NAME}//")
+
+          if [ "$ROOT_TAG" = "$IMAGE_TAG" ]; then
+            echo "No ref suffix found in $IMAGE_TAG; skipping floating root tag"
+          else
+            ROOT_TAG_ONLY="${ROOT_TAG##*:}"
+            echo "Creating floating root tag: $ROOT_TAG_ONLY -> $IMAGE_TAG"
+            crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
+
+            echo "Signing floating root tag: $ROOT_TAG"
+            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --apiUrl="${{ inputs.devguard-api-url }}" --assetName="${{ inputs.devguard-asset-name }}"
+
+            echo "ROOT_TAG=$ROOT_TAG" >> $GITHUB_ENV
+          fi
+      - name: Download build provenance
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: build${{ inputs.image-suffix }}.provenance.json
+        continue-on-error: true
+      - name: Download artifact purl
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: artifact-purl${{ inputs.image-suffix }}
+          path: .
+        if: inputs.devguard-artifact-name == ''
+        continue-on-error: true
+      - name: Download artifact purl (safe)
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: artifact-purl-safe${{ inputs.image-suffix }}
+          path: .
+        if: inputs.devguard-artifact-name == ''
+        continue-on-error: true
+      - name: Attest floating root tag
+        if: env.ROOT_TAG != ''
+        env:
+          DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
+        run: |-
+          ARTIFACT_NAME="${{ inputs.devguard-artifact-name }}"
+          if [ -z "$ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
+            ARTIFACT_NAME=$(cat artifact-purl.txt)
+          fi
+          if [ -f artifact-purl-safe.txt ]; then
+            API_ARTIFACT_NAME=$(cat artifact-purl-safe.txt)
+          else
+            API_ARTIFACT_NAME=$(echo -n "$ARTIFACT_NAME" | jq -s -R -r @uri)
+          fi
+          echo "Attesting for artifact: $ARTIFACT_NAME"
+
+          SLUG=$(docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner slug "${{ inputs.commit-ref }}")
+
+          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > /tmp/sbom.json
+          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > /tmp/vex.json
+          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > /tmp/sarif.json
+
+          ATTESTATIONS=("/tmp/sbom.json:https://cyclonedx.org/bom" "/tmp/vex.json:https://cyclonedx.org/vex" "/tmp/sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
+          [ -f build.provenance.json ] && ATTESTATIONS+=("build.provenance.json:https://slsa.dev/provenance/v1")
+
+          for ENTRY in "${ATTESTATIONS[@]}"; do
+            FILE="${ENTRY%%:*}"
+            PREDICATE_TYPE="${ENTRY#*:}"
+            echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
+            docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --apiUrl="${{ inputs.devguard-api-url }}" --assetName="${{ inputs.devguard-asset-name }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="$ARTIFACT_NAME"
+          done
+    needs:
+      - devguard_build_oci_image
+      - devguard_deploy
+    name: devguard:create-root-tag
   devguard_attest:
     runs-on: ubuntu-latest
     if: inputs.should-deploy

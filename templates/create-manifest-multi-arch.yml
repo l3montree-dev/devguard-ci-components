@@ -28,6 +28,24 @@ spec:
     artifacts_subdirectory:
       default: .
       description: Directory to store generated artifacts in (relative to project root).
+    devguard_token:
+      description: The DevGuard API token (use CI/CD variable, your private key)
+      default: $DEVGUARD_TOKEN
+    devguard_api_url:
+      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
+      default: https://api.devguard.org
+    devguard_asset_name:
+      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
+      default: $DEVGUARD_ASSET_NAME
+    devguard_artifact_name:
+      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      default: ""
+    commit_ref:
+      description: Current commit reference
+      default: $CI_COMMIT_REF_NAME
+    is_tag:
+      description: Is the current commit a tag
+      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
 ---
 
 include: []
@@ -63,6 +81,7 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
       docker manifest push "$BASE_TAG"
 
       echo "MANIFEST_IMAGE_TAG=$BASE_TAG" > manifest_image_tag.env
+      MANIFEST_TAGS="$BASE_TAG"
 
       if [ "$[[ inputs.create_root_manifest ]]" = "true" ]; then
         ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${CI_COMMIT_REF_NAME}//")
@@ -71,8 +90,14 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
           docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
           docker manifest push "$ROOT_TAG"
           echo "MANIFEST_WITHOUT_REF_TAG=$ROOT_TAG" >> manifest_image_tag.env
+          MANIFEST_TAGS="$MANIFEST_TAGS $ROOT_TAG"
         fi
       fi
+
+      for TAG in $MANIFEST_TAGS; do
+        echo "Signing manifest: $TAG"
+        docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u $CI_REGISTRY_USER -r $CI_REGISTRY -p "$CI_REGISTRY_PASSWORD" --token="$[[ inputs.devguard_token ]]" "$TAG" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]"
+      done
   artifacts:
     reports:
       dotenv: manifest_image_tag.env

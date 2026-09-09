@@ -15,6 +15,7 @@ import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab } from "
 import { ExportCIComponentsGitHub, ExportCIComponentsGitLab } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
+import { CreateRootTagTemplate, CreateRootTagTemplateGitHub } from "./templates/create-root-tag";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
 import { Inputs } from "./templates/inputs";
 import { ReleaseTemplate } from "./templates/release";
@@ -95,6 +96,12 @@ const fullSignOciImage = SignOciImageTemplate({
   needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
   dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name],
 });
+const fullCreateRootTag = CreateRootTagTemplate({
+  stage: "attestation",
+  image_tag: "$IMAGE_TAG",
+  needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
+  dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name],
+});
 const fullSourceProvenanceAttestation = SourceProvenanceTemplate({
   stage: AttestJobInputs.stage.default,
 });
@@ -170,6 +177,12 @@ const clSignOciImage = SignOciImageTemplate({
   image: "$IMAGE_TAG",
   needs: [clGenerateTag.name, { job: clPushOciImage.name, optional: true }],
   dependencies: [clGenerateTag.name, clPushOciImage.name],
+});
+const clCreateRootTag = CreateRootTagTemplate({
+  stage: "attestation",
+  image_tag: "$IMAGE_TAG",
+  needs: [clGenerateTag.name, clBuildOciImage.name, { job: clPushOciImage.name, optional: true }],
+  dependencies: [clGenerateTag.name, clBuildOciImage.name, clPushOciImage.name],
 });
 const clAttest = AttestTemplate({
   stage: "attestation",
@@ -524,6 +537,12 @@ const clbiSignOciImage = SignOciImageTemplate({
   needs: [clbiGenerateTag.name, { job: clbiPushOciImage.name, optional: true }],
   dependencies: [clbiGenerateTag.name, clbiPushOciImage.name],
 });
+const clbiCreateRootTag = CreateRootTagTemplate({
+  stage: "attestation",
+  image_tag: "$IMAGE_TAG",
+  needs: [clbiGenerateTag.name, clbiBuildOciImage.name, { job: clbiPushOciImage.name, optional: true }],
+  dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name, clbiPushOciImage.name],
+});
 const clbiAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
@@ -598,6 +617,7 @@ const templates: CIComponentGroupTemplateGitLab = {
     fullContrainerScanning,
     fullPushOciImage,
     fullSignOciImage,
+    fullCreateRootTag,
     fullAttest,
   ],
   "container-lifecycle": [
@@ -606,6 +626,7 @@ const templates: CIComponentGroupTemplateGitLab = {
     clContainerScanning,
     clPushOciImage,
     clSignOciImage,
+    clCreateRootTag,
     clAttest,
   ],
   "container-lifecycle-nix": [
@@ -626,6 +647,7 @@ const templates: CIComponentGroupTemplateGitLab = {
     clbiContainerScanning,
     clbiPushOciImage,
     clbiSignOciImage,
+    clbiCreateRootTag,
     clbiAttest,
     clbiSbomUpload,
     clbiVexUpload,
@@ -717,6 +739,8 @@ const ghClDeploy = DeployTemplateGitHub({});
 ghClDeploy.job.needs = ["devguard_build_oci_image", "devguard_container_scanning"];
 const ghClSign = SignTemplateGitHub({ image: "image.tar" });
 ghClSign.job.needs = ["devguard_build_oci_image", "devguard_container_scanning", "devguard_deploy"];
+const ghClCreateRootTag = CreateRootTagTemplateGitHub({});
+ghClCreateRootTag.job.needs = ["devguard_build_oci_image", "devguard_deploy"];
 const ghClAttest = AttestTemplateGitHub({});
 ghClAttest.job.needs = ["devguard_build_oci_image", "devguard_container_scanning", "devguard_deploy"];
 
@@ -747,6 +771,8 @@ ghFullSign.job.needs = [
   "devguard_software_composition_analysis",
   "devguard_deploy",
 ];
+const ghFullCreateRootTag = CreateRootTagTemplateGitHub({});
+ghFullCreateRootTag.job.needs = ["devguard_build_oci_image", "devguard_deploy"];
 const ghFullAttest = AttestTemplateGitHub({});
 ghFullAttest.job.needs = [
   "devguard_build_oci_image",
@@ -867,7 +893,7 @@ const templatesGitHub: CIComponentGroupTemplateGitHub = {
   "build-nix-multiarch-manifest": [BuildNixMultiArchCreateManifestTemplateGitHub({})],
   // Orchestrator workflows (inline, no uses:)
   "code-scanning": [ghCsSecretScanning, ghCsSast, ghCsIac, ghCsSca],
-  "container-lifecycle": [ghClBuild, ghClScan, ghClDeploy, ghClSign, ghClAttest],
+  "container-lifecycle": [ghClBuild, ghClScan, ghClDeploy, ghClSign, ghClCreateRootTag, ghClAttest],
   full: [
     ghFullSecretScanning,
     ghFullSast,
@@ -877,6 +903,7 @@ const templatesGitHub: CIComponentGroupTemplateGitHub = {
     ghFullScan,
     ghFullDeploy,
     ghFullSign,
+    ghFullCreateRootTag,
     ghFullAttest,
   ],
   "container-lifecycle-nix": [ghClnBuild, ghClnScan, ghClnDeploy, ghClnSign, ghClnAttest],
