@@ -432,12 +432,13 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:push_oci_image$[[ inputs.job_suffix ]]
-  rules:
-    - if: $[[ inputs.create_root_manifest ]] == "true"
-      when: on_success
-    - when: never
   script:
     - |-
+      if [ "$[[ inputs.create_root_manifest ]]" != "true" ]; then
+        echo "create_root_manifest is not true; skipping floating root tag"
+        exit 0
+      fi
+
       /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
       IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
