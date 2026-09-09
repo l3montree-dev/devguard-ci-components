@@ -137,59 +137,139 @@ done`,
         run: `[ -f build.provenance.json ] && mv build.provenance.json arm64.provenance.json || true`,
       },
       {
-        name: "Download amd64 artifact purl",
+        name: "Download artifact purl (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `artifact-purl${ inputValues.image_suffix }-amd64`,
-          path: "amd64",
         },
         if: "inputs.devguard_artifact_name == ''",
-        "continue-on-error": true,
       },
       {
-        name: "Download amd64 artifact purl (safe)",
+        name: "Download safe-artifact (can be created by build-image)",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
           name: `artifact-purl-safe${ inputValues.image_suffix }-amd64`,
-          path: "amd64",
         },
         if: "inputs.devguard_artifact_name == ''",
-        "continue-on-error": true,
       },
       {
-        name: "Attest multi-arch manifest(s)",
+        name: "set artifact-name variable if it is empty",
         env: {
-          DEVGUARD_TOKEN: "${{ secrets.devguard-token }}",
-        } as Record<string, string>,
-        run: `ARTIFACT_NAME="${ inputValues.devguard_artifact_name }"
-if [ -z "$ARTIFACT_NAME" ] && [ -f amd64/artifact-purl.txt ]; then
-  ARTIFACT_NAME=$(cat amd64/artifact-purl.txt)
-fi
-if [ -f amd64/artifact-purl-safe.txt ]; then
-  API_ARTIFACT_NAME=$(cat amd64/artifact-purl-safe.txt)
+          DEVGUARD_ARTIFACT_NAME: `${ inputValues.devguard_artifact_name }`,
+        },
+        run: `if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
+  echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+  echo "Using artifact name from file: $ARTIFACT_NAME"
+  if [ -f artifact-purl-safe.txt ]; then
+    echo "API_ARTIFACT_NAME=$(cat artifact-purl-safe.txt)" >> $GITHUB_ENV
+  else
+    echo "API_ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+  fi
 else
-  API_ARTIFACT_NAME=$(echo -n "$ARTIFACT_NAME" | jq -s -R -r @uri)
-fi
-echo "Attesting for artifact: $ARTIFACT_NAME"
-
-SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "${ inputValues.commit_ref }")
-
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > /tmp/sbom.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > /tmp/vex.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > /tmp/sarif.json
-
-ATTESTATIONS=("/tmp/sbom.json:https://cyclonedx.org/bom" "/tmp/vex.json:https://cyclonedx.org/vex" "/tmp/sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
-[ -f amd64.provenance.json ] && ATTESTATIONS+=("amd64.provenance.json:https://slsa.dev/provenance/v1")
-[ -f arm64.provenance.json ] && ATTESTATIONS+=("arm64.provenance.json:https://slsa.dev/provenance/v1")
-
-for TAG in $MANIFEST_TAGS; do
-  for ENTRY in "\${ATTESTATIONS[@]}"; do
-    FILE="\${ENTRY%%:*}"
-    PREDICATE_TYPE="\${ENTRY#*:}"
-    echo "Attesting $FILE ($PREDICATE_TYPE) -> $TAG"
-    docker run --rm -v "$PWD:/workspace" -w /workspace ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner attest -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$TAG" --token="$DEVGUARD_TOKEN" --apiUrl="${ inputValues.devguard_api_url }" --assetName="${ inputValues.devguard_asset_name }" --ref="${ inputValues.commit_ref }" --isTag="${ inputValues.is_tag }" --artifactName="$ARTIFACT_NAME"
+  echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
+  echo "API_ARTIFACT_NAME=$(echo -n "$DEVGUARD_ARTIFACT_NAME" | jq -s -R -r @uri)" >> $GITHUB_ENV
+  echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
+fi`,
+      },
+      {
+        name: "Get and Attest SBOM",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `sh -c "
+  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  echo 'Fetching SBOM for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/sbom.json &&
+  echo 'SBOM downloaded to /tmp/sbom.json' &&
+  for TAG in \${{ env.MANIFEST_TAGS }}; do
+    echo 'Attesting SBOM for manifest:' \\"$TAG\\" &&
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \\"$TAG\\" --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$ARTIFACT_NAME"
   done
-done`,
+"`,
+        },
+        env: {
+          API_ARTIFACT_NAME: "${{ env.API_ARTIFACT_NAME }}",
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
+        } as Record<string, string>,
+      },
+      {
+        name: "Get and Attest VeX",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `sh -c "
+  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  echo 'Fetching VeX for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/vex.json &&
+  echo 'VeX downloaded to /tmp/vex.json' &&
+  for TAG in \${{ env.MANIFEST_TAGS }}; do
+    echo 'Attesting VeX for manifest:' \\"$TAG\\" &&
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/vex.json \\"$TAG\\" --token='\${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$ARTIFACT_NAME"
+  done
+"`,
+        },
+        env: {
+          API_ARTIFACT_NAME: "${{ env.API_ARTIFACT_NAME }}",
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
+        } as Record<string, string>,
+      },
+      {
+        name: "Get and Attest SAST-Results",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `sh -c "
+  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  echo 'Fetching SAST results for artifact:' '\${{ env.ARTIFACT_NAME }}' &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
+  echo 'SAST results downloaded to /tmp/sarif.json' &&
+  for TAG in \${{ env.MANIFEST_TAGS }}; do
+    echo 'Attesting SAST results for manifest:' \\"$TAG\\" &&
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \\"$TAG\\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$ARTIFACT_NAME"
+  done
+"`,
+        },
+        env: {
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
+        } as Record<string, string>,
+      },
+      {
+        name: "Attest amd64 build provenance",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        "continue-on-error": true,
+        with: {
+          args: `sh -c "
+  if [ -f amd64.provenance.json ]; then
+    for TAG in \${{ env.MANIFEST_TAGS }}; do
+      echo 'Attesting amd64 provenance for manifest:' \\"$TAG\\" &&
+      devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \\"$TAG\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$ARTIFACT_NAME"
+    done
+  fi
+"`,
+        },
+        env: {
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
+        } as Record<string, string>,
+      },
+      {
+        name: "Attest arm64 build provenance",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        "continue-on-error": true,
+        with: {
+          args: `sh -c "
+  if [ -f arm64.provenance.json ]; then
+    for TAG in \${{ env.MANIFEST_TAGS }}; do
+      echo 'Attesting arm64 provenance for manifest:' \\"$TAG\\" &&
+      devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \\"$TAG\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$ARTIFACT_NAME"
+    done
+  fi
+"`,
+        },
+        env: {
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
+        } as Record<string, string>,
       },
     ],
   },

@@ -139,11 +139,11 @@ echo "Attesting for artifact: $ARTIFACT_NAME"
 
 SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "${ inputValues.commit_ref }")
 
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > /tmp/sbom.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > /tmp/vex.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > /tmp/sarif.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
 
-ATTESTATIONS=("/tmp/sbom.json:https://cyclonedx.org/bom" "/tmp/vex.json:https://cyclonedx.org/vex" "/tmp/sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
+ATTESTATIONS=("sbom.json:https://cyclonedx.org/bom" "vex.json:https://cyclonedx.org/vex" "sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
 [ -f build.provenance.json ] && ATTESTATIONS+=("build.provenance.json:https://slsa.dev/provenance/v1")
 
 for ENTRY in "\${ATTESTATIONS[@]}"; do

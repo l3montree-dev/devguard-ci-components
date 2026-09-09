@@ -264,7 +264,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   echo 'SAST results downloaded to /tmp/sarif.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting SAST results with image digest present' &&
-    devguard-scanner attest -u ${inputValues.registry_user} -r ghcr.io -p \${{ secrets.GITHUB_TOKEN }} /tmp/sarif.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
   else
     echo 'Attesting SAST results without image digest' &&
     devguard-scanner attest /tmp/sarif.json --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
@@ -292,7 +292,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   echo 'Building provenance attestation for artifact:' '\${{ env.ARTIFACT_NAME }}' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting provenance with image digest present' &&
-    devguard-scanner attest -u ${inputValues.registry_user} -r ghcr.io -p \${{ secrets.GITHUB_TOKEN }} build.provenance.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
+    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" build.provenance.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
   else
     echo 'Attesting provenance without image digest' &&
     devguard-scanner attest build.provenance.json --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --predicateType='https://slsa.dev/provenance/v1' --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
