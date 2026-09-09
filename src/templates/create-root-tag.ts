@@ -167,17 +167,15 @@ export const CreateRootTagTemplate = defineJobGitLab(CreateRootTagJobInputs, (in
     },
     needs: inputValues.needs,
     dependencies: inputValues.dependencies,
-    rules: [
-      {
-        if: `${inputValues.create_root_manifest} == "true"`,
-        when: "on_success",
-      },
-      {
-        when: "never",
-      },
-    ],
     script: [
-      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+      // The create_root_manifest default is a shell command substitution, so it can only be
+      // evaluated in a script - a rules:if: on it would be invalid expression syntax.
+      `if [ "${inputValues.create_root_manifest}" != "true" ]; then
+  echo "create_root_manifest is not true; skipping floating root tag"
+  exit 0
+fi
+
+/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 IMAGE_TAG=$(echo "${inputValues.image_tag}" | tr '[:upper:]' '[:lower:]')
 ROOT_TAG=$(echo "$IMAGE_TAG" | sed "s/-\${CI_COMMIT_REF_NAME}//")
