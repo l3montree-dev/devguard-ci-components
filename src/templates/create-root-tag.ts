@@ -197,12 +197,14 @@ else
   /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
   /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
 
-  ATTESTATIONS=("/tmp/sbom.json:https://cyclonedx.org/bom" "/tmp/vex.json:https://cyclonedx.org/vex" "/tmp/sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
-  [ -f build.provenance.json ] && ATTESTATIONS+=("build.provenance.json:https://slsa.dev/provenance/v1")
+  ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
+/tmp/vex.json|https://cyclonedx.org/vex
+/tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
+  [ -f build.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
+build.provenance.json|https://slsa.dev/provenance/v1"
 
-  for ENTRY in "\${ATTESTATIONS[@]}"; do
-    FILE="\${ENTRY%%:*}"
-    PREDICATE_TYPE="\${ENTRY#*:}"
+  echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
+    [ -z "$FILE" ] && continue
     echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
     /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="${inputValues.devguard_token}" --offline
   done

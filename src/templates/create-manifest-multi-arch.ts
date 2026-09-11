@@ -446,17 +446,22 @@ devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${in
 devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/vex.json/" --token="${inputValues.devguard_token}" > /tmp/arm64.vex.json
 devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
 
-ATTESTATIONS=("/tmp/amd64.sbom.json|https://cyclonedx.org/bom" "/tmp/amd64.vex.json|https://cyclonedx.org/vex" "/tmp/arm64.sbom.json|https://cyclonedx.org/bom" "/tmp/arm64.vex.json|https://cyclonedx.org/vex" "/tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
-[ -f amd64.provenance.json ] && ATTESTATIONS+=("amd64.provenance.json|https://slsa.dev/provenance/v1")
-[ -f arm64.provenance.json ] && ATTESTATIONS+=("arm64.provenance.json|https://slsa.dev/provenance/v1")
+ATTESTATIONS="/tmp/amd64.sbom.json|https://cyclonedx.org/bom
+/tmp/amd64.vex.json|https://cyclonedx.org/vex
+/tmp/arm64.sbom.json|https://cyclonedx.org/bom
+/tmp/arm64.vex.json|https://cyclonedx.org/vex
+/tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
+[ -f amd64.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
+amd64.provenance.json|https://slsa.dev/provenance/v1"
+[ -f arm64.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
+arm64.provenance.json|https://slsa.dev/provenance/v1"
 
 for TAG in $MANIFEST_TAGS; do
   echo "Signing manifest: $TAG"
   devguard-scanner sign --token="${inputValues.devguard_token}" "$TAG" --offline
 
-  for ENTRY in "\${ATTESTATIONS[@]}"; do
-    FILE=$(echo "$ENTRY" | cut -d'|' -f1)
-    PREDICATE_TYPE=$(echo "$ENTRY" | cut -d'|' -f2)
+  echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
+    [ -z "$FILE" ] && continue
     echo "Attesting $FILE ($PREDICATE_TYPE) -> $TAG"
     devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$TAG" --token="${inputValues.devguard_token}" --offline
   done
