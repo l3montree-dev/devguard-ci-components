@@ -134,7 +134,7 @@ jobs:
         run: |-
           for TAG in $MANIFEST_TAGS; do
             echo "Signing manifest: $TAG"
-            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:v1.13.7 devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$TAG" --offline
+            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$TAG" --offline
           done
       - name: Download amd64 build provenance
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
@@ -205,7 +205,7 @@ jobs:
             echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
           fi
       - name: Get and Attest amd64 SBOM
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -222,7 +222,7 @@ jobs:
           AMD64_API_ARTIFACT_NAME: ${{ env.AMD64_API_ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Get and Attest amd64 VeX
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -239,7 +239,7 @@ jobs:
           AMD64_API_ARTIFACT_NAME: ${{ env.AMD64_API_ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Get and Attest arm64 SBOM
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -256,7 +256,7 @@ jobs:
           ARM64_API_ARTIFACT_NAME: ${{ env.ARM64_API_ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Get and Attest arm64 VeX
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -273,7 +273,7 @@ jobs:
           ARM64_API_ARTIFACT_NAME: ${{ env.ARM64_API_ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Get and Attest SAST-Results
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -289,7 +289,7 @@ jobs:
         env:
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Attest amd64 build provenance
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: true
         with:
           args: |-
@@ -304,7 +304,7 @@ jobs:
         env:
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Attest arm64 build provenance
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: true
         with:
           args: |-

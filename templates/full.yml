@@ -157,7 +157,7 @@ devguard:secret_scanning$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: clone
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -173,7 +173,7 @@ devguard:static-application-security-testing$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard SAST..."
@@ -187,7 +187,7 @@ devguard:infrastructure_as_code_scanning$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard IaC Scanning..."
@@ -201,7 +201,7 @@ devguard:software_composition_analysis$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard SCA (based on the Trivy Project)..."
@@ -218,7 +218,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     DEVGUARD_ARTIFACT_NAME: $[[ inputs.devguard_artifact_name ]]
     ENV_FILENAME: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script: |
     echo "Running generate-tag job..."
@@ -279,7 +279,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
@@ -410,7 +410,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -420,7 +420,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
 devguard:create_root_tag$[[ inputs.job_suffix ]]:
   stage: attestation
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     entrypoint:
       - ""
   needs:
@@ -477,7 +477,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
       fi
 devguard:attest$[[ inputs.job_suffix ]]:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
