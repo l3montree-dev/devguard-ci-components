@@ -149,7 +149,7 @@ include: []
 devguard:discover_baseimage_attestations$[[ inputs.job_suffix ]]:
   stage: oci-image
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -175,7 +175,7 @@ devguard:generate_tag$[[ inputs.job_suffix ]]:
     DEVGUARD_ARTIFACT_NAME: $[[ inputs.devguard_artifact_name ]]
     ENV_FILENAME: generate_tag_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].env
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
   script: |
     echo "Running generate-tag job..."
@@ -236,7 +236,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard Container Scanning..."
@@ -365,7 +365,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -375,7 +375,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
 devguard:create_root_tag$[[ inputs.job_suffix ]]:
   stage: attestation
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     entrypoint:
       - ""
   needs:
@@ -432,7 +432,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
       fi
 devguard:attest$[[ inputs.job_suffix ]]:
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -543,7 +543,7 @@ devguard:sbom_upload$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard SBOM Upload..."
@@ -561,7 +561,7 @@ devguard:vex_upload$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: ghcr.io/l3montree-dev/devguard/scanner:v1.13.7
     pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Running DevGuard VeX Upload..."
