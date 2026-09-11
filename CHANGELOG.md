@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.13.2] — 2026-09-11
+
+### Added
+
+- **Signing and attestation of multi-arch manifests.** The manifest list produced by `create-manifest-multi-arch` was pushed but carried no attestations of its own — only the per-architecture images did, so anything resolving the manifest tag found nothing describing its contents. A new `sign-manifest-multi-arch` component signs the manifest and the root manifest tag and attaches both architectures' SBOM and VeX documents, the SARIF results, and both architectures' SLSA build provenance. The GitHub `create-manifest-multi-arch` workflow does the same inline
+- **Floating root tags for single-arch pipelines**, in the GitLab `full`, `container-lifecycle`, and `container-lifecycle-with-base-image-inspection` templates and the GitHub `container-lifecycle` and `full` workflows. After the image is built and pushed, the ref suffix is stripped from its tag (e.g. `16.15-v1.13.5` → `16.15`), the image is re-tagged under that floating tag, and that tag is signed and attested with the artifact's SBOM, VeX, SARIF, and SLSA provenance. Skipped when the tag carries no ref suffix
+- `provenance_file` input on the Nix build job, controlling the filename its SLSA build provenance is published under
+
+Manifest and root tags are signed and attested with `--offline`, so **devguard-scanner ≥ v1.13.7 is required**. Neither tag is an artifact DevGuard knows about — only the per-architecture images are — so these attestations are attached to the image in the registry without being written to the backend.
+
+### Fixed
+
+- **The per-architecture `attest` jobs in `build-nix-multiarch` could attest the other architecture's SLSA build provenance.** Both build jobs published their provenance under the same name, `build.provenance.json`, and the attest jobs declare no `dependencies`, so GitLab handed each of them both files and one silently overwrote the other. Each build job now publishes an architecture-specific name (`build-amd64.provenance.json`, `build-arm64.provenance.json`)
+- **GitHub attestation failed for images hosted outside ghcr.io.** The SARIF and build provenance attestation steps authenticated against a hardcoded `ghcr.io` using `GITHUB_TOKEN` rather than the `registry` input and the resolved registry password
+
+### Changed
+
+- In the child-pipeline variant of `build-nix-multiarch`, the manifest is no longer signed through a separately included `sign-oci-image.yml` — the manifest job handles signing itself
+
+---
+
 ## [v1.13.1] — 2026-09-08
 
 ### Added
