@@ -452,7 +452,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         /crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
         echo "Signing floating root tag: $ROOT_TAG"
-        /devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$ROOT_TAG"
+        /devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$ROOT_TAG" --offline
 
         echo "Attesting floating root tag: $ROOT_TAG"
         SLUG=$(/devguard-scanner slug "$[[ inputs.commit_ref ]]")
@@ -468,7 +468,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
           FILE="${ENTRY%%:*}"
           PREDICATE_TYPE="${ENTRY#*:}"
           echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-          /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --ref="$[[ inputs.commit_ref ]]" --isTag="$[[ inputs.is_tag ]]" --artifactName="$[[ inputs.devguard_artifact_name ]]"
+          /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$[[ inputs.devguard_token ]]" --offline
         done
       fi
 devguard:attest$[[ inputs.job_suffix ]]:

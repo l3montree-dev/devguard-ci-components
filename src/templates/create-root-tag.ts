@@ -87,7 +87,7 @@ else
   crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
   echo "Signing floating root tag: $ROOT_TAG"
-  docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --apiUrl="${ inputValues.devguard_api_url }" --assetName="${ inputValues.devguard_asset_name }"
+  docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
 
   echo "ROOT_TAG=$ROOT_TAG" >> $GITHUB_ENV
 fi`,
@@ -150,7 +150,7 @@ for ENTRY in "\${ATTESTATIONS[@]}"; do
   FILE="\${ENTRY%%:*}"
   PREDICATE_TYPE="\${ENTRY#*:}"
   echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-  docker run --rm -v "$PWD:/workspace" -w /workspace ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner attest -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --apiUrl="${ inputValues.devguard_api_url }" --assetName="${ inputValues.devguard_asset_name }" --ref="${ inputValues.commit_ref }" --isTag="${ inputValues.is_tag }" --artifactName="$ARTIFACT_NAME"
+  docker run --rm -v "$PWD:/workspace" -w /workspace ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner attest -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --offline
 done`,
       },
     ],
@@ -188,7 +188,7 @@ else
   /crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
   echo "Signing floating root tag: $ROOT_TAG"
-  /devguard-scanner sign --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" "$ROOT_TAG"
+  /devguard-scanner sign --token="${inputValues.devguard_token}" "$ROOT_TAG" --offline
 
   echo "Attesting floating root tag: $ROOT_TAG"
   SLUG=$(/devguard-scanner slug "${inputValues.commit_ref}")
@@ -204,7 +204,7 @@ else
     FILE="\${ENTRY%%:*}"
     PREDICATE_TYPE="\${ENTRY#*:}"
     echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-    /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}" --artifactName="${inputValues.devguard_artifact_name}"
+    /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="${inputValues.devguard_token}" --offline
   done
 fi`,
     ],

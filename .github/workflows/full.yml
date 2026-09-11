@@ -675,7 +675,7 @@ jobs:
             crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
             echo "Signing floating root tag: $ROOT_TAG"
-            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --apiUrl="${{ inputs.devguard-api-url }}" --assetName="${{ inputs.devguard-asset-name }}"
+            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
 
             echo "ROOT_TAG=$ROOT_TAG" >> $GITHUB_ENV
           fi
@@ -727,7 +727,7 @@ jobs:
             FILE="${ENTRY%%:*}"
             PREDICATE_TYPE="${ENTRY#*:}"
             echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-            docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --apiUrl="${{ inputs.devguard-api-url }}" --assetName="${{ inputs.devguard-asset-name }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="$ARTIFACT_NAME"
+            docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --offline
           done
     needs:
       - devguard_build_oci_image
