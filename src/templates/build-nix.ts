@@ -95,6 +95,12 @@ export const BuildNixJobInputs = defineInputsGitLab({
     ...Inputs.image,
     default: "image.tar" as const,
   },
+  provenance_file: {
+    description:
+      "Filename the SLSA provenance is published under. Give each architecture its own name when several build jobs feed the same downstream job, since GitLab merges dependency artifacts into one workspace." as const,
+    default: "build.provenance.json" as const,
+    type: "string" as const,
+  },
   supply_chain_id: Inputs.supply_chain_id,
   nix_target: Inputs.nix_target,
   ...InputGroups.nixCache,
@@ -342,9 +348,10 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
       `if [[ -n "${inputValues.nix_cache_s3_endpoint}" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then\n  export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"\n  export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"\n  nix copy $(nix-store -qR $(readlink result)) --to 's3://${inputValues.nix_cache_s3_bucket}?endpoint=${inputValues.nix_cache_s3_endpoint}&region=${inputValues.nix_cache_region}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true\nfi`,
       `nix run nixpkgs#crane -- digest --tarball="${inputValues.image}" > image-digest.txt`,
       `./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance`,
+      `if [ "${inputValues.provenance_file}" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "${inputValues.provenance_file}"; fi`,
     ],
     artifacts: {
-      paths: [inputValues.image, `image-digest.txt`, `build.provenance.json`],
+      paths: [inputValues.image, `image-digest.txt`, inputValues.provenance_file],
       when: "on_success",
     },
   },

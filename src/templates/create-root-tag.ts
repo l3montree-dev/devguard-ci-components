@@ -200,8 +200,10 @@ else
   ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
 /tmp/vex.json|https://cyclonedx.org/vex
 /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-  [ -f build.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
+  if [ -f build.provenance.json ]; then
+    ATTESTATIONS="$ATTESTATIONS
 build.provenance.json|https://slsa.dev/provenance/v1"
+  fi
 
   echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
     [ -z "$FILE" ] && continue

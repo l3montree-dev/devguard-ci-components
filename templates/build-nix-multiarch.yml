@@ -223,11 +223,12 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
       fi
     - nix run nixpkgs#crane -- digest --tarball="image-amd64.tar" > image-digest.txt
     - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
+    - if [ "build-amd64.provenance.json" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "build-amd64.provenance.json"; fi
   artifacts:
     paths:
       - image-amd64.tar
       - image-digest.txt
-      - build.provenance.json
+      - build-amd64.provenance.json
     when: on_success
 devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
   tags:
@@ -414,9 +415,9 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-amd64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
 
-    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-amd64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
@@ -554,11 +555,12 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
       fi
     - nix run nixpkgs#crane -- digest --tarball="image-arm64.tar" > image-digest.txt
     - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
+    - if [ "build-arm64.provenance.json" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "build-arm64.provenance.json"; fi
   artifacts:
     paths:
       - image-arm64.tar
       - image-digest.txt
-      - build.provenance.json
+      - build-arm64.provenance.json
     when: on_success
 devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
   tags:
@@ -745,9 +747,9 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-arm64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
 
-    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-arm64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
@@ -878,8 +880,12 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
   stage: attestation
   needs:
     - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
   dependencies:
     - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
@@ -910,10 +916,14 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
       /tmp/arm64.sbom.json|https://cyclonedx.org/bom
       /tmp/arm64.vex.json|https://cyclonedx.org/vex
       /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-      [ -f amd64.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
-      amd64.provenance.json|https://slsa.dev/provenance/v1"
-      [ -f arm64.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
-      arm64.provenance.json|https://slsa.dev/provenance/v1"
+      if [ -f build-amd64.provenance.json ]; then
+        ATTESTATIONS="$ATTESTATIONS
+      build-amd64.provenance.json|https://slsa.dev/provenance/v1"
+      fi
+      if [ -f build-arm64.provenance.json ]; then
+        ATTESTATIONS="$ATTESTATIONS
+      build-arm64.provenance.json|https://slsa.dev/provenance/v1"
+      fi
 
       for TAG in $MANIFEST_TAGS; do
         echo "Signing manifest: $TAG"

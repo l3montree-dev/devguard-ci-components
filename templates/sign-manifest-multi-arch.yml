@@ -77,10 +77,14 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]:
       /tmp/arm64.sbom.json|https://cyclonedx.org/bom
       /tmp/arm64.vex.json|https://cyclonedx.org/vex
       /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-      [ -f amd64.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
-      amd64.provenance.json|https://slsa.dev/provenance/v1"
-      [ -f arm64.provenance.json ] && ATTESTATIONS="$ATTESTATIONS
-      arm64.provenance.json|https://slsa.dev/provenance/v1"
+      if [ -f build-amd64.provenance.json ]; then
+        ATTESTATIONS="$ATTESTATIONS
+      build-amd64.provenance.json|https://slsa.dev/provenance/v1"
+      fi
+      if [ -f build-arm64.provenance.json ]; then
+        ATTESTATIONS="$ATTESTATIONS
+      build-arm64.provenance.json|https://slsa.dev/provenance/v1"
+      fi
 
       for TAG in $MANIFEST_TAGS; do
         echo "Signing manifest: $TAG"

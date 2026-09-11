@@ -54,6 +54,10 @@ spec:
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
+    provenance_file:
+      description: Filename the SLSA provenance is published under. Give each architecture its own name when several build jobs feed the same downstream job, since GitLab merges dependency artifacts into one workspace.
+      default: build.provenance.json
+      type: string
     supply_chain_id:
       default: $CI_COMMIT_SHA
       description: The supply chain ID to use for the in-toto attestation
@@ -216,11 +220,12 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
       fi
     - nix run nixpkgs#crane -- digest --tarball="image.tar" > image-digest.txt
     - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
+    - if [ "$[[ inputs.provenance_file ]]" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "$[[ inputs.provenance_file ]]"; fi
   artifacts:
     paths:
       - image.tar
       - image-digest.txt
-      - build.provenance.json
+      - $[[ inputs.provenance_file ]]
     when: on_success
 devguard:container_scanning$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]

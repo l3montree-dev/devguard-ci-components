@@ -325,6 +325,7 @@ const bnmaGenerateTagAmd64 = BuildNixGenerateTagTemplate({
 const bnmaBuildAmd64 = BuildNixTemplate({
   stage: "build",
   image: "image-amd64.tar",
+  provenance_file: "build-amd64.provenance.json",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   nix_target: "$[[ inputs.nix_target_amd64 ]]",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
@@ -389,7 +390,7 @@ const bnmaAttestAmd64 = AttestTemplate({
       predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
     },
     {
-      source: "build.provenance.json",
+      source: "build-amd64.provenance.json",
       predicate_type: "https://slsa.dev/provenance/v1",
     },
   ],
@@ -407,6 +408,7 @@ const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
 const bnmaBuildArm64 = BuildNixTemplate({
   stage: "build",
   image: "image-arm64.tar",
+  provenance_file: "build-arm64.provenance.json",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   nix_target: "$[[ inputs.nix_target_arm64 ]]",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
@@ -471,7 +473,7 @@ const bnmaAttestArm64 = AttestTemplate({
       predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
     },
     {
-      source: "build.provenance.json",
+      source: "build-arm64.provenance.json",
       predicate_type: "https://slsa.dev/provenance/v1",
     },
   ],
@@ -491,8 +493,8 @@ const bnmaCreateManifest = CreateManifestMultiArchTemplate({
 const bnmaSignManifest = SignManifestMultiArchTemplate({
   stage: "attestation",
   job_suffix: "$[[ inputs.job_suffix ]]-manifest",
-  needs: [bnmaCreateManifest.name],
-  dependencies: [bnmaCreateManifest.name],
+  needs: [bnmaCreateManifest.name, bnmaBuildAmd64.name, bnmaBuildArm64.name],
+  dependencies: [bnmaCreateManifest.name, bnmaBuildAmd64.name, bnmaBuildArm64.name],
 });
 
 // ── container-lifecycle-with-base-image-inspection ────────────────────────────
