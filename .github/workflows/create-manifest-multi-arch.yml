@@ -134,7 +134,7 @@ jobs:
         run: |-
           for TAG in $MANIFEST_TAGS; do
             echo "Signing manifest: $TAG"
-            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$TAG" --apiUrl="${{ inputs.devguard-api-url }}" --assetName="${{ inputs.devguard-asset-name }}"
+            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$TAG" --offline
           done
       - name: Download amd64 build provenance
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
@@ -150,68 +150,127 @@ jobs:
         continue-on-error: true
       - name: Rename arm64 build provenance
         run: "[ -f build.provenance.json ] && mv build.provenance.json arm64.provenance.json || true"
-      - name: Download artifact purl (can be created by build-image)
+      - name: Download amd64 artifact purl (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl${{ inputs.image-suffix }}-amd64
+          path: amd64
         if: inputs.devguard-artifact-name == ''
-      - name: Download safe-artifact (can be created by build-image)
+      - name: Download amd64 safe-artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: artifact-purl-safe${{ inputs.image-suffix }}-amd64
+          path: amd64
         if: inputs.devguard-artifact-name == ''
-      - name: set artifact-name variable if it is empty
+      - name: Download arm64 artifact purl (can be created by build-image)
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: artifact-purl${{ inputs.image-suffix }}-arm64
+          path: arm64
+        if: inputs.devguard-artifact-name == ''
+      - name: Download arm64 safe-artifact (can be created by build-image)
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: artifact-purl-safe${{ inputs.image-suffix }}-arm64
+          path: arm64
+        if: inputs.devguard-artifact-name == ''
+      - name: set amd64 artifact-name variable if it is empty
         env:
           DEVGUARD_ARTIFACT_NAME: ${{ inputs.devguard-artifact-name }}
         run: |-
-          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
-            echo "ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
-            echo "Using artifact name from file: $ARTIFACT_NAME"
-            if [ -f artifact-purl-safe.txt ]; then
-              echo "API_ARTIFACT_NAME=$(cat artifact-purl-safe.txt)" >> $GITHUB_ENV
+          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f amd64/artifact-purl.txt ]; then
+            if [ -f amd64/artifact-purl-safe.txt ]; then
+              echo "AMD64_API_ARTIFACT_NAME=$(cat amd64/artifact-purl-safe.txt)" >> $GITHUB_ENV
             else
-              echo "API_ARTIFACT_NAME=$(cat artifact-purl.txt)" >> $GITHUB_ENV
+              echo "AMD64_API_ARTIFACT_NAME=$(cat amd64/artifact-purl.txt)" >> $GITHUB_ENV
             fi
+            echo "Using artifact name from file: $(cat amd64/artifact-purl.txt)"
           else
-            echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
-            echo "API_ARTIFACT_NAME=$(echo -n "$DEVGUARD_ARTIFACT_NAME" | jq -s -R -r @uri)" >> $GITHUB_ENV
+            echo "AMD64_API_ARTIFACT_NAME=$(echo -n "$DEVGUARD_ARTIFACT_NAME" | jq -s -R -r @uri)" >> $GITHUB_ENV
             echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
           fi
-      - name: Get and Attest SBOM
+      - name: set arm64 artifact-name variable if it is empty
+        env:
+          DEVGUARD_ARTIFACT_NAME: ${{ inputs.devguard-artifact-name }}
+        run: |-
+          if [ -z "$DEVGUARD_ARTIFACT_NAME" ] && [ -f arm64/artifact-purl.txt ]; then
+            if [ -f arm64/artifact-purl-safe.txt ]; then
+              echo "ARM64_API_ARTIFACT_NAME=$(cat arm64/artifact-purl-safe.txt)" >> $GITHUB_ENV
+            else
+              echo "ARM64_API_ARTIFACT_NAME=$(cat arm64/artifact-purl.txt)" >> $GITHUB_ENV
+            fi
+            echo "Using artifact name from file: $(cat arm64/artifact-purl.txt)"
+          else
+            echo "ARM64_API_ARTIFACT_NAME=$(echo -n "$DEVGUARD_ARTIFACT_NAME" | jq -s -R -r @uri)" >> $GITHUB_ENV
+            echo "Using provided artifact name: $DEVGUARD_ARTIFACT_NAME"
+          fi
+      - name: Get and Attest amd64 SBOM
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
               slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
-              echo 'Fetching SBOM for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/sbom.json &&
-              echo 'SBOM downloaded to /tmp/sbom.json' &&
+              echo 'Fetching SBOM for artifact:' '${{ env.AMD64_API_ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.AMD64_API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/amd64.sbom.json &&
+              echo 'SBOM downloaded to /tmp/amd64.sbom.json' &&
               for TAG in ${{ env.MANIFEST_TAGS }}; do
-                echo 'Attesting SBOM for manifest:' \"$TAG\" &&
-                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/sbom.json --predicateType='https://cyclonedx.org/bom' \"$TAG\" --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME"
+                echo 'Attesting amd64 SBOM for manifest:' \"$TAG\" &&
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/amd64.sbom.json --predicateType='https://cyclonedx.org/bom' \"$TAG\" --token='${{ secrets.devguard-token }}' --offline
               done
             "
         env:
-          API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          AMD64_API_ARTIFACT_NAME: ${{ env.AMD64_API_ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
-      - name: Get and Attest VeX
+      - name: Get and Attest amd64 VeX
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
               slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
-              echo 'Fetching VeX for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/vex.json &&
-              echo 'VeX downloaded to /tmp/vex.json' &&
+              echo 'Fetching VeX for artifact:' '${{ env.AMD64_API_ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.AMD64_API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/amd64.vex.json &&
+              echo 'VeX downloaded to /tmp/amd64.vex.json' &&
               for TAG in ${{ env.MANIFEST_TAGS }}; do
-                echo 'Attesting VeX for manifest:' \"$TAG\" &&
-                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/vex.json \"$TAG\" --token='${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME"
+                echo 'Attesting amd64 VeX for manifest:' \"$TAG\" &&
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/amd64.vex.json \"$TAG\" --token='${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --offline
               done
             "
         env:
-          API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          AMD64_API_ARTIFACT_NAME: ${{ env.AMD64_API_ARTIFACT_NAME }}
+          MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
+      - name: Get and Attest arm64 SBOM
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: |-
+            sh -c "
+              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              echo 'Fetching SBOM for artifact:' '${{ env.ARM64_API_ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.ARM64_API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/arm64.sbom.json &&
+              echo 'SBOM downloaded to /tmp/arm64.sbom.json' &&
+              for TAG in ${{ env.MANIFEST_TAGS }}; do
+                echo 'Attesting arm64 SBOM for manifest:' \"$TAG\" &&
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/arm64.sbom.json --predicateType='https://cyclonedx.org/bom' \"$TAG\" --token='${{ secrets.devguard-token }}' --offline
+              done
+            "
+        env:
+          ARM64_API_ARTIFACT_NAME: ${{ env.ARM64_API_ARTIFACT_NAME }}
+          MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
+      - name: Get and Attest arm64 VeX
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: |-
+            sh -c "
+              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              echo 'Fetching VeX for artifact:' '${{ env.ARM64_API_ARTIFACT_NAME }}' &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/artifacts/${{ env.ARM64_API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/arm64.vex.json &&
+              echo 'VeX downloaded to /tmp/arm64.vex.json' &&
+              for TAG in ${{ env.MANIFEST_TAGS }}; do
+                echo 'Attesting arm64 VeX for manifest:' \"$TAG\" &&
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/arm64.vex.json \"$TAG\" --token='${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --offline
+              done
+            "
+        env:
+          ARM64_API_ARTIFACT_NAME: ${{ env.ARM64_API_ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Get and Attest SAST-Results
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
@@ -219,16 +278,15 @@ jobs:
           args: |-
             sh -c "
               slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
-              echo 'Fetching SAST results for artifact:' '${{ env.ARTIFACT_NAME }}' &&
+              echo 'Fetching SAST results' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/'$slug'/sarif.json' --token='${{ secrets.devguard-token }}' > /tmp/sarif.json &&
               echo 'SAST results downloaded to /tmp/sarif.json' &&
               for TAG in ${{ env.MANIFEST_TAGS }}; do
                 echo 'Attesting SAST results for manifest:' \"$TAG\" &&
-                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \"$TAG\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME"
+                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \"$TAG\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --offline
               done
             "
         env:
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Attest amd64 build provenance
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
@@ -239,12 +297,11 @@ jobs:
               if [ -f amd64.provenance.json ]; then
                 for TAG in ${{ env.MANIFEST_TAGS }}; do
                   echo 'Attesting amd64 provenance for manifest:' \"$TAG\" &&
-                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME"
+                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --offline
                 done
               fi
             "
         env:
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
       - name: Attest arm64 build provenance
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
@@ -255,11 +312,10 @@ jobs:
               if [ -f arm64.provenance.json ]; then
                 for TAG in ${{ env.MANIFEST_TAGS }}; do
                   echo 'Attesting arm64 provenance for manifest:' \"$TAG\" &&
-                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME"
+                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --offline
                 done
               fi
             "
         env:
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
     name: devguard:create-manifest-multi-arch

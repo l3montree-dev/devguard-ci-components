@@ -4,7 +4,7 @@ import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchBuildImageTemplat
 import { BuildOciImageJobInputs, BuildOciImageJobInputsGitHub, BuildOciImageTemplate, BuildOciImageTemplateGitHub } from "./build-oci-image";
 import { BuildOciImageWDockerJobInputs, BuildOciImageWDockerJobInputsGitHub, BuildOciImageWDockerTemplate, BuildOciImageWDockerTemplateGitHub } from "./build-oci-image-w-docker";
 import { ContainerScanningJobInputs, ContainerScanningJobInputsGitHub, ContainerScanningTemplate, ContainerScanningTemplateGitHub } from "./container-scanning";
-import { CreateManifestMultiArchJobInputs, CreateManifestMultiArchJobInputsGitHub, CreateManifestMultiArchTemplate, CreateManifestMultiArchTemplateGitHub } from "./create-manifest-multi-arch";
+import { CreateManifestMultiArchJobInputs, CreateManifestMultiArchJobInputsGitHub, CreateManifestMultiArchTemplate, CreateManifestMultiArchTemplateGitHub, SignManifestMultiArchJobInputs, SignManifestMultiArchTemplate } from "./create-manifest-multi-arch";
 import { DeployJobInputsGitHub, DeployJobInputsGitLab, DeployTemplateGitHub, DeployTemplateGitLab } from "./deploy";
 import { DiscoverBaseimageAttestationsJobInputs, DiscoverBaseimageAttestationsJobInputsGitHub, DiscoverBaseimageAttestationsTemplate, DiscoverBaseimageAttestationsTemplateGitHub } from "./discover-baseimage-attestations";
 import { GenerateTagJobInputs, GenerateTagJobInputsGitHub, GenerateTagTemplate, GenerateTagTemplateGitHub } from "./generate-tag";
@@ -33,6 +33,7 @@ export const templates: { gitlab: TemplateEntry[]; github: TemplateEntry[] } = {
     ["BuildOciImageWDockerTemplate", BuildOciImageWDockerTemplate, BuildOciImageWDockerJobInputs],
     ["ContainerScanningTemplate", ContainerScanningTemplate, ContainerScanningJobInputs],
     ["CreateManifestMultiArchTemplate", CreateManifestMultiArchTemplate, CreateManifestMultiArchJobInputs],
+    ["SignManifestMultiArchTemplate", SignManifestMultiArchTemplate, SignManifestMultiArchJobInputs],
     ["DeployTemplateGitLab", DeployTemplateGitLab, DeployJobInputsGitLab],
     ["DiscoverBaseimageAttestationsTemplate", DiscoverBaseimageAttestationsTemplate, DiscoverBaseimageAttestationsJobInputs],
     ["GenerateTagTemplate", GenerateTagTemplate, GenerateTagJobInputs],

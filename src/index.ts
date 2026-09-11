@@ -14,7 +14,7 @@ import {
 import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab } from "./lib/types";
 import { ExportCIComponentsGitHub, ExportCIComponentsGitLab } from "./lib/utils";
 import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
-import { CreateManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
+import { CreateManifestMultiArchTemplate, SignManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { CreateRootTagTemplate, CreateRootTagTemplateGitHub } from "./templates/create-root-tag";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
 import { Inputs } from "./templates/inputs";
@@ -488,10 +488,8 @@ const bnmaCreateManifest = CreateManifestMultiArchTemplate({
   ],
   dependencies: [bnmaGenerateTagAmd64.name, bnmaGenerateTagArm64.name, bnmaPushAmd64.name, bnmaPushArm64.name],
 });
-const bnmaSignManifest = SignOciImageTemplate({
+const bnmaSignManifest = SignManifestMultiArchTemplate({
   stage: "attestation",
-  git_strategy: "none",
-  image: "$MANIFEST_IMAGE_TAG",
   job_suffix: "$[[ inputs.job_suffix ]]-manifest",
   needs: [bnmaCreateManifest.name],
   dependencies: [bnmaCreateManifest.name],
@@ -590,6 +588,7 @@ const templates: CIComponentGroupTemplateGitLab = {
   "push-oci-image": [PushOciImageTemplate({})],
   "sign-oci-image": [SignOciImageTemplate({})],
   "create-manifest-multi-arch": [CreateManifestMultiArchTemplate({})],
+  "sign-manifest-multi-arch": [SignManifestMultiArchTemplate({})],
   "sarif-upload": [SarifUploadTemplate({})],
   "sbom-upload": [SbomUploadTemplate({})],
   "vex-upload": [VexUploadTemplate({})],

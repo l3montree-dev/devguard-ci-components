@@ -839,6 +839,8 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
 
       AMD64_TAG=$(grep '^IMAGE_TAG=' ./generate_tag_$[[ inputs.upstream_version ]]_amd64.env | cut -d'=' -f2)
       ARM64_TAG=$(grep '^IMAGE_TAG=' ./generate_tag_$[[ inputs.upstream_version ]]_arm64.env | cut -d'=' -f2)
+      AMD64_ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' ./generate_tag_$[[ inputs.upstream_version ]]_amd64.env | cut -d'=' -f2-)
+      ARM64_ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' ./generate_tag_$[[ inputs.upstream_version ]]_arm64.env | cut -d'=' -f2-)
 
       if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ]; then
         echo "ERROR: Could not read arch-specific IMAGE_TAG from generate_tag env files"
@@ -856,7 +858,8 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
       docker manifest push "$BASE_TAG"
 
       echo "MANIFEST_IMAGE_TAG=$BASE_TAG" > manifest_image_tag.env
-      MANIFEST_TAGS="$BASE_TAG"
+      echo "AMD64_ARTIFACT_NAME=$AMD64_ARTIFACT_NAME" >> manifest_image_tag.env
+      echo "ARM64_ARTIFACT_NAME=$ARM64_ARTIFACT_NAME" >> manifest_image_tag.env
 
       if [ "$[[ inputs.create_root_manifest ]]" = "true" ]; then
         ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${CI_COMMIT_REF_NAME}//")
@@ -865,33 +868,55 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
           docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
           docker manifest push "$ROOT_TAG"
           echo "MANIFEST_WITHOUT_REF_TAG=$ROOT_TAG" >> manifest_image_tag.env
-          MANIFEST_TAGS="$MANIFEST_TAGS $ROOT_TAG"
         fi
       fi
-
-      for TAG in $MANIFEST_TAGS; do
-        echo "Signing manifest: $TAG"
-        docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u $CI_REGISTRY_USER -r $CI_REGISTRY -p "$CI_REGISTRY_PASSWORD" --token="$[[ inputs.devguard_token ]]" "$TAG" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]"
-      done
   artifacts:
     reports:
       dotenv: manifest_image_tag.env
     expire_in: 1 week
-devguard:sign_oci_image$[[ inputs.job_suffix ]]-manifest:
-  tags: $[[ inputs.runner_tags ]]
+devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
   stage: attestation
-  allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
   dependencies:
     - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
-  variables:
-    GIT_STRATEGY: none
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   script:
-    - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$MANIFEST_IMAGE_TAG"
+    - |-
+      devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+      MANIFEST_TAGS="$MANIFEST_IMAGE_TAG"
+      if [ -n "$MANIFEST_WITHOUT_REF_TAG" ]; then
+        MANIFEST_TAGS="$MANIFEST_TAGS $MANIFEST_WITHOUT_REF_TAG"
+      fi
+
+      SLUG=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
+
+      AMD64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$AMD64_ARTIFACT_NAME', safe=''))")
+      ARM64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARM64_ARTIFACT_NAME', safe=''))")
+
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/amd64.sbom.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/amd64.vex.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/arm64.sbom.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/arm64.vex.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
+
+      ATTESTATIONS=("/tmp/amd64.sbom.json|https://cyclonedx.org/bom" "/tmp/amd64.vex.json|https://cyclonedx.org/vex" "/tmp/arm64.sbom.json|https://cyclonedx.org/bom" "/tmp/arm64.vex.json|https://cyclonedx.org/vex" "/tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
+      [ -f amd64.provenance.json ] && ATTESTATIONS+=("amd64.provenance.json|https://slsa.dev/provenance/v1")
+      [ -f arm64.provenance.json ] && ATTESTATIONS+=("arm64.provenance.json|https://slsa.dev/provenance/v1")
+
+      for TAG in $MANIFEST_TAGS; do
+        echo "Signing manifest: $TAG"
+        devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$TAG" --offline
+
+        for ENTRY in "${ATTESTATIONS[@]}"; do
+          FILE=$(echo "$ENTRY" | cut -d'|' -f1)
+          PREDICATE_TYPE=$(echo "$ENTRY" | cut -d'|' -f2)
+          echo "Attesting $FILE ($PREDICATE_TYPE) -> $TAG"
+          devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$TAG" --token="$[[ inputs.devguard_token ]]" --offline
+        done
+      done

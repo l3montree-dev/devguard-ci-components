@@ -64,6 +64,8 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
 
       AMD64_TAG=$(grep '^IMAGE_TAG=' $[[ inputs.artifacts_subdirectory ]]/generate_tag_$[[ inputs.upstream_version ]]_amd64.env | cut -d'=' -f2)
       ARM64_TAG=$(grep '^IMAGE_TAG=' $[[ inputs.artifacts_subdirectory ]]/generate_tag_$[[ inputs.upstream_version ]]_arm64.env | cut -d'=' -f2)
+      AMD64_ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' $[[ inputs.artifacts_subdirectory ]]/generate_tag_$[[ inputs.upstream_version ]]_amd64.env | cut -d'=' -f2-)
+      ARM64_ARTIFACT_NAME=$(grep '^ARTIFACT_NAME=' $[[ inputs.artifacts_subdirectory ]]/generate_tag_$[[ inputs.upstream_version ]]_arm64.env | cut -d'=' -f2-)
 
       if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ]; then
         echo "ERROR: Could not read arch-specific IMAGE_TAG from generate_tag env files"
@@ -81,7 +83,8 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
       docker manifest push "$BASE_TAG"
 
       echo "MANIFEST_IMAGE_TAG=$BASE_TAG" > manifest_image_tag.env
-      MANIFEST_TAGS="$BASE_TAG"
+      echo "AMD64_ARTIFACT_NAME=$AMD64_ARTIFACT_NAME" >> manifest_image_tag.env
+      echo "ARM64_ARTIFACT_NAME=$ARM64_ARTIFACT_NAME" >> manifest_image_tag.env
 
       if [ "$[[ inputs.create_root_manifest ]]" = "true" ]; then
         ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${CI_COMMIT_REF_NAME}//")
@@ -90,14 +93,8 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
           docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
           docker manifest push "$ROOT_TAG"
           echo "MANIFEST_WITHOUT_REF_TAG=$ROOT_TAG" >> manifest_image_tag.env
-          MANIFEST_TAGS="$MANIFEST_TAGS $ROOT_TAG"
         fi
       fi
-
-      for TAG in $MANIFEST_TAGS; do
-        echo "Signing manifest: $TAG"
-        docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u $CI_REGISTRY_USER -r $CI_REGISTRY -p "$CI_REGISTRY_PASSWORD" --token="$[[ inputs.devguard_token ]]" "$TAG" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]"
-      done
   artifacts:
     reports:
       dotenv: manifest_image_tag.env
