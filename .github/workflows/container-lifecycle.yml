@@ -203,7 +203,7 @@ jobs:
           sudo chmod -R u+rwX $GITHUB_WORKSPACE || true
       - name: In-Toto Provenance record start
         id: in-toto-start
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }}
         continue-on-error: true
@@ -234,7 +234,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane digest --tarball="${IMAGE_DESTINATION_PATH}" > image-digest.txt
         env:
           IMAGE_DESTINATION_PATH: ${{ inputs.image-destination-path }}
@@ -266,7 +266,7 @@ jobs:
               -e IMAGE_PATH \
               -e GITHUB_REF_NAME \
               -e UPSTREAM_VERSION \
-              ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 \
+              ghcr.io/l3montree-dev/devguard/scanner:main \
               devguard-scanner generate-tag \
                 --imagePath="$IMAGE_PATH" \
                 --ref="$GITHUB_REF_NAME" \
@@ -289,7 +289,7 @@ jobs:
           docker run --rm \
             --user 53111:53111 \
             -v "${HOME}/.docker:/tmp/.docker" \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
         if: inputs.disable-artifact-registry-as-image-store == true
       - name: Upload to container registry
@@ -298,7 +298,7 @@ jobs:
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
             -v "${HOME}/.docker:/tmp/.docker:ro" \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane push "${IMAGE_DESTINATION_PATH}" "$(cat image-tag.txt)"
         env:
           IMAGE_DESTINATION_PATH: ${{ inputs.image-destination-path }}
@@ -339,7 +339,7 @@ jobs:
           name: image-tag${{ inputs.image-suffix }}
           path: image-tag.txt
       - name: In-Toto Provenance record stop
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --generateSlsaProvenance --defaultRef=${{ inputs.default-ref }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }}
         continue-on-error: true
@@ -404,7 +404,7 @@ jobs:
         run: crane pull $(cat image-tag.txt) image.tar
         if: ${{ inputs.fetch-image-from-registry == 'true' }}
       - name: DevGuard Container-Scanning
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
         with:
           args: devguard-scanner container-scanning --origin="${{ inputs.devguard-origin }}" --assetName="${{ inputs.devguard-asset-name }}" --apiUrl="${{ inputs.devguard-api-url }}" --token="${{ secrets.devguard-token }}" --path="${{ inputs.image-tar-path }}" --defaultRef="${{ inputs.default-ref }}" --ref="${{ inputs.commit-ref }}" --isTag="${{ inputs.is-tag }}" --artifactName="${{ env.ARTIFACT_NAME }}" --webUI="${{ inputs.devguard-web-ui }}" --failOnRisk="${{ inputs.fail-on-risk }}" --failOnCVSS="${{ inputs.fail-on-cvss }}" --ignoreExternalReferences=${{ inputs.ignore-external-references }} --ignoreUpstreamAttestations=${{ inputs.ignore-upstream-attestations }} -- ${{ inputs.extra-args }}
@@ -453,7 +453,7 @@ jobs:
         id: read-digest
         run: echo "DIGEST=$(cat image-digest.txt)" >> $GITHUB_ENV
       - name: In-Toto Provenance run
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ inputs.default-ref }} --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
         continue-on-error: true
@@ -509,7 +509,7 @@ jobs:
       - name: Set Image to be signed
         run: echo "IMAGE_TAG_AND_DIGEST=$(cat image-tag.txt)@$(cat image-digest.txt)" >> $GITHUB_ENV
       - name: DevGuard Image-Signing
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     needs:
@@ -557,7 +557,7 @@ jobs:
             crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
             echo "Signing floating root tag: $ROOT_TAG"
-            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
+            docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
 
             echo "ROOT_TAG=$ROOT_TAG" >> $GITHUB_ENV
           fi
@@ -596,11 +596,11 @@ jobs:
           fi
           echo "Attesting for artifact: $ARTIFACT_NAME"
 
-          SLUG=$(docker run --rm ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 devguard-scanner slug "${{ inputs.commit-ref }}")
+          SLUG=$(docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner slug "${{ inputs.commit-ref }}")
 
-          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
-          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
-          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
+          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
+          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
+          docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner curl "${{ inputs.devguard-api-url }}/api/v1/organizations/${{ inputs.devguard-asset-name }}/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
 
           ATTESTATIONS=("sbom.json:https://cyclonedx.org/bom" "vex.json:https://cyclonedx.org/vex" "sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
           [ -f build.provenance.json ] && ATTESTATIONS+=("build.provenance.json:https://slsa.dev/provenance/v1")
@@ -609,7 +609,7 @@ jobs:
             FILE="${ENTRY%%:*}"
             PREDICATE_TYPE="${ENTRY#*:}"
             echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-            docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/l3montree-dev/devguard/scanner:v1.14.0 devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --offline
+            docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --offline
           done
     needs:
       - devguard_build_oci_image
@@ -672,7 +672,7 @@ jobs:
           fi
           echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"
       - name: Get and Attest SBOM
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -693,7 +693,7 @@ jobs:
           API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
       - name: Get and Attest VeX
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -714,7 +714,7 @@ jobs:
           API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
       - name: Get and Attest SAST-Results
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         with:
           args: |-
             sh -c "
@@ -738,7 +738,7 @@ jobs:
         with:
           name: build${{ inputs.image-suffix }}.provenance.json
       - name: Attest build-provenance.json
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.14.0
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: true
         with:
           args: |-
