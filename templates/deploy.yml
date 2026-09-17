@@ -84,7 +84,7 @@ devguard:deploy$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""

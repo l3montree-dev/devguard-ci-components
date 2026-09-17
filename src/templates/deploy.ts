@@ -74,7 +74,7 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
       GIT_STRATEGY: inputValues.git_strategy,
     },
     image: {
-      name: ContainerImages.DEVGUARD_SCANNER,
+      name: ContainerImages.KANIKO,
       pull_policy: inputValues.pull_policy,
       entrypoint: [""],
     },

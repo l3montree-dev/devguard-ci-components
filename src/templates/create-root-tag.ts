@@ -175,7 +175,7 @@ export const CreateRootTagTemplate = defineJobGitLab(CreateRootTagJobInputs, (in
   exit 0
 fi
 
-/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 IMAGE_TAG=$(echo "${inputValues.image_tag}" | tr '[:upper:]' '[:lower:]')
 ROOT_TAG=$(echo "$IMAGE_TAG" | sed "s/-\${CI_COMMIT_REF_NAME}//")
@@ -185,7 +185,7 @@ if [ "$ROOT_TAG" = "$IMAGE_TAG" ]; then
 else
   ROOT_TAG_ONLY="\${ROOT_TAG##*:}"
   echo "Creating floating root tag: $ROOT_TAG_ONLY -> $IMAGE_TAG"
-  /crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
+  crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
   echo "Signing floating root tag: $ROOT_TAG"
   /devguard-scanner sign --token="${inputValues.devguard_token}" "$ROOT_TAG" --offline
