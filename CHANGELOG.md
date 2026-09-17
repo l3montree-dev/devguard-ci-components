@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.14.0] — 2026-09-17
+
+### Changed
+
+- `create-root-tag` now invokes `crane` via `PATH` rather than the absolute path `/crane`, matching how it's installed in the `devguard-scanner:main` image
+
+---
+
 ## [v1.13.2] — 2026-09-11
 
 ### Added
