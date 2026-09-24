@@ -115,6 +115,7 @@ const fullAttest = AttestTemplate({
     fullBuildOciImage.name,
     { job: "source-provenance-artifacts", optional: true },
   ],
+  dependencies: [fullGenerateTag.name, fullBuildOciImage.name, "source-provenance-artifacts"],
   attestations: [
     {
       source:
@@ -194,6 +195,7 @@ const clAttest = AttestTemplate({
     clBuildOciImage.name,
     clContainerScanning.name,
   ],
+  dependencies: [clGenerateTag.name, clBuildOciImage.name],
 });
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
@@ -240,6 +242,7 @@ const clnAttest = AttestTemplate({
     clnBuildOciImage.name,
     clnContainerScanning.name,
   ],
+  dependencies: [clnGenerateTag.name, clnBuildOciImage.name],
 });
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
@@ -267,6 +270,7 @@ const paAttest = AttestTemplate({
   git_strategy: "none",
   image: "$IMAGE_TAG",
   needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", { job: paPushOciImage.name, optional: true }],
+  dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
 
 // ── container-scanning-and-attest ─────────────────────────────────────────────
@@ -305,6 +309,7 @@ const csaAttest = AttestTemplate({
     csaContainerScanning.name,
     { job: csaPushOciImage.name, optional: true },
   ],
+  dependencies: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
 
 // ── build-nix-multiarch ───────────────────────────────────────────────────────
@@ -373,6 +378,7 @@ const bnmaAttestAmd64 = AttestTemplate({
     bnmaContainerScanningAmd64.name,
     { job: bnmaPushAmd64.name, optional: true },
   ],
+  dependencies: [bnmaGenerateTagAmd64.name, bnmaBuildAmd64.name],
   attestations: [
     {
       source:
@@ -456,6 +462,7 @@ const bnmaAttestArm64 = AttestTemplate({
     bnmaContainerScanningArm64.name,
     { job: bnmaPushArm64.name, optional: true },
   ],
+  dependencies: [bnmaGenerateTagArm64.name, bnmaBuildArm64.name],
   attestations: [
     {
       source:
@@ -553,6 +560,7 @@ const clbiAttest = AttestTemplate({
     clbiBuildOciImage.name,
     clbiContainerScanning.name,
   ],
+  dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name],
 });
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
 const clbiSbomUpload = SbomUploadTemplate({

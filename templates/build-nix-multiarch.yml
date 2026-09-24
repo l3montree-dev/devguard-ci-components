@@ -397,6 +397,9 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
     - devguard:container_scanning$[[ inputs.job_suffix ]]-amd64
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
       optional: true
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: none
   script: |
@@ -729,6 +732,9 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
     - devguard:container_scanning$[[ inputs.job_suffix ]]-arm64
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
       optional: true
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: none
   script: |

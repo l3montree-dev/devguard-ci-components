@@ -34,6 +34,7 @@ export const AttestJobInputs = defineInputsGitLab({
   pull_policy: Inputs.pull_policy,
   allow_failure: Inputs.allow_failure,
   needs: Inputs.needs,
+  dependencies: Inputs.dependencies,
 
   ...InputGroups.ref,
 
@@ -56,6 +57,7 @@ export const AttestTemplate = defineJobGitLab(AttestJobInputs, (inputValues) => 
     stage: inputValues.stage,
     allow_failure: inputValues.allow_failure,
     needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
     variables: {
       GIT_STRATEGY: inputValues.git_strategy,
     },

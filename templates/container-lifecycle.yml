@@ -418,6 +418,9 @@ devguard:attest$[[ inputs.job_suffix ]]:
       optional: true
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:container_scanning$[[ inputs.job_suffix ]]
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none
   script: |

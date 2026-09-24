@@ -490,6 +490,10 @@ devguard:attest$[[ inputs.job_suffix ]]:
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - job: source-provenance-artifacts
       optional: true
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - source-provenance-artifacts
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   script: |
