@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- `attest` jobs across all orchestration templates declared no `dependencies`, relying on GitLab's implicit "download artifacts from every `needs` job" behavior.
+
 ## [v1.14.0] — 2026-09-17
 
 ### Changed
