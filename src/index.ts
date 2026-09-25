@@ -99,6 +99,7 @@ const fullSignOciImage = SignOciImageTemplate({
 const fullCreateRootTag = CreateRootTagTemplate({
   stage: "attestation",
   image_tag: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
   dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name],
 });
@@ -161,8 +162,9 @@ const clContainerScanning = ContainerScanningTemplate({
   stage: "oci-image",
   git_strategy: "fetch",
   image_tar_path: "image.tar",
-  needs: [clBuildOciImage.name],
-  dependencies: [clBuildOciImage.name],
+  devguard_artifact_name: "$ARTIFACT_NAME",
+  needs: [clGenerateTag.name, clBuildOciImage.name],
+  dependencies: [clGenerateTag.name, clBuildOciImage.name],
 });
 const clPushOciImage = PushOciImageTemplate({
   stage: "oci-image",
@@ -182,6 +184,7 @@ const clSignOciImage = SignOciImageTemplate({
 const clCreateRootTag = CreateRootTagTemplate({
   stage: "attestation",
   image_tag: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [clGenerateTag.name, clBuildOciImage.name, { job: clPushOciImage.name, optional: true }],
   dependencies: [clGenerateTag.name, clBuildOciImage.name, clPushOciImage.name],
 });
@@ -189,6 +192,7 @@ const clAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [
     clGenerateTag.name,
     { job: clPushOciImage.name, optional: true },
@@ -214,6 +218,7 @@ const clnContainerScanning = ContainerScanningTemplate({
   stage: "oci-image",
   git_strategy: "fetch",
   image_tar_path: "image.tar",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [clnGenerateTag.name, clnBuildOciImage.name],
   dependencies: [clnGenerateTag.name, clnBuildOciImage.name],
 });
@@ -236,6 +241,7 @@ const clnAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [
     clnGenerateTag.name,
     { job: clnPushOciImage.name, optional: true },
@@ -269,6 +275,7 @@ const paAttest = AttestTemplate({
   stage: "$[[ inputs.attest_stage ]]",
   git_strategy: "none",
   image: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", { job: paPushOciImage.name, optional: true }],
   dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
@@ -281,6 +288,7 @@ const csaGenerateTag = GenerateTagTemplate({
 const csaContainerScanning = ContainerScanningTemplate({
   stage: "oci-image",
   git_strategy: "fetch",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
   dependencies: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
@@ -303,6 +311,7 @@ const csaAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [
     csaGenerateTag.name,
     "$[[ inputs.build_job_name ]]",
@@ -547,6 +556,7 @@ const clbiSignOciImage = SignOciImageTemplate({
 const clbiCreateRootTag = CreateRootTagTemplate({
   stage: "attestation",
   image_tag: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [clbiGenerateTag.name, clbiBuildOciImage.name, { job: clbiPushOciImage.name, optional: true }],
   dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name, clbiPushOciImage.name],
 });
@@ -554,6 +564,7 @@ const clbiAttest = AttestTemplate({
   stage: "attestation",
   git_strategy: "none",
   image: "$IMAGE_TAG",
+  devguard_artifact_name: "$ARTIFACT_NAME",
   needs: [
     clbiGenerateTag.name,
     { job: clbiPushOciImage.name, optional: true },
@@ -580,7 +591,7 @@ const clbiVexUpload = VexUploadTemplate({
   dependencies: [clbiDiscoverAttestations.name, clbiSbomUpload.name],
 });
 
-const templates: CIComponentGroupTemplateGitLab = {
+export const templates: CIComponentGroupTemplateGitLab = {
   // ── Individual job templates ──────────────────────────────────────────────
   // "source-provenance-attestation": [
   //     SourceProvenanceTemplate({}),
@@ -682,53 +693,55 @@ const templates: CIComponentGroupTemplateGitLab = {
   ],
 };
 
-await ExportCIComponentsGitLab(templates, fileHeader, {
-  full: {
-    devguard_artifact_name: Inputs.devguard_artifact_name,
-    small_artifact_registry: Inputs.small_artifact_registry,
-  },
-  "container-lifecycle-with-base-image-inspection": {
-    devguard_artifact_name: Inputs.devguard_artifact_name,
-  },
-  "push-and-attest": {
-    build_job_name: {
-      description: "Name of the build job to depend on" as const,
+if (import.meta.main) {
+  await ExportCIComponentsGitLab(templates, fileHeader, {
+    full: {
+      devguard_artifact_name: Inputs.devguard_artifact_name,
+      small_artifact_registry: Inputs.small_artifact_registry,
     },
-    build_stage: {
-      description: "Pipeline stage for the push jobs (e.g. build, oci-image)" as const,
-      default: "oci-image" as const,
+    "container-lifecycle-with-base-image-inspection": {
+      devguard_artifact_name: Inputs.devguard_artifact_name,
     },
-    attest_stage: {
-      description: "Pipeline stage for the sign/attest jobs (e.g. test, attestation)" as const,
-      default: "attestation" as const,
+    "push-and-attest": {
+      build_job_name: {
+        description: "Name of the build job to depend on" as const,
+      },
+      build_stage: {
+        description: "Pipeline stage for the push jobs (e.g. build, oci-image)" as const,
+        default: "oci-image" as const,
+      },
+      attest_stage: {
+        description: "Pipeline stage for the sign/attest jobs (e.g. test, attestation)" as const,
+        default: "attestation" as const,
+      },
     },
-  },
-  "build-nix-multiarch": {
-    job_suffix: {
-      description:
-        "Suffix appended to all job names — use when including this component multiple times in one pipeline (e.g. ':scanner')" as const,
-      default: "" as const,
+    "build-nix-multiarch": {
+      job_suffix: {
+        description:
+          "Suffix appended to all job names — use when including this component multiple times in one pipeline (e.g. ':scanner')" as const,
+        default: "" as const,
+      },
+      nix_target_amd64: {
+        description: "Nix flake build target for amd64 (e.g. coreutils-amd64)" as const,
+      },
+      nix_target_arm64: {
+        description: "Nix flake build target for arm64 (e.g. coreutils-arm64)" as const,
+      },
+      amd64_runner_tag: {
+        description: "Runner tag for amd64 builds" as const,
+        default: "" as const,
+      },
+      arm64_runner_tag: {
+        description: "Runner tag for arm64 builds" as const,
+        default: "" as const,
+      },
+      image_tag: {
+        description: "OCI image tag (e.g. registry.example.com/org/image:tag)" as const,
+        default: "" as const,
+      },
     },
-    nix_target_amd64: {
-      description: "Nix flake build target for amd64 (e.g. coreutils-amd64)" as const,
-    },
-    nix_target_arm64: {
-      description: "Nix flake build target for arm64 (e.g. coreutils-arm64)" as const,
-    },
-    amd64_runner_tag: {
-      description: "Runner tag for amd64 builds" as const,
-      default: "" as const,
-    },
-    arm64_runner_tag: {
-      description: "Runner tag for arm64 builds" as const,
-      default: "" as const,
-    },
-    image_tag: {
-      description: "OCI image tag (e.g. registry.example.com/org/image:tag)" as const,
-      default: "" as const,
-    },
-  },
-});
+  });
+}
 
 // console.log("Finished");
 
@@ -876,7 +889,7 @@ const ghFnAttestArm64 = AttestTemplateGitHub({
 ghFnAttestArm64.name = "devguard:attest-arm64";
 ghFnAttestArm64.job.needs = ["devguard_build_nix_arm64", "devguard_create_manifest_multi_arch"];
 
-const templatesGitHub: CIComponentGroupTemplateGitHub = {
+export const templatesGitHub: CIComponentGroupTemplateGitHub = {
   // Individual reusable component workflows
   "secret-scanning": [SecretScanningTemplateGitHub({})],
   "build-image": [BuildOciImageTemplateGitHub({})],
@@ -931,45 +944,45 @@ const templatesGitHub: CIComponentGroupTemplateGitHub = {
   ],
 };
 
-await ExportCIComponentsGitHub(templatesGitHub, fileHeader, {
-  "container-lifecycle": {
-    image_suffix: {
-      description: "Suffix for the image name when building multiple images" as const,
-      default: "" as const,
+if (import.meta.main) {
+  await ExportCIComponentsGitHub(templatesGitHub, fileHeader, {
+    "container-lifecycle": {
+      image_suffix: {
+        description: "Suffix for the image name when building multiple images" as const,
+        default: "" as const,
+      },
     },
-  },
-  full: {
-    image_suffix: {
-      description: "Suffix for the image name when building multiple images" as const,
-      default: "" as const,
+    full: {
+      image_suffix: {
+        description: "Suffix for the image name when building multiple images" as const,
+        default: "" as const,
+      },
+      devguard_artifact_name: {
+        description: "Name of the artifact you are building (leave empty when building a single artifact)" as const,
+        default: "" as const,
+      },
     },
-    devguard_artifact_name: {
-      description: "Name of the artifact you are building (leave empty when building a single artifact)" as const,
-      default: "" as const,
+    "container-lifecycle-nix": {
+      image_suffix: {
+        description: "Suffix for the image name when building multiple images" as const,
+        default: "" as const,
+      },
     },
-  },
-  "container-lifecycle-nix": {
-    image_suffix: {
-      description: "Suffix for the image name when building multiple images" as const,
-      default: "" as const,
+    "full-nix": {
+      nix_target_amd64: { description: "Nix flake build target for amd64 (e.g. devguard-0-amd64)" as const },
+      nix_target_arm64: { description: "Nix flake build target for arm64 (e.g. devguard-0-arm64)" as const },
+      runner_amd64: {
+        description: "GitHub Actions runner label for the amd64 build" as const,
+        default: "ubuntu-latest" as const,
+      },
+      runner_arm64: {
+        description: "GitHub Actions runner label for the arm64 build" as const,
+        default: "ubuntu-24.04-arm" as const,
+      },
+      artifact_name_suffix: {
+        description: "Suffix appended to artifact names to avoid conflicts when building multiple images" as const,
+        default: "" as const,
+      },
     },
-  },
-  "full-nix": {
-    nix_target_amd64: { description: "Nix flake build target for amd64 (e.g. devguard-0-amd64)" as const },
-    nix_target_arm64: { description: "Nix flake build target for arm64 (e.g. devguard-0-arm64)" as const },
-    runner_amd64: {
-      description: "GitHub Actions runner label for the amd64 build" as const,
-      default: "ubuntu-latest" as const,
-    },
-    runner_arm64: {
-      description: "GitHub Actions runner label for the arm64 build" as const,
-      default: "ubuntu-24.04-arm" as const,
-    },
-    artifact_name_suffix: {
-      description: "Suffix appended to artifact names to avoid conflicts when building multiple images" as const,
-      default: "" as const,
-    },
-  },
-});
-
-// console.log("Finished");
+  });
+}

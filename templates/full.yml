@@ -457,8 +457,8 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         echo "Attesting floating root tag: $ROOT_TAG"
         SLUG=$(/devguard-scanner slug "$[[ inputs.commit_ref ]]")
 
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$[[ inputs.devguard_artifact_name ]]/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$[[ inputs.devguard_artifact_name ]]/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
         /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom

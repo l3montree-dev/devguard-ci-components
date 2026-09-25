@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Jobs composed after `generate-tag` could read the wrong artifact name, breaking sbom/vex download URLs and attestation API calls with a 404.** `generate-tag` resolves the artifact name into the `$ARTIFACT_NAME` dotenv variable at runtime (used whenever `devguard_artifact_name` is left empty so the scanner derives it from the built image)
 - `attest` jobs across all orchestration templates declared no `dependencies`, relying on GitLab's implicit "download artifacts from every `needs` job" behavior.
 
 ## [v1.14.0] — 2026-09-17

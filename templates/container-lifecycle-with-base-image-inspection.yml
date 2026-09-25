@@ -412,8 +412,8 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         echo "Attesting floating root tag: $ROOT_TAG"
         SLUG=$(/devguard-scanner slug "$[[ inputs.commit_ref ]]")
 
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$[[ inputs.devguard_artifact_name ]]/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$[[ inputs.devguard_artifact_name ]]/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
         /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
@@ -452,11 +452,11 @@ devguard:attest$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: none
   script: |
     echo "Attesting artifacts for $IMAGE_TAG"
-    echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
+    echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
     # URL encode artifact name for API calls
-    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
+    API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
     # Slugify the commit ref (replace special characters with hyphens)
@@ -525,7 +525,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
           --token="$[[ inputs.devguard_token ]]" \
           --apiUrl="$[[ inputs.devguard_api_url ]]" \
           --assetName="$[[ inputs.devguard_asset_name ]]" \
-          --artifactName="$[[ inputs.devguard_artifact_name ]]"
+          --artifactName="$ARTIFACT_NAME"
         echo "✓ Attestation created successfully"
       else
         echo "✗ Warning: File $FILE_PATH not found, skipping attestation"
