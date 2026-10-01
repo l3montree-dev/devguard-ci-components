@@ -112,11 +112,11 @@ const fullAttest = AttestTemplate({
   image: "$IMAGE_TAG",
   needs: [
     fullGenerateTag.name,
-    fullSignOciImage.name,
+    { job: fullSignOciImage.name, artifacts: false },
     fullBuildOciImage.name,
+    // only included on gitlab.opencode.de - `dependencies` has no `optional`, so artifacts are pulled via `needs` instead
     { job: "source-provenance-artifacts", optional: true },
   ],
-  dependencies: [fullGenerateTag.name, fullBuildOciImage.name, "source-provenance-artifacts"],
   attestations: [
     {
       source:
@@ -144,6 +144,9 @@ const fullAttest = AttestTemplate({
     },
   ],
 });
+// `dependencies` has no `optional` and fails with "undefined dependency" when source-provenance-artifacts is not
+// included (outside gitlab.opencode.de). Artifacts are selected via `needs` instead.
+delete fullAttest.job.dependencies;
 
 // ── container-lifecycle ───────────────────────────────────────────────────────
 const clGenerateTag = GenerateTagTemplate({

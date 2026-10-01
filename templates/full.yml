@@ -486,14 +486,11 @@ devguard:attest$[[ inputs.job_suffix ]]:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
-    - devguard:sign_oci_image$[[ inputs.job_suffix ]]
+    - job: devguard:sign_oci_image$[[ inputs.job_suffix ]]
+      artifacts: false
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - job: source-provenance-artifacts
       optional: true
-  dependencies:
-    - devguard:generate_tag$[[ inputs.job_suffix ]]
-    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
-    - source-provenance-artifacts
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   script: |
