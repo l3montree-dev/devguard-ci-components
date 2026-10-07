@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.16.0] — 2026-10-07
+
+### Fixed
+
+- **`full` template: `devguard:attest` failed with an "undefined dependency" error when `source-provenance-artifacts` was not included** (i.e. outside gitlab.opencode.de), because `dependencies` has no `optional` option. The attest job now selects its artifacts through `needs` (with `source-provenance-artifacts` marked `optional`) and the explicit `dependencies` list is removed. `devguard:sign_oci_image` is still awaited, but no longer downloads its artifacts (`artifacts: false`)
+
+---
+
 ## [v1.15.0] — 2026-09-30
 
 ### Fixed
