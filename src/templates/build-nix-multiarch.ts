@@ -4,6 +4,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { requestGitHubIdTokenScript, signBuildProvenanceScript } from "../lib/provenance";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
@@ -242,6 +243,18 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
         } as Record<string, string>,
         run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF`,
         "continue-on-error": true,
+      },
+      {
+        name: "Sign SLSA Provenance with DevGuard",
+        run: `${requestGitHubIdTokenScript(inputValues.devguard_api_url)}
+${signBuildProvenanceScript({
+  scanner: "devguard-scanner",
+  jq: "jq",
+  image: "$(cat image-tag.txt)",
+  devguardToken: "${{ secrets.devguard-token }}",
+  devguardApiUrl: inputValues.devguard_api_url,
+  devguardAssetName: inputValues.devguard_asset_name,
+})}`,
       },
       {
         name: "Upload SLSA Provenance",

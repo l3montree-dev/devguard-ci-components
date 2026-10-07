@@ -5,6 +5,7 @@ import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, DOCKER_SETUP_BUILDX_ACTION }
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { DEVGUARD_ID_TOKEN, requestGitHubIdTokenScript, signBuildProvenanceScript } from "../lib/provenance";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   ...InputGroups.devguardCore,
@@ -158,6 +159,18 @@ docker push $IMAGE_TAG`,
         "continue-on-error": true,
       },
       {
+        name: "Sign SLSA Provenance with DevGuard",
+        run: `${requestGitHubIdTokenScript(inputValues.devguard_api_url)}
+${signBuildProvenanceScript({
+  scanner: `docker run --rm -e ${DEVGUARD_ID_TOKEN} -v "$GITHUB_WORKSPACE:/workspace" -w /workspace ${ContainerImages.DEVGUARD_SCANNER} devguard-scanner`,
+  jq: "jq",
+  image: inputValues.image_tag,
+  devguardToken: "${{ secrets.devguard-token }}",
+  devguardApiUrl: inputValues.devguard_api_url,
+  devguardAssetName: inputValues.devguard_asset_name,
+})}`,
+      },
+      {
         name: "Upload SLSA Provenance",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
@@ -182,6 +195,9 @@ export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDocker
       DOCKER_BUILDKIT: inputValues.docker_buildkit,
       DOCKER_HOST: "tcp://127.0.0.1:2375",
       DOCKER_TLS_CERTDIR: "",
+    },
+    id_tokens: {
+      [DEVGUARD_ID_TOKEN]: { aud: inputValues.devguard_api_url },
     },
     services: [
       {
@@ -213,6 +229,14 @@ export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDocker
       `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
       `echo "Running DevGuard Intoto Build...stopping..."`,
       `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
+      signBuildProvenanceScript({
+        scanner: "/devguard-scanner",
+        jq: "jq",
+        image: inputValues.image_tag,
+        devguardToken: inputValues.devguard_token,
+        devguardApiUrl: inputValues.devguard_api_url,
+        devguardAssetName: inputValues.devguard_asset_name,
+      }),
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
     artifacts: {

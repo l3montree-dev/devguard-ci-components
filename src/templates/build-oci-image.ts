@@ -1,10 +1,10 @@
-
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { DEVGUARD_ID_TOKEN, requestGitHubIdTokenScript, signBuildProvenanceScript } from "../lib/provenance";
 
 const BuildOciImageConfig = {
   ...InputGroups.devguardCore,
@@ -65,6 +65,9 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
     variables: {
       GIT_STRATEGY: inputValues.git_strategy,
     },
+    id_tokens: {
+      [DEVGUARD_ID_TOKEN]: { aud: inputValues.devguard_api_url },
+    },
     image: {
       name: ContainerImages.KANIKO,
       pull_policy: inputValues.pull_policy,
@@ -84,6 +87,14 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
 
       `echo "Running DevGuard Intoto Build...stopping..."`,
       `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
+      signBuildProvenanceScript({
+        scanner: "/devguard-scanner",
+        jq: "/jq",
+        image: inputValues.image_tag,
+        devguardToken: inputValues.devguard_token,
+        devguardApiUrl: inputValues.devguard_api_url,
+        devguardAssetName: inputValues.devguard_asset_name,
+      }),
 
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
@@ -180,7 +191,7 @@ else
   exit 1
 fi`,
         env: {
-          IMAGE_DESTINATION_PATH: `${ inputValues.image_destination_path }`,
+          IMAGE_DESTINATION_PATH: `${inputValues.image_destination_path}`,
         } as Record<string, string>,
       },
       {
@@ -197,15 +208,15 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
   ${ContainerImages.DEVGUARD_SCANNER} \\
   crane digest --tarball="\${IMAGE_DESTINATION_PATH}" > image-digest.txt`,
         env: {
-          IMAGE_DESTINATION_PATH: `${ inputValues.image_destination_path }`,
+          IMAGE_DESTINATION_PATH: `${inputValues.image_destination_path}`,
         },
       },
       {
         name: "Upload artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `oci-image${ inputValues.image_suffix }`,
-          path: `${ inputValues.image_destination_path }`,
+          name: `oci-image${inputValues.image_suffix}`,
+          path: `${inputValues.image_destination_path}`,
         },
         if: "inputs.disable_artifact_registry_as_image_store == false",
       },
@@ -213,10 +224,10 @@ sudo chmod -R 777 $GITHUB_WORKSPACE || true`,
         name: "Set image tag",
         id: "set-image-tag",
         env: {
-          IMAGE_SUFFIX: `${ inputValues.image_suffix }`,
-          IMAGE: `${ inputValues.image }`,
-          IS_TAG: `${ inputValues.is_tag }`,
-          UPSTREAM_VERSION: `${ inputValues.upstream_version }`,
+          IMAGE_SUFFIX: `${inputValues.image_suffix}`,
+          IMAGE: `${inputValues.image}`,
+          IS_TAG: `${inputValues.is_tag}`,
+          UPSTREAM_VERSION: `${inputValues.upstream_version}`,
         },
         run: `if [ -n "$IMAGE" ]; then
   IMAGE_TAG="$IMAGE"
@@ -269,7 +280,7 @@ docker run --rm \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
   crane push "\${IMAGE_DESTINATION_PATH}" "$(cat image-tag.txt)"`,
         env: {
-          IMAGE_DESTINATION_PATH: `${ inputValues.image_destination_path }`,
+          IMAGE_DESTINATION_PATH: `${inputValues.image_destination_path}`,
         } as Record<string, string>,
         if: "inputs.disable_artifact_registry_as_image_store == true",
       },
@@ -277,7 +288,7 @@ docker run --rm \\
         name: "Upload digest",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-digest${ inputValues.image_suffix }`,
+          name: `image-digest${inputValues.image_suffix}`,
           path: "image-digest.txt",
         },
       },
@@ -295,14 +306,14 @@ echo "$SAFE_PURL" > artifact-purl-safe.txt
 echo "PURL=$PURL" >> $GITHUB_ENV
 echo "Using artifact name: $PURL"`,
         env: {
-          ARTIFACT_NAME_INPUT: `${ inputValues.devguard_artifact_name }`,
+          ARTIFACT_NAME_INPUT: `${inputValues.devguard_artifact_name}`,
         } as Record<string, string>,
       },
       {
         name: "Upload artifact purl",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `artifact-purl${ inputValues.image_suffix }`,
+          name: `artifact-purl${inputValues.image_suffix}`,
           path: "artifact-purl.txt",
         },
       },
@@ -310,7 +321,7 @@ echo "Using artifact name: $PURL"`,
         name: "Upload safe artifact purl",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `artifact-purl-safe${ inputValues.image_suffix }`,
+          name: `artifact-purl-safe${inputValues.image_suffix}`,
           path: "artifact-purl-safe.txt",
         },
       },
@@ -318,7 +329,7 @@ echo "Using artifact name: $PURL"`,
         name: "Upload image tag",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          name: `image-tag${ inputValues.image_suffix }`,
+          name: `image-tag${inputValues.image_suffix}`,
           path: "image-tag.txt",
         },
       },
@@ -337,11 +348,23 @@ sudo chmod -R u+rw,g+r,o+r $GITHUB_WORKSPACE || true`,
         "continue-on-error": true,
       },
       {
+        name: "Sign SLSA Provenance with DevGuard",
+        run: `${requestGitHubIdTokenScript(inputValues.devguard_api_url)}
+${signBuildProvenanceScript({
+  scanner: `docker run --rm -e ${DEVGUARD_ID_TOKEN} -v "$GITHUB_WORKSPACE:/workspace" -w /workspace ${ContainerImages.DEVGUARD_SCANNER} devguard-scanner`,
+  jq: "jq",
+  image: "$(cat image-tag.txt)",
+  devguardToken: "${{ secrets.devguard-token }}",
+  devguardApiUrl: inputValues.devguard_api_url,
+  devguardAssetName: inputValues.devguard_asset_name,
+})}`,
+      },
+      {
         name: "Upload SLSA Provenance",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
           path: "build.provenance.json",
-          name: `build${ inputValues.image_suffix }.provenance.json`,
+          name: `build${inputValues.image_suffix}.provenance.json`,
         },
       },
     ],

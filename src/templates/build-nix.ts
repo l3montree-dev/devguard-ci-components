@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { DEVGUARD_ID_TOKEN, requestGitHubIdTokenScript, signBuildProvenanceScript } from "../lib/provenance";
 
 // Job 1: extract the devguard-scanner binary once and share as artifact
 export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
@@ -305,6 +306,18 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
         "continue-on-error": true,
       },
       {
+        name: "Sign SLSA Provenance with DevGuard",
+        run: `${requestGitHubIdTokenScript(inputValues.devguard_api_url)}
+${signBuildProvenanceScript({
+  scanner: "devguard-scanner",
+  jq: "jq",
+  image: "$(cat image-tag.txt)",
+  devguardToken: "${{ secrets.devguard-token }}",
+  devguardApiUrl: inputValues.devguard_api_url,
+  devguardAssetName: inputValues.devguard_asset_name,
+})}`,
+      },
+      {
         name: "Upload SLSA Provenance",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
@@ -330,6 +343,9 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
       `devguard:extract_scanner${inputValues.job_suffix}`,
       ...(Array.isArray(inputValues.dependencies) ? inputValues.dependencies : inputValues.dependencies ? [inputValues.dependencies] : []),
     ],
+    id_tokens: {
+      [DEVGUARD_ID_TOKEN]: { aud: inputValues.devguard_api_url },
+    },
     image: {
       name: "nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1",
       entrypoint: ["/bin/sh", "-c"],
@@ -348,6 +364,15 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
       `if [[ -n "${inputValues.nix_cache_s3_endpoint}" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then\n  export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"\n  export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"\n  nix copy $(nix-store -qR $(readlink result)) --to 's3://${inputValues.nix_cache_s3_bucket}?endpoint=${inputValues.nix_cache_s3_endpoint}&region=${inputValues.nix_cache_region}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true\nfi`,
       `nix run nixpkgs#crane -- digest --tarball="${inputValues.image}" > image-digest.txt`,
       `./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance`,
+      signBuildProvenanceScript({
+        scanner: "./devguard-scanner",
+        jq: "nix run nixpkgs#jq --",
+        // IMAGE_TAG is provided by the generate tag job
+        image: "${IMAGE_TAG:-$CI_REGISTRY_IMAGE}",
+        devguardToken: inputValues.devguard_token,
+        devguardApiUrl: inputValues.devguard_api_url,
+        devguardAssetName: inputValues.devguard_asset_name,
+      }),
       `if [ "${inputValues.provenance_file}" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "${inputValues.provenance_file}"; fi`,
     ],
     artifacts: {

@@ -1,4 +1,5 @@
-FROM ghcr.io/l3montree-dev/devguard/scanner:v1.12.4@sha256:7d3046cdd5562129f7579fb8267104e5a3700399282433706ea783a5781a4acd AS devguard-scanner
+# TODO: pin to the first scanner release which ships crane, devguard-scanner and jq in /usr/local/bin (version@sha256:digest)
+FROM ghcr.io/l3montree-dev/devguard/scanner:main AS devguard-scanner
 # https://github.com/l3montree-dev/devguard
 
 # checkov:skip=CKV_DOCKER_2
@@ -8,8 +9,10 @@ FROM registry.opencode.de/oci-community/images/l3montree/kaniko:v1.28.3-debug@sh
 # https://github.com/osscontainertools/kaniko
 # https://gitlab.opencode.de/oci-community/images/l3montree/kaniko
 
-COPY --from=devguard-scanner /nix/store/7zplyq3j4233dbhdli1d6w7a0cb4ayl3-crane-0.21.5/bin/crane /crane
-COPY --from=devguard-scanner /nix/store/83631j10z47z35vbxq7axzgn3x7ncwpz-devguard-scanner-v1.12.4/bin/devguard-scanner /devguard-scanner
+# static binaries at stable paths in the scanner image - jq is needed to set the subject of the build provenance
+COPY --from=devguard-scanner /usr/local/bin/crane /crane
+COPY --from=devguard-scanner /usr/local/bin/devguard-scanner /devguard-scanner
+COPY --from=devguard-scanner /usr/local/bin/jq /jq
 
 WORKDIR /workspace
 
