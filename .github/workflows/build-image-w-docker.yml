@@ -30,11 +30,6 @@ on:
         type: string
         required: false
         default: ${{ github.ref_type == 'tag' }}
-      devguard-artifact-name:
-        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-        type: string
-        required: false
-        default: ""
       image:
         description: The image file to build (e.g. image.tar)
         type: string
@@ -50,11 +45,6 @@ on:
         type: string
         required: false
         default: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-      build-args:
-        description: The build arguments to pass to the Kaniko build command
-        type: string
-        required: false
-        default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
       push-image:
         description: If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts.
         type: string

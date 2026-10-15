@@ -73,11 +73,6 @@ on:
         type: string
         required: false
         default: ubuntu-latest
-      allow-failure:
-        description: Whether the job is allowed to fail without stopping the pipeline
-        type: boolean
-        required: false
-        default: false
       commit-ref:
         description: Current commit reference
         type: string

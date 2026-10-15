@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING: pushing the image during the build is now controlled by a single input.** Previously the build, scan and push jobs each had their own flag, and setting only one of them made the scan or push job fail looking for an `oci-image` / `image.tar` artifact that was never produced. The remaining flag now drives all three jobs: the build pushes the image, the scan pulls it from the registry, and the separate push is skipped
+  - GitLab `full`, `container-lifecycle` and `container-lifecycle-with-base-image-inspection`: use `small_artifact_registry`. The inputs `push_image`, `disable_job` and `fetch_image_from_registry` are removed from these templates
+  - GitHub `container-lifecycle` and `full` workflows: use `disable-artifact-registry-as-image-store`. The inputs `image-already-in-registry` and `fetch-image-from-registry` are removed from these workflows
+  - The standalone `deploy`, `container-scanning` and `push-oci-image` templates/workflows keep their individual inputs
+- **BREAKING: Nix orchestrations no longer expose registry flags they cannot honor.** The Nix build never pushes — the image only reaches the registry through the push/deploy job — so these inputs could only break the pipeline: scanning "from the registry" pulled an image that had not been pushed yet (or a stale image under the same tag), and skipping the push left nothing in the registry for sign/attest
+  - GitLab `container-lifecycle-nix` and `build-nix-multiarch`: `fetch_image_from_registry` and `disable_job` are removed
+  - GitHub `container-lifecycle-nix` and `full-nix` workflows: `fetch-image-from-registry` and `image-already-in-registry` are removed
+- **BREAKING: removed inputs that had no effect.** They were declared, but no job read them. Callers that still pass them get an "unknown input" error and can simply drop them
+  - GitLab `build-oci-image` (and the `full` / `container-lifecycle*` templates): `image`, `image_suffix`, `devguard_artifact_name`, `fetch_depth`. The image tar location is `image_destination_path`; the orchestrations now pin it, as their scan and push jobs always read `image.tar`
+  - GitLab `attest`, `sign-oci-image`: `image_suffix`; `sign-oci-image`, `sign-manifest-multi-arch`: `devguard_artifact_name`; `sign-manifest-multi-arch`: `is_tag`
+  - GitLab `create-manifest-multi-arch`: `devguard_token`, `devguard_api_url`, `devguard_asset_name`, `devguard_artifact_name`, `commit_ref`, `is_tag` (signing happens in `sign-manifest-multi-arch`)
+  - GitHub `deploy` (and the `container-lifecycle*` / `full*` workflows): `artifact-suffix` — artifacts are always looked up by `image-suffix`
+  - GitHub `sign`: `image`, `devguard-artifact-name`; `generate-tag`: `devguard-artifact-name`; `build-image-w-docker`: `devguard-artifact-name` and the `build-args` input (the `build-args` secret is what the build reads); `create-manifest-multi-arch`: `upstream-version`, `is-tag`; `build-nix`: `allow-failure`
+  - GitHub `build-nix-multiarch-build` and `build-nix-multiarch-manifest` now each declare only the inputs they use instead of sharing one set (the build drops `registry`, `registry-user`, `create-root-manifest`, `allow-failure`, `fail-on-*`; the manifest keeps only `registry`, `registry-user`, `image-suffix`, `create-root-manifest`)
+
+### Fixed
+
+- GitLab `push-oci-image` and `release` ignored the `pull_policy` input; it is now applied to the job image
+- GitHub `generate-tag` ignored the `commit-ref` input and always used `GITHUB_REF_NAME`. It now passes `commit-ref` (default `${{ github.ref_name }}`, so unchanged unless overridden)
+
+- **`container-lifecycle` and `container-lifecycle-with-base-image-inspection`: `devguard:sign_oci_image` had no predecessor job when the push job was skipped.** It now also depends on `devguard:build_oci_image`, and therefore receives `IMAGE_TAG` from the build job's dotenv as `repo:tag@sha256:…` — the image is signed by digest
+- `container-lifecycle-with-base-image-inspection` referenced `small_artifact_registry` without declaring it as an input
+- `container-scanning-and-attest` referenced `build_job_name` without declaring it as an input
+
 ## [v1.16.0] — 2026-10-07
 
 ### Fixed

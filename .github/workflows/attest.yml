@@ -20,11 +20,6 @@ on:
         type: string
         required: false
         default: ""
-      image-suffix:
-        description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
-        type: string
-        required: false
-        default: default
       is-tag:
         description: Is the current commit a tag
         type: string
@@ -45,6 +40,11 @@ on:
         type: string
         required: false
         default: ${{ github.actor }}
+      image-suffix:
+        description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
+        type: string
+        required: false
+        default: default
       should-deploy:
         description: Should the attestation job run
         type: boolean

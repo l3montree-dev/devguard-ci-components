@@ -80,16 +80,16 @@ on:
         type: string
         required: false
         default: ${{ github.sha }}
-      image:
-        description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
-        type: string
-        required: false
-        default: ""
       image-destination-path:
         description: Destination of the image.tar file
         type: string
         required: false
         default: image.tar
+      image:
+        description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
+        type: string
+        required: false
+        default: ""
       image-suffix:
         description: Suffix for the image name when building multiple images
         type: string
@@ -115,11 +115,6 @@ on:
         type: string
         required: false
         default: image.tar
-      fetch-image-from-registry:
-        description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
-        type: string
-        required: false
-        default: "false"
       ignore-upstream-attestations:
         description: Whether to ignore upstream attestations when scanning the image.
         type: string
@@ -135,16 +130,6 @@ on:
         type: boolean
         required: false
         default: true
-      image-already-in-registry:
-        description: If set to true, the image wont be pushed again
-        type: boolean
-        required: false
-        default: false
-      artifact-suffix:
-        description: Suffix used to look up build artifacts by name. Defaults to image-suffix when not set.
-        type: string
-        required: false
-        default: ""
       registry:
         description: Container registry URL
         type: string
@@ -488,7 +473,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: ${{ inputs.fetch-image-from-registry == 'false' }}
+        if: ${{ format('{0}', inputs.disable-artifact-registry-as-image-store) == 'false' }}
       - name: Download image-tag artifact (created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -512,7 +497,7 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
-        if: ${{ inputs.fetch-image-from-registry == 'true' }}
+        if: ${{ format('{0}', inputs.disable-artifact-registry-as-image-store) == 'true' }}
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
@@ -548,7 +533,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: inputs.image-already-in-registry == false
+        if: format('{0}', inputs.disable-artifact-registry-as-image-store) == 'false'
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -571,7 +556,7 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
         run: crane push image.tar "$(cat image-tag.txt)"
-        if: inputs.image-already-in-registry == false
+        if: format('{0}', inputs.disable-artifact-registry-as-image-store) == 'false'
     needs:
       - devguard_build_oci_image
       - devguard_container_scanning

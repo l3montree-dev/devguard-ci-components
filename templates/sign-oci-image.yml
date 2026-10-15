@@ -10,9 +10,6 @@ spec:
     devguard_asset_name:
       description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
       default: $DEVGUARD_ASSET_NAME
-    devguard_artifact_name:
-      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-      default: ""
     registry:
       description: Container registry URL
       default: $CI_REGISTRY
@@ -22,9 +19,6 @@ spec:
     image:
       description: The container image to sign (e.g., registry.example.com/project/image:tag)
       default: $CI_REGISTRY_IMAGE:latest
-    image_suffix:
-      default: default
-      description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN

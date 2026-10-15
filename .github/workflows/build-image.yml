@@ -15,26 +15,26 @@ on:
         type: string
         required: false
         default: $DEVGUARD_ASSET_NAME
-      devguard-artifact-name:
-        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-        type: string
-        required: false
-        default: ""
       supply-chain-id:
         description: The supply chain ID to use for the in-toto attestation
         type: string
         required: false
         default: ${{ github.sha }}
-      image:
-        description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
-        type: string
-        required: false
-        default: ""
       image-destination-path:
         description: Destination of the image.tar file
         type: string
         required: false
         default: image.tar
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+        type: string
+        required: false
+        default: ""
+      image:
+        description: Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate.
+        type: string
+        required: false
+        default: ""
       image-suffix:
         description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
         type: string

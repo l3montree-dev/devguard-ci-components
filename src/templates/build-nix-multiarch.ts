@@ -66,12 +66,10 @@ export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
   },
   commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
-  ...InputGroups.registry,
   image_suffix: {
     ...Inputs.image_suffix,
     default: "" as const,
   },
-  create_root_manifest: Inputs.create_root_manifest,
   nix_target_amd64: {
     description: "Nix flake build target for amd64 (e.g. coreutils-amd64)" as const,
     type: "string" as const,
@@ -86,8 +84,15 @@ export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
     default: "2.34.4" as const,
     type: "string" as const,
   },
-  allow_failure: Inputs.allow_failure,
-  ...InputGroups.failThresholds,
+});
+
+export const BuildNixMultiArchManifestJobInputsGitHub = defineInputsGitHub({
+  ...InputGroups.registry,
+  image_suffix: {
+    ...Inputs.image_suffix,
+    default: "" as const,
+  },
+  create_root_manifest: Inputs.create_root_manifest,
 });
 
 // GitHub: builds amd64 + arm64 in parallel using matrix strategy
@@ -256,7 +261,7 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
 }));
 
 // GitHub: create multi-arch manifest after parallel builds complete
-export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (inputValues) => ({
+export const BuildNixMultiArchCreateManifestTemplateGitHub = defineJobGitHub(BuildNixMultiArchManifestJobInputsGitHub, (inputValues) => ({
   name: "devguard:create-nix-manifest-multi-arch",
   secrets: {
     "registry-password": Secrets["registry-password"],

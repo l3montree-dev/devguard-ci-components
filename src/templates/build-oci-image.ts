@@ -8,22 +8,14 @@ import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const BuildOciImageConfig = {
   ...InputGroups.devguardCore,
-  devguard_artifact_name: Inputs.devguard_artifact_name,
 
   supply_chain_id: Inputs.supply_chain_id,
 
-  image: {
-    ...Inputs.image,
-    description: "Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate." as const,
-    default: "" as const,
-  },
   image_destination_path: {
     description: "Destination of the image.tar file",
     default: "image.tar",
     type: "string" as const,
   },
-  image_suffix: Inputs.image_suffix,
-  fetch_depth: Inputs.fetch_depth,
 };
 
 export const BuildOciImageJobInputs = defineInputsGitLab({
@@ -99,6 +91,14 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
 
 export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
   ...BuildOciImageConfig,
+  devguard_artifact_name: Inputs.devguard_artifact_name,
+  image: {
+    ...Inputs.image,
+    description: "Explicit image tag to use (e.g. ghcr.io/org/repo:mytag). Leave empty to auto-generate." as const,
+    default: "" as const,
+  },
+  image_suffix: Inputs.image_suffix,
+  fetch_depth: Inputs.fetch_depth,
   ...InputGroups.ref,
   upstream_version: Inputs.upstream_version,
   disable_artifact_registry_as_image_store: {

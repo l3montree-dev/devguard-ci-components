@@ -142,6 +142,16 @@ function checkForInputConflicts(
   }
 }
 
+/**
+ * The inputs a template group exports: the remaining inputs of all its jobs plus the group's overrides.
+ */
+export function mergeTemplateInputs(
+  template: (GitHubWorkflow | GitLabJobWithSpec | IncludeWithSpec)[],
+  inputOverrides: ConfigInputs = {},
+): ConfigInputs {
+  return Object.assign({}, ...template.map((t) => t.inputs), inputOverrides);
+}
+
 export async function ExportCIComponentsGitLab(
   templates: CIComponentGroupTemplateGitLab,
   header: string,
@@ -156,7 +166,7 @@ export async function ExportCIComponentsGitLab(
     // Check for conflicting input defaults before merging
     checkForInputConflicts(template, Object.keys(inputOverrides[templateName] ?? {}));
 
-    const mergedInputs = Object.assign({}, ...template.map((t) => t.inputs), inputOverrides[templateName] ?? {});
+    const mergedInputs = mergeTemplateInputs(template, inputOverrides[templateName]);
 
     // find all entries with Jobs
     const jobDefs = template.filter((t): t is GitLabJobWithSpec | GitHubWorkflow => "job" in t);
@@ -242,7 +252,7 @@ export async function ExportCIComponentsGitHub(
     // Check for conflicting input defaults before merging
     checkForInputConflicts(template, Object.keys(inputOverrides[templateName] ?? {}));
 
-    const mergedInputs = Object.assign({}, ...template.map((t) => t.inputs), inputOverrides[templateName] ?? {});
+    const mergedInputs = mergeTemplateInputs(template, inputOverrides[templateName]);
 
     // find all entries with Jobs
     const jobDefs = template.filter((t): t is GitHubWorkflow => "job" in t);

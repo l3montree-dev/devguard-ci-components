@@ -98,15 +98,9 @@ spec:
     extra_args:
       default: ""
       description: Extra arguments passed straight through to the underlying scanner invocation (after a '--' separator).
-    fetch_image_from_registry:
-      default: "false"
-      description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
     ref:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
-    disable_job:
-      default: "false"
-      description: Whether to disable the job. This is useful when you want to conditionally disable this job in orchestration templates.
     runner_tags:
       default: []
       type: array
@@ -250,7 +244,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
     - echo "Running DevGuard Container Scanning..."
     - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
     - 'echo "Image Tar Path: image-amd64.tar"'
-    - 'echo "Fetch Image From Registry: $[[ inputs.fetch_image_from_registry ]]"'
+    - 'echo "Fetch Image From Registry: false"'
     - 'echo "Origin: $[[ inputs.devguard_origin ]]"'
     - 'echo "Asset Name: $[[ inputs.devguard_asset_name ]]"'
     - 'echo "API URL: $[[ inputs.devguard_api_url ]]"'
@@ -264,7 +258,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
     - 'echo "Fail on CVSS: $[[ inputs.fail_on_cvss ]]"'
     - |-
       echo "---"
-      if [ "$[[ inputs.fetch_image_from_registry ]]" = "true" ]; then
+      if [ "false" = "true" ]; then
           echo "Scanning remote image from registry: $IMAGE_TAG"
           devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
           devguard-scanner container-scanning \
@@ -336,12 +330,13 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
     GIT_STRATEGY: none
   image:
     name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: never
-    - if: $[[ inputs.disable_job ]] == "true"
+    - if: false == "true"
       when: never
     - when: on_success
   script: |
@@ -585,7 +580,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
     - echo "Running DevGuard Container Scanning..."
     - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
     - 'echo "Image Tar Path: image-arm64.tar"'
-    - 'echo "Fetch Image From Registry: $[[ inputs.fetch_image_from_registry ]]"'
+    - 'echo "Fetch Image From Registry: false"'
     - 'echo "Origin: $[[ inputs.devguard_origin ]]"'
     - 'echo "Asset Name: $[[ inputs.devguard_asset_name ]]"'
     - 'echo "API URL: $[[ inputs.devguard_api_url ]]"'
@@ -599,7 +594,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
     - 'echo "Fail on CVSS: $[[ inputs.fail_on_cvss ]]"'
     - |-
       echo "---"
-      if [ "$[[ inputs.fetch_image_from_registry ]]" = "true" ]; then
+      if [ "false" = "true" ]; then
           echo "Scanning remote image from registry: $IMAGE_TAG"
           devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
           devguard-scanner container-scanning \
@@ -671,12 +666,13 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
     GIT_STRATEGY: none
   image:
     name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: never
-    - if: $[[ inputs.disable_job ]] == "true"
+    - if: false == "true"
       when: never
     - when: on_success
   script: |

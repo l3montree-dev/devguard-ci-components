@@ -11,7 +11,7 @@ export type InputValuesGitHub<TInputDefinitions extends InputDefinitionsGitHub> 
   [K in keyof TInputDefinitions]: TInputDefinitions[K] extends { type: "array" }
     ? ArrayInputItem | undefined
     : TInputDefinitions[K] extends { type: "boolean" }
-      ? boolean | undefined
+      ? boolean | string | undefined
       : string | undefined;
 };
 export type ResolvedInputValuesGitHub<TInputDefinitions extends InputDefinitionsGitHub> = {
@@ -20,6 +20,16 @@ export type ResolvedInputValuesGitHub<TInputDefinitions extends InputDefinitions
     : TInputDefinitions[K] extends { type: "boolean" }
       ? boolean | string
       : string;
+};
+
+/**
+ * Turns an input value into an operand for a GitHub `if:` expression.
+ * An unresolved input reference ("$[[ inputs.foo ]]") becomes `inputs.foo`, literals become quoted strings.
+ * Wrap the result in format('{0}', ...) so boolean and string inputs compare the same way.
+ */
+export const githubExpressionOperand = (value: boolean | string): string => {
+  const match = /^\$\[\[\s*(inputs\.[a-z0-9_]+)\s*\]\]$/.exec(String(value));
+  return match ? match[1] : `'${String(value)}'`;
 };
 
 export const defineInputsGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(

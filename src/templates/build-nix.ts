@@ -130,7 +130,6 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
     default: "ubuntu-latest" as const,
     type: "string" as const,
   },
-  allow_failure: Inputs.allow_failure,
   commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
   upstream_version: Inputs.upstream_version,

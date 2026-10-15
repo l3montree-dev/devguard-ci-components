@@ -73,11 +73,6 @@ on:
         type: string
         required: false
         default: ubuntu-latest
-      allow-failure:
-        description: Whether the job is allowed to fail without stopping the pipeline
-        type: boolean
-        required: false
-        default: false
       commit-ref:
         description: Current commit reference
         type: string
@@ -108,16 +103,16 @@ on:
         type: string
         required: false
         default: DEFAULT
+      allow-failure:
+        description: Whether the job is allowed to fail without stopping the pipeline
+        type: boolean
+        required: false
+        default: false
       image-tar-path:
         description: The path to the local image tar file to scan (e.g. image.tar). Used when image_tag is empty.
         type: string
         required: false
         default: image.tar
-      fetch-image-from-registry:
-        description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
-        type: string
-        required: false
-        default: "false"
       default-ref:
         description: Default branch reference
         type: string
@@ -153,16 +148,6 @@ on:
         type: boolean
         required: false
         default: true
-      image-already-in-registry:
-        description: If set to true, the image wont be pushed again
-        type: boolean
-        required: false
-        default: false
-      artifact-suffix:
-        description: Suffix used to look up build artifacts by name. Defaults to image-suffix when not set.
-        type: string
-        required: false
-        default: ""
       supply-chain-id:
         description: The supply chain ID to use for the in-toto attestation
         type: string
@@ -346,7 +331,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: ${{ inputs.fetch-image-from-registry == 'false' }}
+        if: ${{ format('{0}', 'false') == 'false' }}
       - name: Download image-tag artifact (created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -370,7 +355,7 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
-        if: ${{ inputs.fetch-image-from-registry == 'true' }}
+        if: ${{ format('{0}', 'false') == 'true' }}
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
@@ -406,7 +391,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: inputs.image-already-in-registry == false
+        if: format('{0}', 'false') == 'false'
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -429,7 +414,7 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
         run: crane push image.tar "$(cat image-tag.txt)"
-        if: inputs.image-already-in-registry == false
+        if: format('{0}', 'false') == 'false'
     needs:
       - devguard_build_nix
       - devguard_container_scanning

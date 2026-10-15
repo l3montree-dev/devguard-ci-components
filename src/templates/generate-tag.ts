@@ -42,11 +42,6 @@ const GenerateTagConfig = {
   upstream_version: Inputs.upstream_version,
   commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
-  devguard_artifact_name: {
-    ...Inputs.devguard_artifact_name,
-    description:
-      "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image" as const,
-  },
 };
 
 export const GenerateTagJobInputsGitHub = defineInputsGitHub({
@@ -78,7 +73,7 @@ export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGit
   -e IMAGE_VARIANT \\
   -e ARCHITECTURE \\
   -e IMAGE_PATH \\
-  -e GITHUB_REF_NAME \\
+  -e COMMIT_REF \\
   -e IS_TAG \\
   -e UPSTREAM_VERSION \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
@@ -87,7 +82,7 @@ export const GenerateTagTemplateGitHub = defineJobGitHub(GenerateTagJobInputsGit
     --imageVariant="$IMAGE_VARIANT" \\
     --architecture="$ARCHITECTURE" \\
     --imagePath="$IMAGE_PATH" \\
-    --ref="$GITHUB_REF_NAME" \\
+    --ref="$COMMIT_REF" \\
     --isTag="$IS_TAG" \\
     --upstreamVersion="$UPSTREAM_VERSION" \\
   >> generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env
@@ -99,6 +94,7 @@ cat generate_tag_\${UPSTREAM_VERSION}_\${ARCHITECTURE}.env`,
           ARCHITECTURE: `${ inputValues.architecture }`,
           IMAGE_PATH: `${ inputValues.image_path }`,
           UPSTREAM_VERSION: `${ inputValues.upstream_version }`,
+          COMMIT_REF: `${ inputValues.commit_ref }`,
           IS_TAG: `${ inputValues.is_tag }`,
         },
       },

@@ -29,26 +29,11 @@ on:
         type: string
         required: false
         default: ${{ github.ref_type == 'tag' }}
-      registry:
-        description: Container registry URL
-        type: string
-        required: false
-        default: ghcr.io
-      registry-user:
-        description: Container registry username
-        type: string
-        required: false
-        default: ${{ github.actor }}
       image-suffix:
         description: Suffix for the image name (e.g. 'web'). Leave empty for no suffix.
         type: string
         required: false
         default: ""
-      create-root-manifest:
-        description: Whether to also create a manifest without the branch ref in the tag.
-        type: string
-        required: false
-        default: ${{ github.ref_type == 'tag' }}
       nix-target-amd64:
         description: Nix flake build target for amd64 (e.g. coreutils-amd64)
         type: string
@@ -92,21 +77,6 @@ on:
         type: string
         required: false
         default: 2.34.4
-      allow-failure:
-        description: Whether the job is allowed to fail without stopping the pipeline
-        type: boolean
-        required: false
-        default: false
-      fail-on-risk:
-        description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
-        type: string
-        required: false
-        default: critical
-      fail-on-cvss:
-        description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
-        type: string
-        required: false
-        default: critical
     secrets:
       devguard-token:
         description: DevGuard API token

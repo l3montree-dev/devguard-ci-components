@@ -44,7 +44,6 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
 export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
   ...InputGroups.devguardCore,
   ...InputGroups.ref,
-  devguard_artifact_name: Inputs.devguard_artifact_name,
 
   image: {
     ...Inputs.image,
@@ -53,7 +52,6 @@ export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
   },
   image_suffix: Inputs.image_suffix,
   image_tag: Inputs.image_tag,
-  build_args: Inputs.build_args,
   push_image: Inputs.push_image,
   supply_chain_id: Inputs.supply_chain_id,
   default_ref: Inputs.default_ref,

@@ -154,6 +154,7 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
     },
     image: {
       name: ContainerImages.KANIKO,
+      pull_policy: inputValues.pull_policy,
       entrypoint: [""],
     },
     rules: [

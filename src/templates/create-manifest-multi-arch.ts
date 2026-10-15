@@ -8,9 +8,7 @@ import { GitHubReusableSteps } from "../github-resusable-steps";
 const CreateManifestMultiArchSigningInputs = {
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
-  devguard_artifact_name: Inputs.devguard_artifact_name,
   commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
 };
 
 export const CreateManifestMultiArchJobInputs = defineInputsGitLab({
@@ -24,16 +22,14 @@ export const CreateManifestMultiArchJobInputs = defineInputsGitLab({
   upstream_version: Inputs.upstream_version,
   create_root_manifest: Inputs.create_root_manifest,
   artifacts_subdirectory: Inputs.artifacts_subdirectory,
-  devguard_token: Inputs.devguard_token,
-  ...CreateManifestMultiArchSigningInputs,
 });
 
 export const CreateManifestMultiArchJobInputsGitHub = defineInputsGitHub({
-  upstream_version: Inputs.upstream_version,
   create_root_manifest: Inputs.create_root_manifest,
   image_suffix: Inputs.image_suffix,
   ...InputGroups.registry,
   ...CreateManifestMultiArchSigningInputs,
+  devguard_artifact_name: Inputs.devguard_artifact_name,
 });
 
 export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManifestMultiArchJobInputsGitHub, (inputValues) => ({

@@ -8,20 +8,17 @@ import { GitHubReusableSteps } from "../github-resusable-steps";
 const SignOciImageConfig = {
   devguard_api_url: Inputs.devguard_api_url,
   devguard_asset_name: Inputs.devguard_asset_name,
-  devguard_artifact_name: Inputs.devguard_artifact_name,
   registry: Inputs.registry,
   registry_user: Inputs.registry_user,
+};
 
+export const SignOciImageJobInputs = defineInputsGitLab({
+  ...SignOciImageConfig,
   image: {
     ...Inputs.image,
     description: "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
     default: "$CI_REGISTRY_IMAGE:latest" as const,
   },
-  image_suffix: Inputs.image_suffix,
-};
-
-export const SignOciImageJobInputs = defineInputsGitLab({
-  ...SignOciImageConfig,
   devguard_token: Inputs.devguard_token,
 
   runner_tags: Inputs.runner_tags,
@@ -72,6 +69,7 @@ export const SignOciImageTemplate = defineJobGitLab(SignOciImageJobInputs, (inpu
 
 export const SignJobInputsGitHub = defineInputsGitHub({
   ...SignOciImageConfig,
+  image_suffix: Inputs.image_suffix,
   should_deploy: {
     description: "Should the signing job run",
     default: true,

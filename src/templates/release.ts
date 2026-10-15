@@ -85,7 +85,10 @@ export const ReleaseTemplate = defineJobGitLab(ReleaseJobInputs, (inputValues) =
       GIT_STRATEGY: inputValues.git_strategy,
     },
     rules: inputValues.rules,
-    image: ContainerImages.GITLAB_RELEASE_CLI,
+    image: {
+      name: ContainerImages.GITLAB_RELEASE_CLI,
+      pull_policy: inputValues.pull_policy,
+    },
     script: [`echo "Creating release for tag $CI_COMMIT_TAG"`],
     release: {
       tag_name: inputValues.release_tag,

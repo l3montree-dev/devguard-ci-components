@@ -8,7 +8,6 @@ import { GitHubReusableSteps } from "../github-resusable-steps";
 const AttestConfig = {
   ...InputGroups.devguardCore,
   devguard_artifact_name: Inputs.devguard_artifact_name,
-  image_suffix: Inputs.image_suffix,
   is_tag: Inputs.is_tag,
   commit_ref: Inputs.commit_ref,
   ...InputGroups.registry,
@@ -151,6 +150,7 @@ echo "All attestations completed"
 
 export const AttestJobInputsGitHub = defineInputsGitHub({
   ...AttestConfig,
+  image_suffix: Inputs.image_suffix,
   should_deploy,
 });
 

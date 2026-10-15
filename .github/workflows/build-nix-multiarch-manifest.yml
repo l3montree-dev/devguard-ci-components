@@ -5,30 +5,6 @@
 on:
   workflow_call:
     inputs:
-      devguard-asset-name:
-        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-        type: string
-        required: false
-        default: $DEVGUARD_ASSET_NAME
-      devguard-api-url:
-        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-        type: string
-        required: false
-        default: https://api.devguard.opencode.de
-      image-name:
-        description: Full OCI image name without tag (e.g. ghcr.io/org/repo/image)
-        type: string
-        required: false
-      commit-ref:
-        description: Current commit reference
-        type: string
-        required: false
-        default: ${{ github.ref_name }}
-      is-tag:
-        description: Is the current commit a tag
-        type: string
-        required: false
-        default: ${{ github.ref_type == 'tag' }}
       registry:
         description: Container registry URL
         type: string
@@ -49,64 +25,6 @@ on:
         type: string
         required: false
         default: ${{ github.ref_type == 'tag' }}
-      nix-target-amd64:
-        description: Nix flake build target for amd64 (e.g. coreutils-amd64)
-        type: string
-        required: false
-      nix-target-arm64:
-        description: Nix flake build target for arm64 (e.g. coreutils-arm64)
-        type: string
-        required: false
-      nix-cache-substituter:
-        description: Nix binary cache substituter URL. Set to empty string to disable.
-        type: string
-        required: false
-        default: ""
-      nix-cache-public-key:
-        description: Trusted public key for the Nix binary cache.
-        type: string
-        required: false
-        default: ""
-      nix-cache-s3-endpoint:
-        description: S3 API endpoint for pushing to the cache (e.g. s3.garage.l3montree.cloud). Leave empty to skip pushing.
-        type: string
-        required: false
-        default: ""
-      nix-cache-s3-bucket:
-        description: S3 bucket name for the cache.
-        type: string
-        required: false
-        default: ""
-      nix-cache-region:
-        description: S3 region for the cache bucket.
-        type: string
-        required: false
-        default: ""
-      nix-impure:
-        description: Whether to allow impure builds (e.g., reading environment variables during build).
-        type: string
-        required: false
-        default: "false"
-      nix-version:
-        description: Pinned Nix version for deterministic builds
-        type: string
-        required: false
-        default: 2.34.4
-      allow-failure:
-        description: Whether the job is allowed to fail without stopping the pipeline
-        type: boolean
-        required: false
-        default: false
-      fail-on-risk:
-        description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
-        type: string
-        required: false
-        default: critical
-      fail-on-cvss:
-        description: "The CVSS score to fail the job on. Options are: none, low, medium, high, critical"
-        type: string
-        required: false
-        default: critical
     secrets:
       registry-password:
         description: Registry password for pulling the image.

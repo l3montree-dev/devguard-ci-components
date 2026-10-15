@@ -5,11 +5,6 @@
 on:
   workflow_call:
     inputs:
-      upstream-version:
-        description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
-        type: string
-        required: false
-        default: "0"
       create-root-manifest:
         description: Whether to also create a manifest without the branch ref in the tag.
         type: string
@@ -40,21 +35,16 @@ on:
         type: string
         required: false
         default: $DEVGUARD_ASSET_NAME
-      devguard-artifact-name:
-        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
-        type: string
-        required: false
-        default: ""
       commit-ref:
         description: Current commit reference
         type: string
         required: false
         default: ${{ github.ref_name }}
-      is-tag:
-        description: Is the current commit a tag
+      devguard-artifact-name:
+        description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
         type: string
         required: false
-        default: ${{ github.ref_type == 'tag' }}
+        default: ""
     secrets:
       registry-password:
         description: Registry password for pulling the image.

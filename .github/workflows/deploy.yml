@@ -30,11 +30,6 @@ on:
         type: boolean
         required: false
         default: false
-      artifact-suffix:
-        description: Suffix used to look up build artifacts by name. Defaults to image-suffix when not set.
-        type: string
-        required: false
-        default: ""
       supply-chain-id:
         description: The supply chain ID to use for the in-toto attestation
         type: string
@@ -88,7 +83,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: inputs.image-already-in-registry == false
+        if: format('{0}', inputs.image-already-in-registry) == 'false'
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -111,5 +106,5 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
         run: crane push image.tar "$(cat image-tag.txt)"
-        if: inputs.image-already-in-registry == false
+        if: format('{0}', inputs.image-already-in-registry) == 'false'
     name: devguard:deploy

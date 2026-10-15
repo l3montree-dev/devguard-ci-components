@@ -5,7 +5,7 @@
 spec:
   inputs:
     devguard_artifact_name:
-      description: The name of the artifact (in purl format e.g., pkg:oci/k8s-tools)
+      description: The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If not provided, will use the generated PURL from the built image
       default: ""
     runner_tags:
       default: []
@@ -54,14 +54,6 @@ spec:
     supply_chain_id:
       default: $CI_COMMIT_SHA
       description: The supply chain ID to use for the in-toto attestation
-    image_destination_path:
-      description: Destination of the image.tar file
-      default: image.tar
-      type: string
-    fetch_depth:
-      type: number
-      description: Number of commits to fetch. 0 indicates all history for all branches and tags.
-      default: 1
     devguard_token:
       description: The DevGuard API token (use CI/CD variable, your private key)
       default: $DEVGUARD_TOKEN
@@ -80,9 +72,6 @@ spec:
     build_args:
       default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
       description: The build arguments to pass to the Kaniko build command
-    push_image:
-      default: "false"
-      description: If your GitLab instance has small artifact size limits, set this to true to push the image to the registry instead of uploading artifacts.
     default_ref:
       description: Default branch reference
       default: $CI_DEFAULT_BRANCH
@@ -119,12 +108,6 @@ spec:
     extra_args:
       default: ""
       description: Extra arguments passed straight through to the underlying scanner invocation (after a '--' separator).
-    fetch_image_from_registry:
-      default: "false"
-      description: If the artifact size is too big for your GitLab instance and the image was pushed directly to the registry during build (small_artifact_registry=true), set this to true to pull the image from the registry for scanning instead of using a local tar artifact.
-    disable_job:
-      default: "false"
-      description: Whether to disable the job. This is useful when you want to conditionally disable this job in orchestration templates.
     create_root_manifest:
       default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
       description: Whether to also create a manifest without the branch ref in the tag.
@@ -135,6 +118,9 @@ spec:
         - predicate_type: the predicate type URL
       default: []
       type: array
+    small_artifact_registry:
+      default: "false"
+      description: If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step.
 ---
 
 include: []
@@ -183,15 +169,15 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
     - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image_destination_path ]]" )
+    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image_destination_path ]]" || echo "$IMAGE_TAG" ) > image-digest.txt
+    - /crane digest $([[ "$[[ inputs.small_artifact_registry ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
     - echo "Running DevGuard Intoto Build...stopping..."
     - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
     - echo "IMAGE_TAG=$IMAGE_TAG@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:
-      - $[[ inputs.image_destination_path ]]
+      - image.tar
       - image-digest.txt
       - build.provenance.json
       - variables.env
@@ -217,7 +203,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
     - echo "Running DevGuard Container Scanning..."
     - 'echo "Image Tag: $[[ inputs.image_tag ]]"'
     - 'echo "Image Tar Path: image.tar"'
-    - 'echo "Fetch Image From Registry: $[[ inputs.fetch_image_from_registry ]]"'
+    - 'echo "Fetch Image From Registry: $[[ inputs.small_artifact_registry ]]"'
     - 'echo "Origin: $[[ inputs.devguard_origin ]]"'
     - 'echo "Asset Name: $[[ inputs.devguard_asset_name ]]"'
     - 'echo "API URL: $[[ inputs.devguard_api_url ]]"'
@@ -231,7 +217,7 @@ devguard:container_scanning$[[ inputs.job_suffix ]]:
     - 'echo "Fail on CVSS: $[[ inputs.fail_on_cvss ]]"'
     - |-
       echo "---"
-      if [ "$[[ inputs.fetch_image_from_registry ]]" = "true" ]; then
+      if [ "$[[ inputs.small_artifact_registry ]]" = "true" ]; then
           echo "Scanning remote image from registry: $IMAGE_TAG"
           devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
           devguard-scanner container-scanning \
@@ -302,12 +288,13 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     GIT_STRATEGY: none
   image:
     name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: never
-    - if: $[[ inputs.disable_job ]] == "true"
+    - if: $[[ inputs.small_artifact_registry ]] == "true"
       when: never
     - when: on_success
   script: |
@@ -332,10 +319,12 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
       optional: true
   dependencies:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:push_oci_image$[[ inputs.job_suffix ]]
   variables:
     GIT_STRATEGY: none

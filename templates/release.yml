@@ -63,7 +63,9 @@ devguard:release$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   rules: $[[ inputs.rules ]]
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image:
+    name: registry.gitlab.com/gitlab-org/release-cli:latest
+    pull_policy: $[[ inputs.pull_policy ]]
   script:
     - echo "Creating release for tag $CI_COMMIT_TAG"
   release:
