@@ -1,4 +1,4 @@
-import { defineInputsGitHub, defineJobGitHub, githubExpressionOperand } from "../lib/JobBuilderGitHub";
+import { defineInputsGitHub, defineJobGitHub, githubInputEquals } from "../lib/JobBuilderGitHub";
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
@@ -121,7 +121,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
           name: `oci-image${ inputValues.image_suffix }`,
           path: ".",
         },
-        if: `format('{0}', ${githubExpressionOperand(inputValues.image_already_in_registry)}) == 'false'`,
+        if: githubInputEquals(inputValues.image_already_in_registry, "false"),
       },
       {
         name: "Download image-tag artifact (can be created by build-image)",
@@ -159,7 +159,7 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
       {
         name: "Push oci image to GitHub image Registry",
         run: 'crane push image.tar "$(cat image-tag.txt)"',
-        if: `format('{0}', ${githubExpressionOperand(inputValues.image_already_in_registry)}) == 'false'`,
+        if: githubInputEquals(inputValues.image_already_in_registry, "false"),
       },
     ],
   },

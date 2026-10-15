@@ -102,10 +102,12 @@ echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
         name: "Sign multi-arch manifest(s)",
         env: {
           DEVGUARD_TOKEN: "${{ secrets.devguard-token }}",
+          REGISTRY: inputValues.registry,
+          REGISTRY_USER: inputValues.registry_user,
         } as Record<string, string>,
         run: `for TAG in $MANIFEST_TAGS; do
   echo "Signing manifest: $TAG"
-  docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$TAG" --offline
+  docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
 done`,
       },
       {
@@ -211,7 +213,7 @@ fi`,
   echo 'Fetching SBOM for artifact:' '\${{ env.AMD64_API_ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.AMD64_API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/amd64.sbom.json &&
   echo 'SBOM downloaded to /tmp/amd64.sbom.json' &&
-  for TAG in \${{ env.MANIFEST_TAGS }}; do
+  for TAG in $MANIFEST_TAGS; do
     echo 'Attesting amd64 SBOM for manifest:' \\"$TAG\\" &&
     devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/amd64.sbom.json --predicateType='https://cyclonedx.org/bom' \\"$TAG\\" --token='\${{ secrets.devguard-token }}' --offline
   done
@@ -231,7 +233,7 @@ fi`,
   echo 'Fetching VeX for artifact:' '\${{ env.AMD64_API_ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.AMD64_API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/amd64.vex.json &&
   echo 'VeX downloaded to /tmp/amd64.vex.json' &&
-  for TAG in \${{ env.MANIFEST_TAGS }}; do
+  for TAG in $MANIFEST_TAGS; do
     echo 'Attesting amd64 VeX for manifest:' \\"$TAG\\" &&
     devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/amd64.vex.json \\"$TAG\\" --token='\${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --offline
   done
@@ -251,7 +253,7 @@ fi`,
   echo 'Fetching SBOM for artifact:' '\${{ env.ARM64_API_ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.ARM64_API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/arm64.sbom.json &&
   echo 'SBOM downloaded to /tmp/arm64.sbom.json' &&
-  for TAG in \${{ env.MANIFEST_TAGS }}; do
+  for TAG in $MANIFEST_TAGS; do
     echo 'Attesting arm64 SBOM for manifest:' \\"$TAG\\" &&
     devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/arm64.sbom.json --predicateType='https://cyclonedx.org/bom' \\"$TAG\\" --token='\${{ secrets.devguard-token }}' --offline
   done
@@ -271,7 +273,7 @@ fi`,
   echo 'Fetching VeX for artifact:' '\${{ env.ARM64_API_ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.ARM64_API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/arm64.vex.json &&
   echo 'VeX downloaded to /tmp/arm64.vex.json' &&
-  for TAG in \${{ env.MANIFEST_TAGS }}; do
+  for TAG in $MANIFEST_TAGS; do
     echo 'Attesting arm64 VeX for manifest:' \\"$TAG\\" &&
     devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/arm64.vex.json \\"$TAG\\" --token='\${{ secrets.devguard-token }}' --predicateType='https://cyclonedx.org/vex' --offline
   done
@@ -291,7 +293,7 @@ fi`,
   echo 'Fetching SAST results' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
   echo 'SAST results downloaded to /tmp/sarif.json' &&
-  for TAG in \${{ env.MANIFEST_TAGS }}; do
+  for TAG in $MANIFEST_TAGS; do
     echo 'Attesting SAST results for manifest:' \\"$TAG\\" &&
     devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \\"$TAG\\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='\${{ secrets.devguard-token }}' --offline
   done
@@ -308,7 +310,7 @@ fi`,
         with: {
           args: `sh -c "
   if [ -f amd64.provenance.json ]; then
-    for TAG in \${{ env.MANIFEST_TAGS }}; do
+    for TAG in $MANIFEST_TAGS; do
       echo 'Attesting amd64 provenance for manifest:' \\"$TAG\\" &&
       devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \\"$TAG\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --offline
     done
@@ -326,7 +328,7 @@ fi`,
         with: {
           args: `sh -c "
   if [ -f arm64.provenance.json ]; then
-    for TAG in \${{ env.MANIFEST_TAGS }}; do
+    for TAG in $MANIFEST_TAGS; do
       echo 'Attesting arm64 provenance for manifest:' \\"$TAG\\" &&
       devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \\"$TAG\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --offline
     done

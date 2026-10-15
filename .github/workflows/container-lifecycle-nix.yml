@@ -331,7 +331,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: ${{ format('{0}', 'false') == 'false' }}
+        if: "true"
       - name: Download image-tag artifact (created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -355,7 +355,7 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
-        if: ${{ format('{0}', 'false') == 'true' }}
+        if: "false"
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
         continue-on-error: ${{ inputs.allow-failure }}
@@ -391,7 +391,7 @@ jobs:
         with:
           name: oci-image${{ inputs.image-suffix }}
           path: .
-        if: format('{0}', 'false') == 'false'
+        if: "true"
       - name: Download image-tag artifact (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -414,7 +414,7 @@ jobs:
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
         run: crane push image.tar "$(cat image-tag.txt)"
-        if: format('{0}', 'false') == 'false'
+        if: "true"
     needs:
       - devguard_build_nix
       - devguard_container_scanning

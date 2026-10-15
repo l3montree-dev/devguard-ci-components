@@ -1,5 +1,5 @@
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
-import { defineInputsGitHub, defineJobGitHub, githubExpressionOperand } from "../lib/JobBuilderGitHub";
+import { defineInputsGitHub, defineJobGitHub, githubInputEquals } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
@@ -91,7 +91,7 @@ export const ContainerScanningTemplateGitHub = defineJobGitHub(ContainerScanning
           name: `oci-image${inputValues.image_suffix}`,
           path: ".",
         },
-        if: `$\{{ format('{0}', ${githubExpressionOperand(inputValues.fetch_image_from_registry)}) == 'false' }}`,
+        if: githubInputEquals(inputValues.fetch_image_from_registry, "false"),
       },
       {
         name: "Download image-tag artifact (created by build-image)",
@@ -127,7 +127,7 @@ fi`,
       {
         name: "Download OCI Image from registry",
         run: "crane pull $(cat image-tag.txt) image.tar",
-        if: `$\{{ format('{0}', ${githubExpressionOperand(inputValues.fetch_image_from_registry)}) == 'true' }}`,
+        if: githubInputEquals(inputValues.fetch_image_from_registry, "true"),
       },
       {
         name: "DevGuard Container-Scanning",

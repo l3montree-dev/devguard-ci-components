@@ -23,13 +23,13 @@ export type ResolvedInputValuesGitHub<TInputDefinitions extends InputDefinitions
 };
 
 /**
- * Turns an input value into an operand for a GitHub `if:` expression.
- * An unresolved input reference ("$[[ inputs.foo ]]") becomes `inputs.foo`, literals become quoted strings.
- * Wrap the result in format('{0}', ...) so boolean and string inputs compare the same way.
+ * Builds an `if:` condition checking that a boolean-ish input equals "true" or "false".
+ * An unresolved input reference ("$[[ inputs.foo ]]") becomes a runtime comparison via format('{0}', ...),
+ * so boolean and string inputs compare the same way. A literal is resolved at generation time.
  */
-export const githubExpressionOperand = (value: boolean | string): string => {
+export const githubInputEquals = (value: boolean | string, expected: "true" | "false"): string => {
   const match = /^\$\[\[\s*(inputs\.[a-z0-9_]+)\s*\]\]$/.exec(String(value));
-  return match ? match[1] : `'${String(value)}'`;
+  return match ? `format('{0}', ${match[1]}) == '${expected}'` : String(String(value) === expected);
 };
 
 export const defineInputsGitHub = <TInputDefinitions extends InputDefinitionsGitHub>(

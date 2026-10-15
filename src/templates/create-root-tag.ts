@@ -69,12 +69,18 @@ export const CreateRootTagTemplateGitHub = defineJobGitHub(CreateRootTagJobInput
       },
       {
         name: "Log in to registry",
-        run: `crane auth login ${ inputValues.registry } -u ${ inputValues.registry_user } -p "\${{ env.REGISTRY_PASSWORD }}"`,
+        env: {
+          REGISTRY: inputValues.registry,
+          REGISTRY_USER: inputValues.registry_user,
+        } as Record<string, string>,
+        run: 'crane auth login "$REGISTRY" -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD"',
       },
       {
         name: "Create and sign floating root tag",
         env: {
           DEVGUARD_TOKEN: "${{ secrets.devguard-token }}",
+          REGISTRY: inputValues.registry,
+          REGISTRY_USER: inputValues.registry_user,
         } as Record<string, string>,
         run: `IMAGE_TAG=$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')
 ROOT_TAG=$(echo "$IMAGE_TAG" | sed "s/-\${GITHUB_REF_NAME}//")
@@ -87,7 +93,7 @@ else
   crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
   echo "Signing floating root tag: $ROOT_TAG"
-  docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
+  docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
 
   echo "ROOT_TAG=$ROOT_TAG" >> $GITHUB_ENV
 fi`,
@@ -125,8 +131,14 @@ fi`,
         if: "env.ROOT_TAG != ''",
         env: {
           DEVGUARD_TOKEN: "${{ secrets.devguard-token }}",
+          REGISTRY: inputValues.registry,
+          REGISTRY_USER: inputValues.registry_user,
+          COMMIT_REF: inputValues.commit_ref,
+          DEVGUARD_API_URL: inputValues.devguard_api_url,
+          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
+          DEVGUARD_ARTIFACT_NAME: inputValues.devguard_artifact_name,
         } as Record<string, string>,
-        run: `ARTIFACT_NAME="${ inputValues.devguard_artifact_name }"
+        run: `ARTIFACT_NAME="$DEVGUARD_ARTIFACT_NAME"
 if [ -z "$ARTIFACT_NAME" ] && [ -f artifact-purl.txt ]; then
   ARTIFACT_NAME=$(cat artifact-purl.txt)
 fi
@@ -137,11 +149,11 @@ else
 fi
 echo "Attesting for artifact: $ARTIFACT_NAME"
 
-SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "${ inputValues.commit_ref }")
+SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "$COMMIT_REF")
 
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
 
 ATTESTATIONS=("sbom.json:https://cyclonedx.org/bom" "vex.json:https://cyclonedx.org/vex" "sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
 [ -f build.provenance.json ] && ATTESTATIONS+=("build.provenance.json:https://slsa.dev/provenance/v1")
@@ -150,7 +162,7 @@ for ENTRY in "\${ATTESTATIONS[@]}"; do
   FILE="\${ENTRY%%:*}"
   PREDICATE_TYPE="\${ENTRY#*:}"
   echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-  docker run --rm -v "$PWD:/workspace" -w /workspace ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner attest -u ${ inputValues.registry_user } -r ${ inputValues.registry } -p "\${{ env.REGISTRY_PASSWORD }}" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --offline
+  docker run --rm -v "$PWD:/workspace" -w /workspace ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner attest -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$DEVGUARD_TOKEN" --offline
 done`,
       },
     ],
