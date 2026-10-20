@@ -59,6 +59,7 @@ export const ReleaseTemplateGitHub = defineJobGitHub(ReleaseJobInputsGitHub, (in
         name: "Create GitHub Release",
         "continue-on-error": inputValues.allow_failure as boolean,
         env: {
+          GH_TOKEN: "${{ github.token }}",
           RELEASE_TAG: inputValues.release_tag,
           RELEASE_NAME: inputValues.release_name,
           RELEASE_DESCRIPTION: inputValues.release_description,
