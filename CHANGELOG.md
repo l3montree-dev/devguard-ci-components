@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v1.17.0] — 2026-10-26
 
 ### Changed
 
@@ -23,12 +23,19 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- GitHub `release` failed to create the release because `GH_TOKEN` was not set for the `gh` CLI; it is now passed as `github.token`
 - GitLab `push-oci-image` and `release` ignored the `pull_policy` input; it is now applied to the job image
 - GitHub `generate-tag` ignored the `commit-ref` input and always used `GITHUB_REF_NAME`. It now passes `commit-ref` (default `${{ github.ref_name }}`, so unchanged unless overridden)
 
 - **`container-lifecycle` and `container-lifecycle-with-base-image-inspection`: `devguard:sign_oci_image` had no predecessor job when the push job was skipped.** It now also depends on `devguard:build_oci_image`, and therefore receives `IMAGE_TAG` from the build job's dotenv as `repo:tag@sha256:…` — the image is signed by digest
 - `container-lifecycle-with-base-image-inspection` referenced `small_artifact_registry` without declaring it as an input
 - `container-scanning-and-attest` referenced `build_job_name` without declaring it as an input
+
+### Security
+
+- GitHub workflows: fixed the findings reported by zizmor. `${{ inputs.* }}` values (`registry`, `registry-user`, `commit-ref`, `devguard-api-url`, `devguard-asset-name`, `devguard-artifact-name`) and `REGISTRY_PASSWORD` are no longer interpolated directly into `run` scripts (script injection); they are passed through `env` and referenced as shell variables. Redundant `${{ }}` wrappers around `if:` conditions are removed
+
+---
 
 ## [v1.16.0] — 2026-10-07
 
