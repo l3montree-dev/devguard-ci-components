@@ -4,6 +4,7 @@ import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { indexProvenanceScript } from "./provenance";
 
 const CreateManifestMultiArchSigningInputs = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -40,7 +41,9 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
   },
   job: {
     "runs-on": "ubuntu-latest",
+    // the id-token signs the build provenance of the index - the job never runs code of the built project
     permissions: {
+      "id-token": "write",
       packages: "write",
     },
     steps: [
@@ -109,6 +112,37 @@ echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
   echo "Signing manifest: $TAG"
   docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
 done`,
+      },
+      ...["amd64", "arm64"].map((arch) => ({
+        name: `Download ${arch} oci-image`,
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
+        with: {
+          name: `oci-image${inputValues.image_suffix}-${arch}`,
+          path: arch,
+        },
+      })),
+      {
+        name: "Generate, sign and attach build provenance of the multi-arch manifest(s)",
+        env: {
+          DEVGUARD_API_URL: inputValues.devguard_api_url,
+          REGISTRY: inputValues.registry,
+          REGISTRY_USER: inputValues.registry_user,
+          IMAGE_TARS: "amd64/image.tar arm64/image.tar",
+        } as Record<string, string>,
+        run: `AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
+DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+echo "::add-mask::$DEVGUARD_ID_TOKEN"
+export DEVGUARD_ID_TOKEN
+
+cat > index-provenance.sh << 'PROVENANCE_SCRIPT'
+${indexProvenanceScript}
+PROVENANCE_SCRIPT
+
+# run as the runner user - the scanner image user can not write to the workspace
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \\
+  -e IMAGE_TARS -e MANIFEST_TAGS \\
+  -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \\
+  --entrypoint sh ${ContainerImages.DEVGUARD_SCANNER} index-provenance.sh`,
       },
       {
         name: "Download amd64 artifact purl (can be created by build-image)",
@@ -352,6 +386,11 @@ export const SignManifestMultiArchJobInputs = defineInputsGitLab({
   pull_policy: Inputs.pull_policy,
   devguard_token: Inputs.devguard_token,
   ...CreateManifestMultiArchSigningInputs,
+  image_tars: {
+    description:
+      "Space separated image tarballs the build produced, one per architecture - the build provenance of the manifest is only signed if it references exactly these images" as const,
+    default: "image-amd64.tar image-arm64.tar" as const,
+  },
 });
 
 export const SignManifestMultiArchTemplate = defineJobGitLab(SignManifestMultiArchJobInputs, (inputValues) => ({
@@ -364,6 +403,12 @@ export const SignManifestMultiArchTemplate = defineJobGitLab(SignManifestMultiAr
       name: ContainerImages.DEVGUARD_SCANNER,
       pull_policy: inputValues.pull_policy,
       entrypoint: [""],
+    },
+    // signs the build provenance of the manifest - the job never runs code of the built project
+    id_tokens: {
+      DEVGUARD_ID_TOKEN: {
+        aud: inputValues.devguard_api_url,
+      },
     },
     script: [
       `devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -400,6 +445,15 @@ for TAG in $MANIFEST_TAGS; do
     devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$TAG" --token="${inputValues.devguard_token}" --offline
   done
 done`,
+      // a subshell: the provenance script sets -eu and its own variables
+      `(
+DEVGUARD_API_URL="${inputValues.devguard_api_url}"
+REGISTRY="$CI_REGISTRY"
+REGISTRY_USER="$CI_REGISTRY_USER"
+REGISTRY_PASSWORD="$CI_REGISTRY_PASSWORD"
+IMAGE_TARS="${inputValues.image_tars}"
+${indexProvenanceScript}
+)`,
     ],
   },
 }));

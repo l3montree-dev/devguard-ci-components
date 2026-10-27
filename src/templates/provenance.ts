@@ -60,6 +60,67 @@ IFS="$OLD_IFS"
 devguard-scanner provenance generate "$@" --output provenance.json
 devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output ${PROVENANCE_FILE}`;
 
+// Generates, signs and attaches SLSA build provenance for multi-arch indexes - admission controllers verify the digest a
+// tag resolves to, which is the index. Run by the job which created the index, after it pushed it. Like the per image
+// provenance job it never runs code of the built project and trusts nothing but the image tarballs the build produced.
+//
+// Expects in the environment:
+//   IMAGE_TARS          space separated image tarballs the build produced, one per architecture
+//   MANIFEST_TAGS       space separated tags of the pushed index
+//   DEVGUARD_ID_TOKEN   the OIDC token of this job, issued for the audience DEVGUARD_API_URL
+//   DEVGUARD_API_URL, REGISTRY, REGISTRY_USER, REGISTRY_PASSWORD
+export const indexProvenanceScript = `set -eu
+
+crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+# images are matched by their config digest - see the provenance job
+tarball_config_digest() {
+  CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
+  echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+}
+sorted() {
+  printf '%s\\n' "$@" | sort | tr '\\n' ' '
+}
+
+BUILT_CONFIGS=""
+for TAR in $IMAGE_TARS; do
+  BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
+done
+EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+
+INDEX_REFS=""
+for TAG in $MANIFEST_TAGS; do
+  IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
+  IMAGE_NAME="\${IMAGE_REF%@*}"
+  IMAGE_NAME="\${IMAGE_NAME%:*}"
+  # resolved once - everything below refers to the digest
+  INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
+
+  # the index is only attested if it references exactly the built images
+  LISTED_CONFIGS=""
+  for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
+    LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
+  done
+  LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
+  if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
+    echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
+    exit 1
+  fi
+
+  # the root tag points to the same index - attest it once
+  case " $INDEX_REFS " in
+    *" $INDEX_REF "*) ;;
+    *) INDEX_REFS="$INDEX_REFS $INDEX_REF" ;;
+  esac
+done
+
+for INDEX_REF in $INDEX_REFS; do
+  devguard-scanner provenance generate --image "$INDEX_REF" --output index-provenance.json
+  devguard-scanner provenance sign index-provenance.json --apiUrl "$DEVGUARD_API_URL" --output index-${PROVENANCE_FILE}
+  echo "Attaching build provenance to $INDEX_REF"
+  devguard-scanner attest index-${PROVENANCE_FILE} "$INDEX_REF" --predicateType=${SLSA_PROVENANCE_PREDICATE_TYPE} -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
+done`;
+
 export const ProvenanceJobInputsGitHub = defineInputsGitHub({
   devguard_api_url: Inputs.devguard_api_url,
   ...InputGroups.registry,

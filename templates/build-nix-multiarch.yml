@@ -105,6 +105,9 @@ spec:
     create_root_manifest:
       default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
       description: Whether to also create a manifest without the branch ref in the tag.
+    image_tars:
+      description: Space separated image tarballs the build produced, one per architecture - the build provenance of the manifest is only signed if it references exactly these images
+      default: image-amd64.tar image-arm64.tar
     nix_target_amd64:
       description: Nix flake build target for amd64 (e.g. coreutils-amd64)
     nix_target_arm64:
@@ -1061,6 +1064,9 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
+  id_tokens:
+    DEVGUARD_ID_TOKEN:
+      aud: $[[ inputs.devguard_api_url ]]
   script:
     - |-
       devguard-scanner login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -1097,3 +1103,62 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
           devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$TAG" --token="$[[ inputs.devguard_token ]]" --offline
         done
       done
+    - |-
+      (
+      DEVGUARD_API_URL="$[[ inputs.devguard_api_url ]]"
+      REGISTRY="$CI_REGISTRY"
+      REGISTRY_USER="$CI_REGISTRY_USER"
+      REGISTRY_PASSWORD="$CI_REGISTRY_PASSWORD"
+      IMAGE_TARS="$[[ inputs.image_tars ]]"
+      set -eu
+
+      crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+      # images are matched by their config digest - see the provenance job
+      tarball_config_digest() {
+        CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
+        echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+      }
+      sorted() {
+        printf '%s\n' "$@" | sort | tr '\n' ' '
+      }
+
+      BUILT_CONFIGS=""
+      for TAR in $IMAGE_TARS; do
+        BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
+      done
+      EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+
+      INDEX_REFS=""
+      for TAG in $MANIFEST_TAGS; do
+        IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
+        IMAGE_NAME="${IMAGE_REF%@*}"
+        IMAGE_NAME="${IMAGE_NAME%:*}"
+        # resolved once - everything below refers to the digest
+        INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
+
+        # the index is only attested if it references exactly the built images
+        LISTED_CONFIGS=""
+        for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
+          LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
+        done
+        LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
+        if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
+          echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
+          exit 1
+        fi
+
+        # the root tag points to the same index - attest it once
+        case " $INDEX_REFS " in
+          *" $INDEX_REF "*) ;;
+          *) INDEX_REFS="$INDEX_REFS $INDEX_REF" ;;
+        esac
+      done
+
+      for INDEX_REF in $INDEX_REFS; do
+        devguard-scanner provenance generate --image "$INDEX_REF" --output index-provenance.json
+        devguard-scanner provenance sign index-provenance.json --apiUrl "$DEVGUARD_API_URL" --output index-provenance.dsse.json
+        echo "Attaching build provenance to $INDEX_REF"
+        devguard-scanner attest index-provenance.dsse.json "$INDEX_REF" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
+      done
+      )

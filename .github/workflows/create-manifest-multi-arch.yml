@@ -56,6 +56,7 @@ jobs:
   devguard_create_manifest_multi_arch:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       packages: write
     steps:
       - name: Resolve registry password
@@ -128,6 +129,87 @@ jobs:
             echo "Signing manifest: $TAG"
             docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
           done
+      - name: Download amd64 oci-image
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: oci-image${{ inputs.image-suffix }}-amd64
+          path: amd64
+      - name: Download arm64 oci-image
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: oci-image${{ inputs.image-suffix }}-arm64
+          path: arm64
+      - name: Generate, sign and attach build provenance of the multi-arch manifest(s)
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          REGISTRY: ${{ inputs.registry }}
+          REGISTRY_USER: ${{ inputs.registry-user }}
+          IMAGE_TARS: amd64/image.tar arm64/image.tar
+        run: |-
+          AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
+          DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          echo "::add-mask::$DEVGUARD_ID_TOKEN"
+          export DEVGUARD_ID_TOKEN
+
+          cat > index-provenance.sh << 'PROVENANCE_SCRIPT'
+          set -eu
+
+          crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+          # images are matched by their config digest - see the provenance job
+          tarball_config_digest() {
+            CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
+            echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+          }
+          sorted() {
+            printf '%s\n' "$@" | sort | tr '\n' ' '
+          }
+
+          BUILT_CONFIGS=""
+          for TAR in $IMAGE_TARS; do
+            BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
+          done
+          EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+
+          INDEX_REFS=""
+          for TAG in $MANIFEST_TAGS; do
+            IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
+            IMAGE_NAME="${IMAGE_REF%@*}"
+            IMAGE_NAME="${IMAGE_NAME%:*}"
+            # resolved once - everything below refers to the digest
+            INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
+
+            # the index is only attested if it references exactly the built images
+            LISTED_CONFIGS=""
+            for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
+              LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
+            done
+            LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
+            if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
+              echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
+              exit 1
+            fi
+
+            # the root tag points to the same index - attest it once
+            case " $INDEX_REFS " in
+              *" $INDEX_REF "*) ;;
+              *) INDEX_REFS="$INDEX_REFS $INDEX_REF" ;;
+            esac
+          done
+
+          for INDEX_REF in $INDEX_REFS; do
+            devguard-scanner provenance generate --image "$INDEX_REF" --output index-provenance.json
+            devguard-scanner provenance sign index-provenance.json --apiUrl "$DEVGUARD_API_URL" --output index-provenance.dsse.json
+            echo "Attaching build provenance to $INDEX_REF"
+            devguard-scanner attest index-provenance.dsse.json "$INDEX_REF" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
+          done
+          PROVENANCE_SCRIPT
+
+          # run as the runner user - the scanner image user can not write to the workspace
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \
+            -e IMAGE_TARS -e MANIFEST_TAGS \
+            -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
+            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main index-provenance.sh
       - name: Download amd64 artifact purl (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
