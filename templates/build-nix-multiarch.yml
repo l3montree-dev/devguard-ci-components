@@ -387,17 +387,17 @@ devguard:provenance$[[ inputs.job_suffix ]]-amd64:
       aud: $[[ inputs.devguard_api_url ]]
   variables:
     GIT_STRATEGY: none
-    DEVGUARD_API_URL: $[[ inputs.devguard_api_url ]]
-    REGISTRY: $[[ inputs.registry ]]
-    REGISTRY_USER: $[[ inputs.registry_user ]]
-    REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
-    IMAGE_TAR: image-amd64.tar
-    IMAGE_TAG: $IMAGE_TAG
-    PROVENANCE_INPUTS: |-
-      nix_target=$[[ inputs.nix_target_amd64 ]]
-      nix_impure=$[[ inputs.nix_impure ]]
   script:
     - |-
+      set -eu
+      DEVGUARD_API_URL="$[[ inputs.devguard_api_url ]]"
+      REGISTRY="$[[ inputs.registry ]]"
+      REGISTRY_USER="$[[ inputs.registry_user ]]"
+      REGISTRY_PASSWORD="$[[ inputs.registry_password ]]"
+      IMAGE_TAR="image-amd64.tar"
+      IMAGE_TAG="$IMAGE_TAG"
+      PROVENANCE_INPUTS="nix_target=$[[ inputs.nix_target_amd64 ]]
+      nix_impure=$[[ inputs.nix_impure ]]"
       set -eu
 
       # like the push job: lowercase the reference, the subject is named after the repository
@@ -810,17 +810,17 @@ devguard:provenance$[[ inputs.job_suffix ]]-arm64:
       aud: $[[ inputs.devguard_api_url ]]
   variables:
     GIT_STRATEGY: none
-    DEVGUARD_API_URL: $[[ inputs.devguard_api_url ]]
-    REGISTRY: $[[ inputs.registry ]]
-    REGISTRY_USER: $[[ inputs.registry_user ]]
-    REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
-    IMAGE_TAR: image-arm64.tar
-    IMAGE_TAG: $IMAGE_TAG
-    PROVENANCE_INPUTS: |-
-      nix_target=$[[ inputs.nix_target_arm64 ]]
-      nix_impure=$[[ inputs.nix_impure ]]
   script:
     - |-
+      set -eu
+      DEVGUARD_API_URL="$[[ inputs.devguard_api_url ]]"
+      REGISTRY="$[[ inputs.registry ]]"
+      REGISTRY_USER="$[[ inputs.registry_user ]]"
+      REGISTRY_PASSWORD="$[[ inputs.registry_password ]]"
+      IMAGE_TAR="image-arm64.tar"
+      IMAGE_TAG="$IMAGE_TAG"
+      PROVENANCE_INPUTS="nix_target=$[[ inputs.nix_target_arm64 ]]
+      nix_impure=$[[ inputs.nix_impure ]]"
       set -eu
 
       # like the push job: lowercase the reference, the subject is named after the repository

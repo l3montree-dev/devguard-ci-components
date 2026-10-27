@@ -437,15 +437,16 @@ devguard:provenance$[[ inputs.job_suffix ]]:
       aud: $[[ inputs.devguard_api_url ]]
   variables:
     GIT_STRATEGY: none
-    DEVGUARD_API_URL: $[[ inputs.devguard_api_url ]]
-    REGISTRY: $[[ inputs.registry ]]
-    REGISTRY_USER: $[[ inputs.registry_user ]]
-    REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
-    IMAGE_TAR: image.tar
-    IMAGE_TAG: $IMAGE_TAG
-    PROVENANCE_INPUTS: $[[ inputs.provenance_inputs ]]
   script:
     - |-
+      set -eu
+      DEVGUARD_API_URL="$[[ inputs.devguard_api_url ]]"
+      REGISTRY="$[[ inputs.registry ]]"
+      REGISTRY_USER="$[[ inputs.registry_user ]]"
+      REGISTRY_PASSWORD="$[[ inputs.registry_password ]]"
+      IMAGE_TAR="image.tar"
+      IMAGE_TAG="$IMAGE_TAG"
+      PROVENANCE_INPUTS="$[[ inputs.provenance_inputs ]]"
       set -eu
 
       # like the push job: lowercase the reference, the subject is named after the repository

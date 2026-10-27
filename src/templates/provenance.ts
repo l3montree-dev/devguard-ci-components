@@ -190,15 +190,20 @@ export const ProvenanceTemplateGitLab = defineJobGitLab(ProvenanceJobInputsGitLa
     },
     variables: {
       GIT_STRATEGY: "none",
-      DEVGUARD_API_URL: inputValues.devguard_api_url,
-      REGISTRY: inputValues.registry,
-      REGISTRY_USER: inputValues.registry_user,
-      REGISTRY_PASSWORD: inputValues.registry_password,
-      IMAGE_TAR: inputValues.image_tar,
-      IMAGE_TAG: inputValues.image_tag,
-      PROVENANCE_INPUTS: inputValues.provenance_inputs,
     },
-    script: [provenanceScript],
+    // assigned in the script, not as job variables: inputs are usually variables of the same name
+    // (devguard_api_url: $DEVGUARD_API_URL) and gitlab does not expand a job variable that references itself
+    script: [
+      `set -eu
+DEVGUARD_API_URL="${inputValues.devguard_api_url}"
+REGISTRY="${inputValues.registry}"
+REGISTRY_USER="${inputValues.registry_user}"
+REGISTRY_PASSWORD="${inputValues.registry_password}"
+IMAGE_TAR="${inputValues.image_tar}"
+IMAGE_TAG="${inputValues.image_tag}"
+PROVENANCE_INPUTS="${inputValues.provenance_inputs}"
+${provenanceScript}`,
+    ],
     artifacts: {
       paths: [PROVENANCE_FILE],
       expire_in: "1 week",
