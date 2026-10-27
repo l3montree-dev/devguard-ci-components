@@ -96,14 +96,24 @@ const fullSignOciImage = SignOciImageTemplate({
   stage: "attestation",
   git_strategy: SignOciImageJobInputs.git_strategy.default,
   image: "$IMAGE_TAG",
-  needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
+  needs: [
+    fullGenerateTag.name,
+    fullBuildOciImage.name,
+    fullContrainerScanning.name,
+    { job: fullPushOciImage.name, optional: true },
+  ],
   dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name],
 });
 const fullCreateRootTag = CreateRootTagTemplate({
   stage: "attestation",
   image_tag: "$IMAGE_TAG",
   devguard_artifact_name: "$ARTIFACT_NAME",
-  needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
+  needs: [
+    fullGenerateTag.name,
+    fullBuildOciImage.name,
+    fullContrainerScanning.name,
+    { job: fullPushOciImage.name, optional: true },
+  ],
   dependencies: [fullGenerateTag.name, fullBuildOciImage.name, fullPushOciImage.name],
 });
 const fullSourceProvenanceAttestation = SourceProvenanceTemplate({
@@ -123,8 +133,9 @@ const fullAttest = AttestTemplate({
   needs: [
     fullProvenance.name,
     fullGenerateTag.name,
-    { job: fullSignOciImage.name, artifacts: false },
     fullBuildOciImage.name,
+    fullContrainerScanning.name,
+    { job: fullPushOciImage.name, optional: true },
     // only included on gitlab.opencode.de - `dependencies` has no `optional`, so artifacts are pulled via `needs` instead
     { job: "source-provenance-artifacts", optional: true },
   ],
@@ -193,14 +204,24 @@ const clSignOciImage = SignOciImageTemplate({
   git_strategy: "none",
   image: "$IMAGE_TAG",
   // build_oci_image is needed when small_artifact_registry=true (push job disabled) - the image is pushed during build
-  needs: [clGenerateTag.name, clBuildOciImage.name, { job: clPushOciImage.name, optional: true }],
+  needs: [
+    clGenerateTag.name,
+    clBuildOciImage.name,
+    clContainerScanning.name,
+    { job: clPushOciImage.name, optional: true },
+  ],
   dependencies: [clGenerateTag.name, clBuildOciImage.name, clPushOciImage.name],
 });
 const clCreateRootTag = CreateRootTagTemplate({
   stage: "attestation",
   image_tag: "$IMAGE_TAG",
   devguard_artifact_name: "$ARTIFACT_NAME",
-  needs: [clGenerateTag.name, clBuildOciImage.name, { job: clPushOciImage.name, optional: true }],
+  needs: [
+    clGenerateTag.name,
+    clBuildOciImage.name,
+    clContainerScanning.name,
+    { job: clPushOciImage.name, optional: true },
+  ],
   dependencies: [clGenerateTag.name, clBuildOciImage.name, clPushOciImage.name],
 });
 const clProvenance = ProvenanceTemplateGitLab({
@@ -629,14 +650,24 @@ const clbiSignOciImage = SignOciImageTemplate({
   git_strategy: "none",
   image: "$IMAGE_TAG",
   // build_oci_image is needed when small_artifact_registry=true (push job disabled) - the image is pushed during build
-  needs: [clbiGenerateTag.name, clbiBuildOciImage.name, { job: clbiPushOciImage.name, optional: true }],
+  needs: [
+    clbiGenerateTag.name,
+    clbiBuildOciImage.name,
+    clbiContainerScanning.name,
+    { job: clbiPushOciImage.name, optional: true },
+  ],
   dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name, clbiPushOciImage.name],
 });
 const clbiCreateRootTag = CreateRootTagTemplate({
   stage: "attestation",
   image_tag: "$IMAGE_TAG",
   devguard_artifact_name: "$ARTIFACT_NAME",
-  needs: [clbiGenerateTag.name, clbiBuildOciImage.name, { job: clbiPushOciImage.name, optional: true }],
+  needs: [
+    clbiGenerateTag.name,
+    clbiBuildOciImage.name,
+    clbiContainerScanning.name,
+    { job: clbiPushOciImage.name, optional: true },
+  ],
   dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name, clbiPushOciImage.name],
 });
 const clbiProvenance = ProvenanceTemplateGitLab({
@@ -1020,13 +1051,14 @@ const ghFnSignAmd64 = SignTemplateGitHub({
   image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
 });
 ghFnSignAmd64.name = "devguard:sign-amd64";
-ghFnSignAmd64.job.needs = ["devguard_build_nix_amd64", "devguard_create_manifest_multi_arch"];
+// sign and attest only need their own image to be pushed - not the manifest, which waits for the other architecture
+ghFnSignAmd64.job.needs = ["devguard_build_nix_amd64", "devguard_deploy_amd64"];
 
 const ghFnSignArm64 = SignTemplateGitHub({
   image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
 });
 ghFnSignArm64.name = "devguard:sign-arm64";
-ghFnSignArm64.job.needs = ["devguard_build_nix_arm64", "devguard_create_manifest_multi_arch"];
+ghFnSignArm64.job.needs = ["devguard_build_nix_arm64", "devguard_deploy_arm64"];
 
 const ghFnProvenanceAmd64 = ProvenanceTemplateGitHub({
   recordedInputs: {
@@ -1043,11 +1075,7 @@ const ghFnAttestAmd64 = AttestTemplateGitHub({
   image_suffix: "${{ inputs.artifact_name_suffix }}-amd64",
 });
 ghFnAttestAmd64.name = "devguard:attest-amd64";
-ghFnAttestAmd64.job.needs = [
-  "devguard_build_nix_amd64",
-  "devguard_create_manifest_multi_arch",
-  "devguard_provenance_amd64",
-];
+ghFnAttestAmd64.job.needs = ["devguard_build_nix_amd64", "devguard_deploy_amd64", "devguard_provenance_amd64"];
 
 const ghFnProvenanceArm64 = ProvenanceTemplateGitHub({
   recordedInputs: {
@@ -1064,11 +1092,7 @@ const ghFnAttestArm64 = AttestTemplateGitHub({
   image_suffix: "${{ inputs.artifact_name_suffix }}-arm64",
 });
 ghFnAttestArm64.name = "devguard:attest-arm64";
-ghFnAttestArm64.job.needs = [
-  "devguard_build_nix_arm64",
-  "devguard_create_manifest_multi_arch",
-  "devguard_provenance_arm64",
-];
+ghFnAttestArm64.job.needs = ["devguard_build_nix_arm64", "devguard_deploy_arm64", "devguard_provenance_arm64"];
 
 export const templatesGitHub: CIComponentGroupTemplateGitHub = {
   // Individual reusable component workflows

@@ -311,6 +311,7 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - devguard:container_scanning$[[ inputs.job_suffix ]]
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
       optional: true
   dependencies:
@@ -336,6 +337,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - devguard:container_scanning$[[ inputs.job_suffix ]]
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
       optional: true
   dependencies:

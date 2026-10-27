@@ -872,7 +872,7 @@ jobs:
           args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     needs:
       - devguard_build_nix_amd64
-      - devguard_create_manifest_multi_arch
+      - devguard_deploy_amd64
     name: devguard:sign-amd64
   devguard_sign_arm64:
     runs-on: ubuntu-latest
@@ -922,7 +922,7 @@ jobs:
           args: devguard-scanner sign -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" --token="${{ secrets.devguard-token }}" ${{ env.IMAGE_TAG_AND_DIGEST }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }}
     needs:
       - devguard_build_nix_arm64
-      - devguard_create_manifest_multi_arch
+      - devguard_deploy_arm64
     name: devguard:sign-arm64
   devguard_provenance_amd64:
     runs-on: ubuntu-latest
@@ -1265,7 +1265,7 @@ jobs:
           PROVENANCE_SUBJECT: ${{ steps.provenance-subject.outputs.subject }}
     needs:
       - devguard_build_nix_amd64
-      - devguard_create_manifest_multi_arch
+      - devguard_deploy_amd64
       - devguard_provenance_amd64
     name: devguard:attest-amd64
   devguard_attest_arm64:
@@ -1407,6 +1407,6 @@ jobs:
           PROVENANCE_SUBJECT: ${{ steps.provenance-subject.outputs.subject }}
     needs:
       - devguard_build_nix_arm64
-      - devguard_create_manifest_multi_arch
+      - devguard_deploy_arm64
       - devguard_provenance_arm64
     name: devguard:attest-arm64
