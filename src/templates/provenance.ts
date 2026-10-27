@@ -112,7 +112,8 @@ export const ProvenanceJobInputsGitHub = defineInputsGitHub({
   ...InputGroups.registry,
   image_suffix: Inputs.image_suffix,
   manifest_tags: {
-    description: "Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds." as const,
+    description:
+      "Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds." as const,
     default: "" as const,
     type: "string" as const,
   },
@@ -144,52 +145,52 @@ export const ProvenanceTemplateGitHub = (options: ProvenanceOptionsGitHub = {}) 
     const inputValues = resolvedInputs as typeof resolvedInputs & { image_suffix: string; manifest_tags: string };
     const imageSuffixes = options.imageSuffixes ?? [inputValues.image_suffix];
     return {
-    name: "devguard:provenance",
-    secrets: {
-      "registry-password": {
-        description: "Registry password for pushing the provenance. Defaults to the github token.",
-        required: false,
+      name: "devguard:provenance",
+      secrets: {
+        "registry-password": {
+          description: "Registry password for pushing the provenance. Defaults to the github token.",
+          required: false,
+        },
       },
-    },
-    job: {
-      "runs-on": "ubuntu-latest",
-      if: "inputs.should_deploy",
-      // the only job with an id-token - it never runs code of the built project
-      permissions: {
-        "id-token": "write",
-        packages: "write",
-      },
-      steps: [
-        GitHubReusableSteps.ResolveRegistryPassword,
-        ...imageSuffixes.flatMap((imageSuffix, i) => [
+      job: {
+        "runs-on": "ubuntu-latest",
+        if: "inputs.should_deploy",
+        // the only job with an id-token - it never runs code of the built project
+        permissions: {
+          "id-token": "write",
+          packages: "write",
+        },
+        steps: [
+          GitHubReusableSteps.ResolveRegistryPassword,
+          ...imageSuffixes.flatMap((imageSuffix, i) => [
+            {
+              name: `Download oci-image${imageSuffix}`,
+              uses: ACTIONS_DOWNLOAD_ARTIFACT,
+              with: { name: `oci-image${imageSuffix}`, path: `build-${i}` },
+              // builds which push directly to the registry upload no image - the script falls back to the pushed tag
+              "continue-on-error": true,
+            },
+            {
+              name: `Download image-tag${imageSuffix}`,
+              uses: ACTIONS_DOWNLOAD_ARTIFACT,
+              with: { name: `image-tag${imageSuffix}`, path: `build-${i}` },
+            },
+          ]),
           {
-            name: `Download oci-image${imageSuffix}`,
-            uses: ACTIONS_DOWNLOAD_ARTIFACT,
-            with: { name: `oci-image${imageSuffix}`, path: `build-${i}` },
-            // builds which push directly to the registry upload no image - the script falls back to the pushed tag
-            "continue-on-error": true,
-          },
-          {
-            name: `Download image-tag${imageSuffix}`,
-            uses: ACTIONS_DOWNLOAD_ARTIFACT,
-            with: { name: `image-tag${imageSuffix}`, path: `build-${i}` },
-          },
-        ]),
-        {
-          name: "Generate, sign and attach build provenance",
-          env: {
-            DEVGUARD_API_URL: inputValues.devguard_api_url,
-            REGISTRY: inputValues.registry,
-            REGISTRY_USER: inputValues.registry_user,
-            IMAGE_TARS: imageSuffixes.map((_, i) => `build-${i}/image.tar`).join(" "),
-            MANIFEST_TAGS: options.manifestJobId
-              ? `\${{ needs.${options.manifestJobId}.outputs.manifest-tags }}`
-              : inputValues.manifest_tags,
-            PROVENANCE_INPUTS: Object.entries(options.recordedInputs ?? {})
-              .map(([key, value]) => `${key}=${value}`)
-              .join("\n"),
-          } as Record<string, string>,
-          run: `IMAGE_TAG=$(cat build-0/image-tag.txt)
+            name: "Generate, sign and attach build provenance",
+            env: {
+              DEVGUARD_API_URL: inputValues.devguard_api_url,
+              REGISTRY: inputValues.registry,
+              REGISTRY_USER: inputValues.registry_user,
+              IMAGE_TARS: imageSuffixes.map((_, i) => `build-${i}/image.tar`).join(" "),
+              MANIFEST_TAGS: options.manifestJobId
+                ? `\${{ needs.${options.manifestJobId}.outputs.manifest-tags }}`
+                : inputValues.manifest_tags,
+              PROVENANCE_INPUTS: Object.entries(options.recordedInputs ?? {})
+                .map(([key, value]) => `${key}=${value}`)
+                .join("\n"),
+            } as Record<string, string>,
+            run: `IMAGE_TAG=$(cat build-0/image-tag.txt)
 export IMAGE_TAG
 
 AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
@@ -205,9 +206,9 @@ docker run --rm -v "$PWD:/work" -w /work \\
   -e IMAGE_TARS -e IMAGE_TAG -e MANIFEST_TAGS -e PROVENANCE_INPUTS \\
   -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \\
   --entrypoint sh ${ContainerImages.DEVGUARD_SCANNER} provenance.sh`,
-        },
-      ],
-    },
+          },
+        ],
+      },
     };
   });
 };
@@ -232,11 +233,13 @@ export const ProvenanceJobInputsGitLab = defineInputsGitLab({
     default: "$IMAGE_TAG" as const,
   },
   manifest_tags: {
-    description: "Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds." as const,
+    description:
+      "Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds." as const,
     default: "" as const,
   },
   provenance_inputs: {
-    description: "Newline separated key=value pairs the build was configured with. Recorded in the provenance." as const,
+    description:
+      "Newline separated key=value pairs the build was configured with. Recorded in the provenance." as const,
     default: "" as const,
   },
 });

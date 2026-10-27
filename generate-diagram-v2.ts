@@ -179,7 +179,7 @@ async function parseYamlFile(absPath: string, root: string): Promise<ParsedFile[
       const relDir = path.dirname(relPath);
       const includesRaw = doc?.include;
       const includeItems = asArray<IncludeItem>(includesRaw);
-      let includes = includeItems
+      const includes = includeItems
         .flatMap((inc) => normalizeIncludeTarget(inc, relDir === "." ? "" : relDir))
         .map((s) => s.replaceAll("\\", "/"))
         .map((s) =>
