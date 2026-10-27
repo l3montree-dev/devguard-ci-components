@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.17.1]
+
+### Changed
+
+- **SLSA build provenance is created by a new `devguard:provenance` job and signed by DevGuard.** The in-toto `start`/`stop`/`run` steps are removed from all build, push and deploy jobs. The new job runs after the push, never runs code of the built project, computes the image digests from the built tarballs itself, requests an OIDC workload identity token for the DevGuard API and lets DevGuard sign the provenance (`devguard-scanner provenance generate` + `sign`). The signed envelope is attached to every built image, and for multi-arch builds to the manifest as well, after checking that the manifest references exactly the built images
+  - GitHub (`full`, `container-lifecycle`, `container-lifecycle-nix`, `full-nix`): **callers must grant `id-token: write`** to the job that calls the workflow. The build jobs now run with `contents: read` only (plus `packages: write` for the Kaniko and Docker builds, which can push directly), so the code being built never sees an id-token. `builder.id` is the reusable workflow, which makes this SLSA Build L3
+  - GitLab (`full`, `container-lifecycle*`, `push-and-attest`, `container-scanning-and-attest`, `build-nix-multiarch`): the job requests `DEVGUARD_ID_TOKEN` via `id_tokens`. `builder.id` is the project's own `.gitlab-ci.yml`, so this is SLSA Build L2
+  - New standalone `provenance` workflow/template
+  - The provenance is attested with the DevGuard instance key instead of the DevGuard token key. Admission policies have to verify it against the instance's public key (`GET /api/v1/slsa/public-key/`)
+
 ## [v1.17.0] — 2026-10-26
 
 ### Changed

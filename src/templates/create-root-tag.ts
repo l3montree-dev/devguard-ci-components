@@ -99,14 +99,6 @@ else
 fi`,
       },
       {
-        name: "Download build provenance",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `build${ inputValues.image_suffix }.provenance.json`,
-        },
-        "continue-on-error": true,
-      },
-      {
         name: "Download artifact purl",
         uses: ACTIONS_DOWNLOAD_ARTIFACT,
         with: {
@@ -156,7 +148,6 @@ docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DE
 docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
 
 ATTESTATIONS=("sbom.json:https://cyclonedx.org/bom" "vex.json:https://cyclonedx.org/vex" "sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
-[ -f build.provenance.json ] && ATTESTATIONS+=("build.provenance.json:https://slsa.dev/provenance/v1")
 
 for ENTRY in "\${ATTESTATIONS[@]}"; do
   FILE="\${ENTRY%%:*}"
@@ -212,10 +203,6 @@ else
   ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
 /tmp/vex.json|https://cyclonedx.org/vex
 /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-  if [ -f build.provenance.json ]; then
-    ATTESTATIONS="$ATTESTATIONS
-build.provenance.json|https://slsa.dev/provenance/v1"
-  fi
 
   echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
     [ -z "$FILE" ] && continue

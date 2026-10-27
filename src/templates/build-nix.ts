@@ -80,8 +80,6 @@ export const BuildNixGenerateTagTemplate = defineJobGitLab(BuildNixGenerateTagJo
 
 // Job 3: build OCI image using Nix (dockerTools.buildLayeredImage)
 export const BuildNixJobInputs = defineInputsGitLab({
-  ...InputGroups.devguardCore,
-  devguard_token: Inputs.devguard_token,
   runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
@@ -95,20 +93,11 @@ export const BuildNixJobInputs = defineInputsGitLab({
     ...Inputs.image,
     default: "image.tar" as const,
   },
-  provenance_file: {
-    description:
-      "Filename the SLSA provenance is published under. Give each architecture its own name when several build jobs feed the same downstream job, since GitLab merges dependency artifacts into one workspace." as const,
-    default: "build.provenance.json" as const,
-    type: "string" as const,
-  },
-  supply_chain_id: Inputs.supply_chain_id,
   nix_target: Inputs.nix_target,
   ...InputGroups.nixCache,
 });
 
 export const BuildNixJobInputsGitHub = defineInputsGitHub({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
   image_name: {
     description: "Full OCI image name without tag (e.g. ghcr.io/org/repo/image)" as const,
     type: "string" as const,
@@ -130,7 +119,6 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
     default: "ubuntu-latest" as const,
     type: "string" as const,
   },
-  commit_ref: Inputs.commit_ref,
   is_tag: Inputs.is_tag,
   upstream_version: Inputs.upstream_version,
 });
@@ -138,7 +126,6 @@ export const BuildNixJobInputsGitHub = defineInputsGitHub({
 export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-nix",
   secrets: {
-    "devguard-token": { ...Secrets["devguard-token"], required: false as const },
     "nix-cache-secret-key": {
       description: "Nix binary cache signing secret key.",
       required: false,
@@ -155,6 +142,11 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
   },
   job: {
     "runs-on": inputValues.runner,
+    // the build runs code of the built project - it must not get an id-token or write access.
+    // Provenance is created by the separate provenance job from the uploaded image
+    permissions: {
+      contents: "read",
+    },
     steps: [
       GitHubReusableSteps.SetupSubmoduleSsh,
       {
@@ -179,15 +171,6 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
       {
         name: "Install crane and devguard-scanner",
         run: `nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner`,
-      },
-      {
-        name: "In-Toto Provenance record start",
-        env: {
-          DEVGUARD_API_URL: inputValues.devguard_api_url,
-          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
-        } as Record<string, string>,
-        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA`,
-        "continue-on-error": true,
       },
       {
         name: "Write Nix cache secret key",
@@ -291,26 +274,6 @@ echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"`,
           path: "artifact-purl-safe.txt",
         },
       },
-      {
-        name: "In-Toto Provenance record stop",
-        env: {
-          DEVGUARD_API_URL: inputValues.devguard_api_url,
-          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
-          DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
-          IS_TAG: inputValues.is_tag,
-          COMMIT_REF: inputValues.commit_ref,
-        } as Record<string, string>,
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF`,
-        "continue-on-error": true,
-      },
-      {
-        name: "Upload SLSA Provenance",
-        uses: ACTIONS_UPLOAD_ARTIFACT,
-        with: {
-          path: "build.provenance.json",
-          name: `build${ inputValues.image_suffix }.provenance.json`,
-        },
-      },
     ],
   },
 }));
@@ -341,16 +304,13 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
       `mkdir -p ~/.aws\necho "[profile nix-cache]" >> ~/.aws/config\necho "s3.addressing_style = path" >> ~/.aws/config`,
     ],
     script: [
-      `./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
       `nix build -L ".#${inputValues.nix_target}" --no-update-lock-file $([[ "${inputValues.nix_impure}" == "true" ]] && echo --impure)`,
       `gzip -cd result > "${inputValues.image}"`,
       `if [[ -n "${inputValues.nix_cache_s3_endpoint}" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then\n  export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"\n  export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"\n  nix copy $(nix-store -qR $(readlink result)) --to 's3://${inputValues.nix_cache_s3_bucket}?endpoint=${inputValues.nix_cache_s3_endpoint}&region=${inputValues.nix_cache_region}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true\nfi`,
       `nix run nixpkgs#crane -- digest --tarball="${inputValues.image}" > image-digest.txt`,
-      `./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance`,
-      `if [ "${inputValues.provenance_file}" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "${inputValues.provenance_file}"; fi`,
     ],
     artifacts: {
-      paths: [inputValues.image, `image-digest.txt`, inputValues.provenance_file],
+      paths: [inputValues.image, `image-digest.txt`],
       when: "on_success",
     },
   },

@@ -6,7 +6,6 @@ import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } fro
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const DeployJobInputsGitHub = defineInputsGitHub({
-  ...InputGroups.devguardCore,
   image_suffix: {
     description:
       "The name of the artifact you are building. This is useful when a single pipeline builds more than a single artifact like a container with a shell inside and one without. If you build a single artifact - leave it empty.",
@@ -23,14 +22,9 @@ export const DeployJobInputsGitHub = defineInputsGitHub({
     default: false,
     type: "boolean" as const,
   },
-  supply_chain_id: Inputs.supply_chain_id,
-  ...InputGroups.ref,
 });
 
 export const DeployJobInputsGitLab = defineInputsGitLab({
-  ...InputGroups.devguardCore,
-  devguard_token: Inputs.devguard_token,
-
   stage: {
     ...Inputs.stage,
     default: "deploy" as const,
@@ -51,9 +45,6 @@ export const DeployJobInputsGitLab = defineInputsGitLab({
     default: "image.tar" as const,
   },
   image_tag: Inputs.image_tag,
-  supply_chain_id: Inputs.supply_chain_id,
-
-  ...InputGroups.ref,
   disable_job: Inputs.disable_job,
 });
 
@@ -89,7 +80,6 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
     script: [
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
       `/crane push ${inputValues.image} ${inputValues.image_tag}`,
-      `/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.commit_ref}" --isTag="${inputValues.is_tag}"`,
     ],
   },
 }));
@@ -97,7 +87,6 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
 export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inputValues) => ({
   name: "devguard:deploy",
   secrets: {
-    "devguard-token": Secrets["devguard-token"],
     "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
@@ -138,19 +127,6 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
           name: `image-digest${ inputValues.image_suffix }`,
           path: ".",
         },
-      },
-      {
-        name: "Read image-digest.txt",
-        id: "read-digest",
-        run: "echo \"DIGEST=$(cat image-digest.txt)\" >> $GITHUB_ENV",
-      },
-      {
-        name: "In-Toto Provenance run",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        with: {
-          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --supplyChainOutputDigest="\${{ env.DIGEST }}" --defaultRef=${inputValues.default_ref} --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
-        },
-        "continue-on-error": true,
       },
       {
         name: "Setup crane",

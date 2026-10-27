@@ -277,34 +277,6 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
           ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
         } as Record<string, string>,
       },
-      {
-        name: "Download and Attest build-provenance.json",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `build${ inputValues.image_suffix }.provenance.json`,
-        },
-      },
-      {
-        name: "Attest build-provenance.json",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        "continue-on-error": true,
-        with: {
-          args: `sh -c "
-  artifact_name="$ARTIFACT_NAME" &&
-  echo 'Building provenance attestation for artifact:' '\${{ env.ARTIFACT_NAME }}' &&
-  if [ -f image-digest.txt ]; then
-    echo 'Attesting provenance with image digest present' &&
-    devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" build.provenance.json \\"$(cat image-tag.txt)@$(cat image-digest.txt)\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
-  else
-    echo 'Attesting provenance without image digest' &&
-    devguard-scanner attest build.provenance.json --token='\${{ secrets.devguard-token }}' --apiUrl=${ inputValues.devguard_api_url } --predicateType='https://slsa.dev/provenance/v1' --assetName=${ inputValues.devguard_asset_name } --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$artifact_name"
-  fi
-"`,
-        },
-        env: {
-          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
-        } as Record<string, string>,
-      },
     ],
   },
 }));

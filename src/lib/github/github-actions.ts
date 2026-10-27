@@ -53,13 +53,8 @@ export interface GitHubJob {
         group: string;
         "cancel-in-progress"?: boolean;
       };
-  outputs?: Record<
-    string,
-    {
-      description: string;
-      value: string;
-    }
-  >;
+  // job outputs map an output name to an expression, e.g. ${{ steps.build.outputs.digest }}
+  outputs?: Record<string, string>;
   env_vars?: Record<string, string>;
   needs?: string | string[];
   if?: string;

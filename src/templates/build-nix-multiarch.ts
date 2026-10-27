@@ -55,11 +55,6 @@ export const BuildNixMultiArchJobInputs = defineInputsGitLab({
 });
 
 export const BuildNixMultiArchJobInputsGitHub = defineInputsGitHub({
-  devguard_asset_name: Inputs.devguard_asset_name,
-  devguard_api_url: {
-    ...Inputs.devguard_api_url,
-    default: "https://api.devguard.opencode.de" as const,
-  },
   image_name: {
     description: "Full OCI image name without tag (e.g. ghcr.io/org/repo/image)" as const,
     type: "string" as const,
@@ -99,7 +94,6 @@ export const BuildNixMultiArchManifestJobInputsGitHub = defineInputsGitHub({
 export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNixMultiArchJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-nix-multiarch",
   secrets: {
-    "devguard-token": { ...Secrets["devguard-token"], required: false as const },
     "nix-cache-secret-key": {
       description: "Nix binary cache signing secret key.",
       required: false,
@@ -116,6 +110,11 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
   },
   job: {
     "runs-on": `\${{ matrix.runner }}`,
+    // the build runs code of the built project - it must not get an id-token or write access.
+    // Provenance is created by the separate provenance job from the uploaded images
+    permissions: {
+      contents: "read",
+    },
     strategy: {
       matrix: {
         include: [
@@ -148,15 +147,6 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
       {
         name: "Install crane and devguard-scanner",
         run: `nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner`,
-      },
-      {
-        name: "In-Toto Provenance record start",
-        env: {
-          DEVGUARD_API_URL: inputValues.devguard_api_url,
-          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
-        } as Record<string, string>,
-        run: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA`,
-        "continue-on-error": true,
       },
       {
         name: "Write Nix cache secret key",
@@ -234,26 +224,6 @@ grep '^ARTIFACT_URL_ENCODED=' image-tag-env.txt | cut -d= -f2- > artifact-purl-s
         with: {
           name: `image-digest${ inputValues.image_suffix }-\${{ matrix.arch }}`,
           path: "image-digest.txt",
-        },
-      },
-      {
-        name: "In-Toto Provenance record stop",
-        env: {
-          DEVGUARD_API_URL: inputValues.devguard_api_url,
-          DEVGUARD_ASSET_NAME: inputValues.devguard_asset_name,
-          DEFAULT_BRANCH: `\${{ github.event.repository.default_branch }}`,
-          IS_TAG: inputValues.is_tag,
-          COMMIT_REF: inputValues.commit_ref,
-        } as Record<string, string>,
-        run: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF`,
-        "continue-on-error": true,
-      },
-      {
-        name: "Upload SLSA Provenance",
-        uses: ACTIONS_UPLOAD_ARTIFACT,
-        with: {
-          path: "build.provenance.json",
-          name: `build${ inputValues.image_suffix }-\${{ matrix.arch }}.provenance.json`,
         },
       },
     ],

@@ -7,10 +7,6 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 const BuildOciImageConfig = {
-  ...InputGroups.devguardCore,
-
-  supply_chain_id: Inputs.supply_chain_id,
-
   image_destination_path: {
     description: "Destination of the image.tar file",
     default: "image.tar",
@@ -20,7 +16,6 @@ const BuildOciImageConfig = {
 
 export const BuildOciImageJobInputs = defineInputsGitLab({
   ...BuildOciImageConfig,
-  devguard_token: Inputs.devguard_token,
 
   stage: {
     ...Inputs.stage,
@@ -40,10 +35,6 @@ export const BuildOciImageJobInputs = defineInputsGitLab({
   image_tag: Inputs.image_tag,
   build_args: Inputs.build_args,
   push_image: Inputs.push_image,
-
-  default_ref: Inputs.default_ref,
-  ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
 });
 
 export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (inputValues) => ({
@@ -64,7 +55,6 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
     },
     before_script: [
       `echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
-      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
     ],
     script: [
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
@@ -74,13 +64,10 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
       `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image_destination_path}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
 
-      `echo "Running DevGuard Intoto Build...stopping..."`,
-      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
-
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
     artifacts: {
-      paths: [inputValues.image_destination_path, "image-digest.txt", "build.provenance.json", "variables.env"],
+      paths: [inputValues.image_destination_path, "image-digest.txt", "variables.env"],
       reports: {
         dotenv: "variables.env",
       },
@@ -99,7 +86,7 @@ export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
   },
   image_suffix: Inputs.image_suffix,
   fetch_depth: Inputs.fetch_depth,
-  ...InputGroups.ref,
+  is_tag: Inputs.is_tag,
   upstream_version: Inputs.upstream_version,
   disable_artifact_registry_as_image_store: {
     description:
@@ -112,7 +99,6 @@ export const BuildOciImageJobInputsGitHub = defineInputsGitHub({
 export const BuildOciImageTemplateGitHub = defineJobGitHub(BuildOciImageJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-oci-image",
   secrets: {
-    "devguard-token": Secrets["devguard-token"],
     "build-args": {
       description: "Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.",
       required: false,
@@ -121,6 +107,12 @@ export const BuildOciImageTemplateGitHub = defineJobGitHub(BuildOciImageJobInput
   },
   job: {
     "runs-on": "ubuntu-latest",
+    // the build runs code of the built project - it must not get an id-token. Provenance is created by the
+    // separate provenance job. packages:write is only used with disable_artifact_registry_as_image_store
+    permissions: {
+      contents: "read",
+      packages: "write",
+    },
     steps: [
       {
         name: "Set BUILD_ARGS",
@@ -143,23 +135,14 @@ echo "BUILD_ARGS=$BUILD_ARGS --no-push --tarPath /github/workspace/tmp-image.tar
         },
       },
       {
-        name: "In-Toto permission fix",
+        name: "Container user permission fix",
         run: `mkdir -p \${HOME}/.docker
 # Ensure the .docker directory is owned by the container user (UID 53111)
 sudo chown -R 53111:53111 \${HOME}/.docker || true
 sudo chmod 700 \${HOME}/.docker || true
-# Make the workspace writable by the in-toto/container user (UID 53111)
+# Make the workspace writable by the container user (UID 53111)
 sudo chown -R 53111:53111 $GITHUB_WORKSPACE || true
 sudo chmod -R u+rwX $GITHUB_WORKSPACE || true`,
-      },
-      {
-        name: "In-Toto Provenance record start",
-        id: "in-toto-start",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        with: {
-          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id}`,
-        },
-        "continue-on-error": true,
       },
       {
         name: "Build Docker image with Kaniko",
@@ -323,26 +306,10 @@ echo "Using artifact name: $PURL"`,
         },
       },
       {
-        name: "In-Toto Provenance record stop",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        with: {
-          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --generateSlsaProvenance --defaultRef=${inputValues.default_ref} --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag}`,
-        },
-        "continue-on-error": true,
-      },
-      {
-        name: "Fix workspace permissions (after provenance)",
+        name: "Fix workspace permissions (after build)",
         run: `sudo chown -R $(id -u):$(id -g) $GITHUB_WORKSPACE || true
 sudo chmod -R u+rw,g+r,o+r $GITHUB_WORKSPACE || true`,
         "continue-on-error": true,
-      },
-      {
-        name: "Upload SLSA Provenance",
-        uses: ACTIONS_UPLOAD_ARTIFACT,
-        with: {
-          path: "build.provenance.json",
-          name: `build${ inputValues.image_suffix }.provenance.json`,
-        },
       },
     ],
   },

@@ -43,6 +43,10 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
     permissions: {
       packages: "write",
     },
+    // the provenance job attests the manifests as well
+    outputs: {
+      "manifest-tags": "${{ steps.create-manifest.outputs.manifest-tags }}",
+    },
     steps: [
       GitHubReusableSteps.ResolveRegistryPassword,
       {
@@ -64,6 +68,7 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       GitHubReusableSteps.DockerLogin(inputValues.registry, inputValues.registry_user),
       {
         name: "Create and push multi-arch manifest",
+        id: "create-manifest",
         env: {
           CREATE_ROOT_MANIFEST: `${ inputValues.create_root_manifest }`,
         },
@@ -96,7 +101,8 @@ if [ "$CREATE_ROOT_MANIFEST" = "true" ]; then
   fi
 fi
 
-echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
+echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
+echo "manifest-tags=$MANIFEST_TAGS" >> $GITHUB_OUTPUT`,
       },
       {
         name: "Sign multi-arch manifest(s)",
@@ -109,30 +115,6 @@ echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
   echo "Signing manifest: $TAG"
   docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
 done`,
-      },
-      {
-        name: "Download amd64 build provenance",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `build${ inputValues.image_suffix }-amd64.provenance.json`,
-        },
-        "continue-on-error": true,
-      },
-      {
-        name: "Rename amd64 build provenance",
-        run: `[ -f build.provenance.json ] && mv build.provenance.json amd64.provenance.json || true`,
-      },
-      {
-        name: "Download arm64 build provenance",
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `build${ inputValues.image_suffix }-arm64.provenance.json`,
-        },
-        "continue-on-error": true,
-      },
-      {
-        name: "Rename arm64 build provenance",
-        run: `[ -f build.provenance.json ] && mv build.provenance.json arm64.provenance.json || true`,
       },
       {
         name: "Download amd64 artifact purl (can be created by build-image)",
@@ -303,42 +285,6 @@ fi`,
           MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
         } as Record<string, string>,
       },
-      {
-        name: "Attest amd64 build provenance",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        "continue-on-error": true,
-        with: {
-          args: `sh -c "
-  if [ -f amd64.provenance.json ]; then
-    for TAG in $MANIFEST_TAGS; do
-      echo 'Attesting amd64 provenance for manifest:' \\"$TAG\\" &&
-      devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \\"$TAG\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --offline
-    done
-  fi
-"`,
-        },
-        env: {
-          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
-        } as Record<string, string>,
-      },
-      {
-        name: "Attest arm64 build provenance",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        "continue-on-error": true,
-        with: {
-          args: `sh -c "
-  if [ -f arm64.provenance.json ]; then
-    for TAG in $MANIFEST_TAGS; do
-      echo 'Attesting arm64 provenance for manifest:' \\"$TAG\\" &&
-      devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \\"$TAG\\" --predicateType='https://slsa.dev/provenance/v1' --token='\${{ secrets.devguard-token }}' --offline
-    done
-  fi
-"`,
-        },
-        env: {
-          MANIFEST_TAGS: "${{ env.MANIFEST_TAGS }}",
-        } as Record<string, string>,
-      },
     ],
   },
 }));
@@ -449,14 +395,6 @@ ATTESTATIONS="/tmp/amd64.sbom.json|https://cyclonedx.org/bom
 /tmp/arm64.sbom.json|https://cyclonedx.org/bom
 /tmp/arm64.vex.json|https://cyclonedx.org/vex
 /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-if [ -f build-amd64.provenance.json ]; then
-  ATTESTATIONS="$ATTESTATIONS
-build-amd64.provenance.json|https://slsa.dev/provenance/v1"
-fi
-if [ -f build-arm64.provenance.json ]; then
-  ATTESTATIONS="$ATTESTATIONS
-build-arm64.provenance.json|https://slsa.dev/provenance/v1"
-fi
 
 for TAG in $MANIFEST_TAGS; do
   echo "Signing manifest: $TAG"

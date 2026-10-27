@@ -51,6 +51,7 @@ import {
 } from "./templates/build-nix-multiarch";
 import { BuildNixTemplateGitHub } from "./templates/build-nix";
 import { ZizmorScanningTemplateGitHub } from "./templates/zizmor-scanning";
+import { ProvenanceTemplateGitHub, ProvenanceTemplateGitLab } from "./templates/provenance";
 
 // const fileHeader = `# Copyright 2025-${new Date().getFullYear()} l3montree GmbH.
 const fileHeader = `# Copyright 2025 l3montree GmbH.
@@ -136,10 +137,6 @@ const fullAttest = AttestTemplate({
       predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
     },
     {
-      source: "build.provenance.json",
-      predicate_type: "https://slsa.dev/provenance/v1",
-    },
-    {
       source: "artifacts/attestation-report.json",
       predicate_type:
         "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json",
@@ -149,6 +146,13 @@ const fullAttest = AttestTemplate({
 // `dependencies` has no `optional` and fails with "undefined dependency" when source-provenance-artifacts is not
 // included (outside gitlab.opencode.de). Artifacts are selected via `needs` instead.
 delete fullAttest.job.dependencies;
+const fullProvenance = ProvenanceTemplateGitLab({
+  stage: "attestation",
+  image_tars: BuildOciImageJobInputs.image_destination_path.default,
+  image_tag: "$IMAGE_TAG",
+  needs: [fullGenerateTag.name, fullBuildOciImage.name, { job: fullPushOciImage.name, optional: true }],
+  dependencies: [fullGenerateTag.name, fullBuildOciImage.name],
+});
 
 // ── container-lifecycle ───────────────────────────────────────────────────────
 const clGenerateTag = GenerateTagTemplate({
@@ -211,6 +215,13 @@ const clAttest = AttestTemplate({
   ],
   dependencies: [clGenerateTag.name, clBuildOciImage.name],
 });
+const clProvenance = ProvenanceTemplateGitLab({
+  stage: "attestation",
+  image_tars: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [clGenerateTag.name, clBuildOciImage.name, { job: clPushOciImage.name, optional: true }],
+  dependencies: [clGenerateTag.name, clBuildOciImage.name],
+});
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
 const clnExtractScanner = BuildNixExtractScannerTemplate({});
@@ -264,6 +275,14 @@ const clnAttest = AttestTemplate({
   ],
   dependencies: [clnGenerateTag.name, clnBuildOciImage.name],
 });
+const clnProvenance = ProvenanceTemplateGitLab({
+  stage: "attestation",
+  image_tars: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  provenance_inputs: "nix_target=$[[ inputs.nix_target ]]\nnix_impure=$[[ inputs.nix_impure ]]",
+  needs: [clnGenerateTag.name, clnBuildOciImage.name, { job: clnPushOciImage.name, optional: true }],
+  dependencies: [clnGenerateTag.name, clnBuildOciImage.name],
+});
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
 const paGenerateTag = GenerateTagTemplate({
@@ -290,6 +309,13 @@ const paAttest = AttestTemplate({
   git_strategy: "none",
   image: "$IMAGE_TAG",
   devguard_artifact_name: "$ARTIFACT_NAME",
+  needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", { job: paPushOciImage.name, optional: true }],
+  dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+});
+const paProvenance = ProvenanceTemplateGitLab({
+  stage: "$[[ inputs.attest_stage ]]",
+  image_tars: "image.tar",
+  image_tag: "$IMAGE_TAG",
   needs: [paGenerateTag.name, "$[[ inputs.build_job_name ]]", { job: paPushOciImage.name, optional: true }],
   dependencies: [paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
@@ -334,6 +360,13 @@ const csaAttest = AttestTemplate({
   ],
   dependencies: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
 });
+const csaProvenance = ProvenanceTemplateGitLab({
+  stage: "attestation",
+  image_tars: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]", { job: csaPushOciImage.name, optional: true }],
+  dependencies: [csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+});
 
 // ── build-nix-multiarch ───────────────────────────────────────────────────────
 // job_suffix is user-provided at include time (e.g. ":scanner") and prepended
@@ -353,7 +386,6 @@ const bnmaGenerateTagAmd64 = BuildNixGenerateTagTemplate({
 const bnmaBuildAmd64 = BuildNixTemplate({
   stage: "build",
   image: "image-amd64.tar",
-  provenance_file: "build-amd64.provenance.json",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   nix_target: "$[[ inputs.nix_target_amd64 ]]",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
@@ -422,10 +454,6 @@ const bnmaAttestAmd64 = AttestTemplate({
         "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
       predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
     },
-    {
-      source: "build-amd64.provenance.json",
-      predicate_type: "https://slsa.dev/provenance/v1",
-    },
   ],
 });
 
@@ -441,7 +469,6 @@ const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
 const bnmaBuildArm64 = BuildNixTemplate({
   stage: "build",
   image: "image-arm64.tar",
-  provenance_file: "build-arm64.provenance.json",
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   nix_target: "$[[ inputs.nix_target_arm64 ]]",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
@@ -510,10 +537,6 @@ const bnmaAttestArm64 = AttestTemplate({
         "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
       predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
     },
-    {
-      source: "build-arm64.provenance.json",
-      predicate_type: "https://slsa.dev/provenance/v1",
-    },
   ],
 });
 
@@ -531,6 +554,17 @@ const bnmaCreateManifest = CreateManifestMultiArchTemplate({
 const bnmaSignManifest = SignManifestMultiArchTemplate({
   stage: "attestation",
   job_suffix: "$[[ inputs.job_suffix ]]-manifest",
+  needs: [bnmaCreateManifest.name, bnmaBuildAmd64.name, bnmaBuildArm64.name],
+  dependencies: [bnmaCreateManifest.name, bnmaBuildAmd64.name, bnmaBuildArm64.name],
+});
+const bnmaProvenance = ProvenanceTemplateGitLab({
+  stage: "attestation",
+  job_suffix: "$[[ inputs.job_suffix ]]",
+  image_tars: "image-amd64.tar image-arm64.tar",
+  image_tag: "$MANIFEST_IMAGE_TAG",
+  manifest_tags: "$MANIFEST_IMAGE_TAG $MANIFEST_WITHOUT_REF_TAG",
+  provenance_inputs:
+    "nix_target_amd64=$[[ inputs.nix_target_amd64 ]]\nnix_target_arm64=$[[ inputs.nix_target_arm64 ]]\nnix_impure=$[[ inputs.nix_impure ]]",
   needs: [bnmaCreateManifest.name, bnmaBuildAmd64.name, bnmaBuildArm64.name],
   dependencies: [bnmaCreateManifest.name, bnmaBuildAmd64.name, bnmaBuildArm64.name],
 });
@@ -600,6 +634,13 @@ const clbiAttest = AttestTemplate({
   ],
   dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name],
 });
+const clbiProvenance = ProvenanceTemplateGitLab({
+  stage: "attestation",
+  image_tars: "image.tar",
+  image_tag: "$IMAGE_TAG",
+  needs: [clbiGenerateTag.name, clbiBuildOciImage.name, { job: clbiPushOciImage.name, optional: true }],
+  dependencies: [clbiGenerateTag.name, clbiBuildOciImage.name],
+});
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
 const clbiSbomUpload = SbomUploadTemplate({
   stage: "attestation",
@@ -643,6 +684,7 @@ export const templates: CIComponentGroupTemplateGitLab = {
   "discover-baseimage-attestations": [DiscoverBaseimageAttestationsTemplate({})],
   release: [ReleaseTemplate({})],
   deploy: [DeployTemplateGitLab({})],
+  provenance: [ProvenanceTemplateGitLab({})],
 
   // ── Orchestration templates ───────────────────────────────────────────────
   full: [
@@ -666,6 +708,7 @@ export const templates: CIComponentGroupTemplateGitLab = {
     fullSignOciImage,
     fullCreateRootTag,
     fullAttest,
+    fullProvenance,
   ],
   "container-lifecycle": [
     clGenerateTag,
@@ -675,6 +718,7 @@ export const templates: CIComponentGroupTemplateGitLab = {
     clSignOciImage,
     clCreateRootTag,
     clAttest,
+    clProvenance,
   ],
   "container-lifecycle-nix": [
     clnExtractScanner,
@@ -684,9 +728,17 @@ export const templates: CIComponentGroupTemplateGitLab = {
     clnPushOciImage,
     clnSignOciImage,
     clnAttest,
+    clnProvenance,
   ],
-  "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest],
-  "container-scanning-and-attest": [csaGenerateTag, csaContainerScanning, csaPushOciImage, csaSignOciImage, csaAttest],
+  "push-and-attest": [paGenerateTag, paPushOciImage, paSignOciImage, paAttest, paProvenance],
+  "container-scanning-and-attest": [
+    csaGenerateTag,
+    csaContainerScanning,
+    csaPushOciImage,
+    csaSignOciImage,
+    csaAttest,
+    csaProvenance,
+  ],
   "container-lifecycle-with-base-image-inspection": [
     clbiDiscoverAttestations,
     clbiGenerateTag,
@@ -696,6 +748,7 @@ export const templates: CIComponentGroupTemplateGitLab = {
     clbiSignOciImage,
     clbiCreateRootTag,
     clbiAttest,
+    clbiProvenance,
     clbiSbomUpload,
     clbiVexUpload,
   ],
@@ -717,6 +770,7 @@ export const templates: CIComponentGroupTemplateGitLab = {
     bnmaAttestArm64,
     bnmaCreateManifest,
     bnmaSignManifest,
+    bnmaProvenance,
   ],
 };
 
@@ -808,6 +862,8 @@ const ghClCreateRootTag = CreateRootTagTemplateGitHub({});
 ghClCreateRootTag.job.needs = ["devguard_build_oci_image", "devguard_deploy"];
 const ghClAttest = AttestTemplateGitHub({});
 ghClAttest.job.needs = ["devguard_build_oci_image", "devguard_container_scanning", "devguard_deploy"];
+const ghClProvenance = ProvenanceTemplateGitHub()({});
+ghClProvenance.job.needs = ["devguard_build_oci_image", "devguard_deploy"];
 
 // ── full orchestrator ─────────────────────────────────────────────────────────
 const ghFullSecretScanning = SecretScanningTemplateGitHub({});
@@ -853,6 +909,8 @@ ghFullAttest.job.needs = [
   "devguard_software_composition_analysis",
   "devguard_deploy",
 ];
+const ghFullProvenance = ProvenanceTemplateGitHub()({});
+ghFullProvenance.job.needs = ["devguard_build_oci_image", "devguard_deploy"];
 
 // ── container-lifecycle-nix orchestrator ──────────────────────────────────────
 const ghClnBuild = BuildNixTemplateGitHub({});
@@ -870,6 +928,13 @@ const ghClnSign = SignTemplateGitHub({});
 ghClnSign.job.needs = ["devguard_build_nix", "devguard_container_scanning", "devguard_deploy"];
 const ghClnAttest = AttestTemplateGitHub({});
 ghClnAttest.job.needs = ["devguard_build_nix", "devguard_container_scanning", "devguard_deploy"];
+const ghClnProvenance = ProvenanceTemplateGitHub({
+  recordedInputs: {
+    "nix-target": "${{ inputs.nix_target }}",
+    "nix-impure": "${{ inputs.nix_impure }}",
+  },
+})({});
+ghClnProvenance.job.needs = ["devguard_build_nix", "devguard_deploy"];
 
 // ── full-nix orchestrator ─────────────────────────────────────────────────────
 const ghFnBuildAmd64 = BuildNixTemplateGitHub({
@@ -949,6 +1014,21 @@ const ghFnAttestArm64 = AttestTemplateGitHub({
 ghFnAttestArm64.name = "devguard:attest-arm64";
 ghFnAttestArm64.job.needs = ["devguard_build_nix_arm64", "devguard_create_manifest_multi_arch"];
 
+const ghFnProvenance = ProvenanceTemplateGitHub({
+  imageSuffixes: ["${{ inputs.artifact_name_suffix }}-amd64", "${{ inputs.artifact_name_suffix }}-arm64"],
+  manifestJobId: "devguard_create_manifest_multi_arch",
+  recordedInputs: {
+    "nix-target-amd64": "${{ inputs.nix_target_amd64 }}",
+    "nix-target-arm64": "${{ inputs.nix_target_arm64 }}",
+    "nix-impure": "${{ inputs.nix_impure }}",
+  },
+})({});
+ghFnProvenance.job.needs = [
+  "devguard_build_nix_amd64",
+  "devguard_build_nix_arm64",
+  "devguard_create_manifest_multi_arch",
+];
+
 export const templatesGitHub: CIComponentGroupTemplateGitHub = {
   // Individual reusable component workflows
   "secret-scanning": [SecretScanningTemplateGitHub({})],
@@ -973,9 +1053,10 @@ export const templatesGitHub: CIComponentGroupTemplateGitHub = {
   "build-nix": [BuildNixTemplateGitHub({})],
   "build-nix-multiarch-build": [BuildNixMultiArchBuildImageTemplateGitHub({})],
   "build-nix-multiarch-manifest": [BuildNixMultiArchCreateManifestTemplateGitHub({})],
+  provenance: [ProvenanceTemplateGitHub()({})],
   // Orchestrator workflows (inline, no uses:)
   "code-scanning": [ghCsSecretScanning, ghCsSast, ghCsIac, ghCsSca],
-  "container-lifecycle": [ghClBuild, ghClScan, ghClDeploy, ghClSign, ghClCreateRootTag, ghClAttest],
+  "container-lifecycle": [ghClBuild, ghClScan, ghClDeploy, ghClSign, ghClCreateRootTag, ghClAttest, ghClProvenance],
   full: [
     ghFullSecretScanning,
     ghFullSast,
@@ -987,8 +1068,9 @@ export const templatesGitHub: CIComponentGroupTemplateGitHub = {
     ghFullSign,
     ghFullCreateRootTag,
     ghFullAttest,
+    ghFullProvenance,
   ],
-  "container-lifecycle-nix": [ghClnBuild, ghClnScan, ghClnDeploy, ghClnSign, ghClnAttest],
+  "container-lifecycle-nix": [ghClnBuild, ghClnScan, ghClnDeploy, ghClnSign, ghClnAttest, ghClnProvenance],
   "full-nix": [
     ghFnBuildAmd64,
     ghFnBuildArm64,
@@ -1001,6 +1083,7 @@ export const templatesGitHub: CIComponentGroupTemplateGitHub = {
     ghFnSignArm64,
     ghFnAttestAmd64,
     ghFnAttestArm64,
+    ghFnProvenance,
   ],
 };
 

@@ -51,25 +51,9 @@ spec:
     upstream_version:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
-    devguard_api_url:
-      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-      default: https://api.devguard.org
-    devguard_asset_name:
-      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-      default: $DEVGUARD_ASSET_NAME
-    devguard_token:
-      description: The DevGuard API token (use CI/CD variable, your private key)
-      default: $DEVGUARD_TOKEN
     image:
       description: Container image to use for attestation
       default: image.tar
-    provenance_file:
-      description: Filename the SLSA provenance is published under. Give each architecture its own name when several build jobs feed the same downstream job, since GitLab merges dependency artifacts into one workspace.
-      default: build.provenance.json
-      type: string
-    supply_chain_id:
-      default: $CI_COMMIT_SHA
-      description: The supply chain ID to use for the in-toto attestation
     nix_target:
       description: Flake output attribute to build (e.g. devguardOCI). Must be a dockerTools.buildLayeredImage derivation.
     nix_cache_substituter:
@@ -160,7 +144,6 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
       echo "[profile nix-cache]" >> ~/.aws/config
       echo "s3.addressing_style = path" >> ~/.aws/config
   script:
-    - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
     - nix build -L ".#$[[ inputs.nix_target ]]" --no-update-lock-file $([[ "$[[ inputs.nix_impure ]]" == "true" ]] && echo --impure)
     - gzip -cd result > "$[[ inputs.image ]]"
     - |-
@@ -170,11 +153,8 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         nix copy $(nix-store -qR $(readlink result)) --to 's3://$[[ inputs.nix_cache_s3_bucket ]]?endpoint=$[[ inputs.nix_cache_s3_endpoint ]]&region=$[[ inputs.nix_cache_region ]]&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
       fi
     - nix run nixpkgs#crane -- digest --tarball="$[[ inputs.image ]]" > image-digest.txt
-    - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
-    - if [ "$[[ inputs.provenance_file ]]" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "$[[ inputs.provenance_file ]]"; fi
   artifacts:
     paths:
       - $[[ inputs.image ]]
       - image-digest.txt
-      - $[[ inputs.provenance_file ]]
     when: on_success

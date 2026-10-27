@@ -45,18 +45,6 @@ spec:
     upstream_version:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
-    devguard_api_url:
-      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-      default: https://api.devguard.org
-    devguard_asset_name:
-      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-      default: $DEVGUARD_ASSET_NAME
-    supply_chain_id:
-      default: $CI_COMMIT_SHA
-      description: The supply chain ID to use for the in-toto attestation
-    devguard_token:
-      description: The DevGuard API token (use CI/CD variable, your private key)
-      default: $DEVGUARD_TOKEN
     job_prefix:
       default: ""
       description: Prefix for the job name.
@@ -72,24 +60,30 @@ spec:
     build_args:
       default: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
       description: The build arguments to pass to the Kaniko build command
-    default_ref:
-      description: Default branch reference
-      default: $CI_DEFAULT_BRANCH
-    ref:
-      description: Current commit reference
-      default: $CI_COMMIT_REF_NAME
-    is_tag:
-      description: Is the current commit a tag
-      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
+    devguard_api_url:
+      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
+      default: https://api.devguard.org
+    devguard_asset_name:
+      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
+      default: $DEVGUARD_ASSET_NAME
+    devguard_token:
+      description: The DevGuard API token (use CI/CD variable, your private key)
+      default: $DEVGUARD_TOKEN
     devguard_origin:
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
       default: DEFAULT
     devguard_web_ui:
       description: The DevGuard Web-UI Instance URL
       default: https://app.devguard.org
+    default_ref:
+      description: Default branch reference
+      default: $CI_DEFAULT_BRANCH
     commit_ref:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
+    is_tag:
+      description: Is the current commit a tag
+      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
     image_tag:
       default: ""
       description: The (remote) OCI image reference to scan (e.g. ghcr.io/org/image:tag). If provided, this takes precedence over image_tar_path.
@@ -118,6 +112,12 @@ spec:
         - predicate_type: the predicate type URL
       default: []
       type: array
+    manifest_tags:
+      description: Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds.
+      default: ""
+    provenance_inputs:
+      description: Newline separated key=value pairs the build was configured with. Recorded in the provenance.
+      default: ""
     small_artifact_registry:
       default: "false"
       description: If the artifact size is too big for your GitLab instance, set this to true. This will push the image directly to the registry during the build step instead of uploading it as an artifact, and skip the separate push step.
@@ -166,20 +166,16 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
       - ""
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
-    - /devguard-scanner intoto start --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
   script:
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
     - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
     - /crane digest $([[ "$[[ inputs.small_artifact_registry ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
-    - echo "Running DevGuard Intoto Build...stopping..."
-    - /devguard-scanner intoto stop --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
     - echo "IMAGE_TAG=$IMAGE_TAG@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:
       - image.tar
       - image-digest.txt
-      - build.provenance.json
       - variables.env
     reports:
       dotenv: variables.env
@@ -311,8 +307,6 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     echo "Image Tag: ${IMAGE_REF}"
 
     /crane push image.tar "${IMAGE_REF}"
-
-    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
@@ -383,10 +377,6 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
       /tmp/vex.json|https://cyclonedx.org/vex
       /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-        if [ -f build.provenance.json ]; then
-          ATTESTATIONS="$ATTESTATIONS
-      build.provenance.json|https://slsa.dev/provenance/v1"
-        fi
 
         echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
           [ -z "$FILE" ] && continue
@@ -499,3 +489,91 @@ devguard:attest$[[ inputs.job_suffix ]]:
 
     echo ""
     echo "All attestations completed"
+devguard:provenance$[[ inputs.job_suffix ]]:
+  tags: $[[ inputs.runner_tags ]]
+  stage: attestation
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+    - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
+      optional: true
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint:
+      - ""
+  id_tokens:
+    DEVGUARD_ID_TOKEN:
+      aud: $[[ inputs.devguard_api_url ]]
+  variables:
+    GIT_STRATEGY: none
+    DEVGUARD_API_URL: $[[ inputs.devguard_api_url ]]
+    REGISTRY: $[[ inputs.registry ]]
+    REGISTRY_USER: $[[ inputs.registry_user ]]
+    REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
+    IMAGE_TARS: image.tar
+    IMAGE_TAG: $IMAGE_TAG
+    MANIFEST_TAGS: $[[ inputs.manifest_tags ]]
+    PROVENANCE_INPUTS: $[[ inputs.provenance_inputs ]]
+  script:
+    - |-
+      set -eu
+
+      # like the push job: drop a digest suffix and the tag, and lowercase the repository
+      IMAGE_NAME="${IMAGE_TAG%@*}"
+      IMAGE_NAME=$(echo "${IMAGE_NAME%:*}" | tr '[:upper:]' '[:lower:]')
+
+      crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+      # the digests are computed from the tarballs - nothing the build job wrote about its images is trusted
+      BUILT_DIGESTS=""
+      for TAR in $IMAGE_TARS; do
+        if [ -f "$TAR" ]; then
+          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest --tarball="$TAR")"
+        else
+          # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+          echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
+          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest "$IMAGE_TAG")"
+        fi
+      done
+      SUBJECT_DIGESTS="$BUILT_DIGESTS"
+
+      # a multi-arch manifest is only attested if it references exactly the built images
+      EXPECTED_DIGESTS=$(printf '%s\n' $BUILT_DIGESTS | sort | tr '\n' ' ')
+      for TAG in $MANIFEST_TAGS; do
+        LISTED_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest' | sort | tr '\n' ' ')
+        if [ "$LISTED_DIGESTS" != "$EXPECTED_DIGESTS" ]; then
+          echo "manifest $TAG references $LISTED_DIGESTS but the build produced $EXPECTED_DIGESTS" >&2
+          exit 1
+        fi
+        INDEX_DIGEST=$(crane digest "$TAG")
+        case " $SUBJECT_DIGESTS " in
+          *" $INDEX_DIGEST "*) ;;
+          *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $INDEX_DIGEST" ;;
+        esac
+      done
+
+      SUBJECT_IMAGES=""
+      for DIGEST in $SUBJECT_DIGESTS; do
+        SUBJECT_IMAGES="$SUBJECT_IMAGES,$IMAGE_NAME@$DIGEST"
+      done
+      set -- --image "${SUBJECT_IMAGES#,}"
+      OLD_IFS="$IFS"
+      IFS='
+      '
+      for INPUT in $PROVENANCE_INPUTS; do
+        set -- "$@" --input "$INPUT"
+      done
+      IFS="$OLD_IFS"
+
+      devguard-scanner provenance generate "$@" --output provenance.json
+      devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
+
+      for DIGEST in $SUBJECT_DIGESTS; do
+        echo "Attaching build provenance to $IMAGE_NAME@$DIGEST"
+        devguard-scanner attest provenance.dsse.json "$IMAGE_NAME@$DIGEST" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
+      done

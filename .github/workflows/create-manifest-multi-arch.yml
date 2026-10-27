@@ -57,6 +57,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    outputs:
+      manifest-tags: ${{ steps.create-manifest.outputs.manifest-tags }}
     steps:
       - name: Resolve registry password
         run: |-
@@ -85,6 +87,7 @@ jobs:
           username: ${{ inputs.registry-user }}
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: Create and push multi-arch manifest
+        id: create-manifest
         env:
           CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}
         run: |-
@@ -118,6 +121,7 @@ jobs:
           fi
 
           echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
+          echo "manifest-tags=$MANIFEST_TAGS" >> $GITHUB_OUTPUT
       - name: Sign multi-arch manifest(s)
         env:
           DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
@@ -128,20 +132,6 @@ jobs:
             echo "Signing manifest: $TAG"
             docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
           done
-      - name: Download amd64 build provenance
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: build${{ inputs.image-suffix }}-amd64.provenance.json
-        continue-on-error: true
-      - name: Rename amd64 build provenance
-        run: "[ -f build.provenance.json ] && mv build.provenance.json amd64.provenance.json || true"
-      - name: Download arm64 build provenance
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: build${{ inputs.image-suffix }}-arm64.provenance.json
-        continue-on-error: true
-      - name: Rename arm64 build provenance
-        run: "[ -f build.provenance.json ] && mv build.provenance.json arm64.provenance.json || true"
       - name: Download amd64 artifact purl (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -277,36 +267,6 @@ jobs:
                 echo 'Attesting SAST results for manifest:' \"$TAG\" &&
                 devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \"$TAG\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --offline
               done
-            "
-        env:
-          MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
-      - name: Attest amd64 build provenance
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        continue-on-error: true
-        with:
-          args: |-
-            sh -c "
-              if [ -f amd64.provenance.json ]; then
-                for TAG in $MANIFEST_TAGS; do
-                  echo 'Attesting amd64 provenance for manifest:' \"$TAG\" &&
-                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --offline
-                done
-              fi
-            "
-        env:
-          MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
-      - name: Attest arm64 build provenance
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        continue-on-error: true
-        with:
-          args: |-
-            sh -c "
-              if [ -f arm64.provenance.json ]; then
-                for TAG in $MANIFEST_TAGS; do
-                  echo 'Attesting arm64 provenance for manifest:' \"$TAG\" &&
-                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --offline
-                done
-              fi
             "
         env:
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}

@@ -26,18 +26,6 @@ spec:
     upstream_version:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
-    devguard_api_url:
-      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-      default: https://api.devguard.org
-    devguard_asset_name:
-      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-      default: $DEVGUARD_ASSET_NAME
-    devguard_token:
-      description: The DevGuard API token (use CI/CD variable, your private key)
-      default: $DEVGUARD_TOKEN
-    supply_chain_id:
-      default: $CI_COMMIT_SHA
-      description: The supply chain ID to use for the in-toto attestation
     nix_cache_substituter:
       default: ""
       description: Nix binary cache substituter URL. Set to empty string to disable.
@@ -56,6 +44,15 @@ spec:
     nix_impure:
       default: "false"
       description: Whether to allow impure builds (e.g., reading environment variables during build).
+    devguard_api_url:
+      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
+      default: https://api.devguard.org
+    devguard_asset_name:
+      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
+      default: $DEVGUARD_ASSET_NAME
+    devguard_token:
+      description: The DevGuard API token (use CI/CD variable, your private key)
+      default: $DEVGUARD_TOKEN
     devguard_origin:
       description: "Origin of the resource/information (how it was generated). Examples: 'source-scanning', 'container-scanning', 'base-image'. (default 'DEFAULT')"
       default: DEFAULT
@@ -98,9 +95,6 @@ spec:
     extra_args:
       default: ""
       description: Extra arguments passed straight through to the underlying scanner invocation (after a '--' separator).
-    ref:
-      description: Current commit reference
-      default: $CI_COMMIT_REF_NAME
     runner_tags:
       default: []
       type: array
@@ -206,7 +200,6 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
       echo "[profile nix-cache]" >> ~/.aws/config
       echo "s3.addressing_style = path" >> ~/.aws/config
   script:
-    - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
     - nix build -L ".#$[[ inputs.nix_target_amd64 ]]" --no-update-lock-file $([[ "$[[ inputs.nix_impure ]]" == "true" ]] && echo --impure)
     - gzip -cd result > "image-amd64.tar"
     - |-
@@ -216,13 +209,10 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
         nix copy $(nix-store -qR $(readlink result)) --to 's3://$[[ inputs.nix_cache_s3_bucket ]]?endpoint=$[[ inputs.nix_cache_s3_endpoint ]]&region=$[[ inputs.nix_cache_region ]]&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
       fi
     - nix run nixpkgs#crane -- digest --tarball="image-amd64.tar" > image-digest.txt
-    - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
-    - if [ "build-amd64.provenance.json" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "build-amd64.provenance.json"; fi
   artifacts:
     paths:
       - image-amd64.tar
       - image-digest.txt
-      - build-amd64.provenance.json
     when: on_success
 devguard:container_scanning$[[ inputs.job_suffix ]]-amd64:
   tags:
@@ -353,8 +343,6 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
     echo "Image Tag: ${IMAGE_REF}"
 
     /crane push image-amd64.tar "${IMAGE_REF}"
-
-    /devguard-scanner intoto run --step=deploy --materials="image-amd64.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
@@ -413,9 +401,9 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-amd64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"}]'
 
-    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-amd64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
@@ -542,7 +530,6 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
       echo "[profile nix-cache]" >> ~/.aws/config
       echo "s3.addressing_style = path" >> ~/.aws/config
   script:
-    - ./devguard-scanner intoto start --ignore=devguard-scanner --step=build --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]"
     - nix build -L ".#$[[ inputs.nix_target_arm64 ]]" --no-update-lock-file $([[ "$[[ inputs.nix_impure ]]" == "true" ]] && echo --impure)
     - gzip -cd result > "image-arm64.tar"
     - |-
@@ -552,13 +539,10 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
         nix copy $(nix-store -qR $(readlink result)) --to 's3://$[[ inputs.nix_cache_s3_bucket ]]?endpoint=$[[ inputs.nix_cache_s3_endpoint ]]&region=$[[ inputs.nix_cache_region ]]&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
       fi
     - nix run nixpkgs#crane -- digest --tarball="image-arm64.tar" > image-digest.txt
-    - ./devguard-scanner intoto stop --ignore=devguard-scanner --step=build --products=image-digest.txt --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --generateSlsaProvenance
-    - if [ "build-arm64.provenance.json" != "build.provenance.json" ] && [ -f build.provenance.json ]; then mv build.provenance.json "build-arm64.provenance.json"; fi
   artifacts:
     paths:
       - image-arm64.tar
       - image-digest.txt
-      - build-arm64.provenance.json
     when: on_success
 devguard:container_scanning$[[ inputs.job_suffix ]]-arm64:
   tags:
@@ -689,8 +673,6 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
     echo "Image Tag: ${IMAGE_REF}"
 
     /crane push image-arm64.tar "${IMAGE_REF}"
-
-    /devguard-scanner intoto run --step=deploy --materials="image-arm64.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
@@ -749,9 +731,9 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
-    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-arm64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]'
+    echo 'Attestations: [{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"}]'
 
-    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"},{"source":"build-arm64.provenance.json","predicate_type":"https://slsa.dev/provenance/v1"}]' \
+    ATT_JSON_CLEAN=$(echo '[{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/","predicate_type":"https://cyclonedx.org/bom"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/","predicate_type":"https://cyclonedx.org/vex"},{"source":"$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/","predicate_type":"https://www.schemastore.org/schemas/json/sarif-2.1.0.json"}]' \
     | sed 's/:\([a-z_]\+\)=>/"\1":/g' \
     | sed 's/=>/:/g' \
     | sed "s/'/\"/g")
@@ -918,14 +900,6 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
       /tmp/arm64.sbom.json|https://cyclonedx.org/bom
       /tmp/arm64.vex.json|https://cyclonedx.org/vex
       /tmp/sarif.json|https://www.schemastore.org/schemas/json/sarif-2.1.0.json"
-      if [ -f build-amd64.provenance.json ]; then
-        ATTESTATIONS="$ATTESTATIONS
-      build-amd64.provenance.json|https://slsa.dev/provenance/v1"
-      fi
-      if [ -f build-arm64.provenance.json ]; then
-        ATTESTATIONS="$ATTESTATIONS
-      build-arm64.provenance.json|https://slsa.dev/provenance/v1"
-      fi
 
       for TAG in $MANIFEST_TAGS; do
         echo "Signing manifest: $TAG"
@@ -936,4 +910,95 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
           echo "Attesting $FILE ($PREDICATE_TYPE) -> $TAG"
           devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$TAG" --token="$[[ inputs.devguard_token ]]" --offline
         done
+      done
+devguard:provenance$[[ inputs.job_suffix ]]:
+  tags: $[[ inputs.runner_tags ]]
+  stage: attestation
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs:
+    - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+  dependencies:
+    - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint:
+      - ""
+  id_tokens:
+    DEVGUARD_ID_TOKEN:
+      aud: $[[ inputs.devguard_api_url ]]
+  variables:
+    GIT_STRATEGY: none
+    DEVGUARD_API_URL: $[[ inputs.devguard_api_url ]]
+    REGISTRY: $[[ inputs.registry ]]
+    REGISTRY_USER: $[[ inputs.registry_user ]]
+    REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
+    IMAGE_TARS: image-amd64.tar image-arm64.tar
+    IMAGE_TAG: $MANIFEST_IMAGE_TAG
+    MANIFEST_TAGS: $MANIFEST_IMAGE_TAG $MANIFEST_WITHOUT_REF_TAG
+    PROVENANCE_INPUTS: |-
+      nix_target_amd64=$[[ inputs.nix_target_amd64 ]]
+      nix_target_arm64=$[[ inputs.nix_target_arm64 ]]
+      nix_impure=$[[ inputs.nix_impure ]]
+  script:
+    - |-
+      set -eu
+
+      # like the push job: drop a digest suffix and the tag, and lowercase the repository
+      IMAGE_NAME="${IMAGE_TAG%@*}"
+      IMAGE_NAME=$(echo "${IMAGE_NAME%:*}" | tr '[:upper:]' '[:lower:]')
+
+      crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+      # the digests are computed from the tarballs - nothing the build job wrote about its images is trusted
+      BUILT_DIGESTS=""
+      for TAR in $IMAGE_TARS; do
+        if [ -f "$TAR" ]; then
+          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest --tarball="$TAR")"
+        else
+          # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+          echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
+          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest "$IMAGE_TAG")"
+        fi
+      done
+      SUBJECT_DIGESTS="$BUILT_DIGESTS"
+
+      # a multi-arch manifest is only attested if it references exactly the built images
+      EXPECTED_DIGESTS=$(printf '%s\n' $BUILT_DIGESTS | sort | tr '\n' ' ')
+      for TAG in $MANIFEST_TAGS; do
+        LISTED_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest' | sort | tr '\n' ' ')
+        if [ "$LISTED_DIGESTS" != "$EXPECTED_DIGESTS" ]; then
+          echo "manifest $TAG references $LISTED_DIGESTS but the build produced $EXPECTED_DIGESTS" >&2
+          exit 1
+        fi
+        INDEX_DIGEST=$(crane digest "$TAG")
+        case " $SUBJECT_DIGESTS " in
+          *" $INDEX_DIGEST "*) ;;
+          *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $INDEX_DIGEST" ;;
+        esac
+      done
+
+      SUBJECT_IMAGES=""
+      for DIGEST in $SUBJECT_DIGESTS; do
+        SUBJECT_IMAGES="$SUBJECT_IMAGES,$IMAGE_NAME@$DIGEST"
+      done
+      set -- --image "${SUBJECT_IMAGES#,}"
+      OLD_IFS="$IFS"
+      IFS='
+      '
+      for INPUT in $PROVENANCE_INPUTS; do
+        set -- "$@" --input "$INPUT"
+      done
+      IFS="$OLD_IFS"
+
+      devguard-scanner provenance generate "$@" --output provenance.json
+      devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
+
+      for DIGEST in $SUBJECT_DIGESTS; do
+        echo "Attaching build provenance to $IMAGE_NAME@$DIGEST"
+        devguard-scanner attest provenance.dsse.json "$IMAGE_NAME@$DIGEST" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
       done

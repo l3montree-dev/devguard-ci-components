@@ -45,15 +45,6 @@ spec:
     upstream_version:
       default: "0"
       description: Upstream version to use for tag generation. If not provided, the job will ignore this parameter.
-    devguard_api_url:
-      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-      default: https://api.devguard.org
-    devguard_asset_name:
-      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-      default: $DEVGUARD_ASSET_NAME
-    devguard_token:
-      description: The DevGuard API token (use CI/CD variable, your private key)
-      default: $DEVGUARD_TOKEN
     registry:
       description: Container registry URL
       default: $CI_REGISTRY
@@ -63,24 +54,27 @@ spec:
     registry_password:
       description: Container registry password
       default: $CI_REGISTRY_PASSWORD
-    supply_chain_id:
-      default: $CI_COMMIT_SHA
-      description: The supply chain ID to use for the in-toto attestation
-    default_ref:
-      description: Default branch reference
-      default: $CI_DEFAULT_BRANCH
-    ref:
-      description: Current commit reference
-      default: $CI_COMMIT_REF_NAME
-    is_tag:
-      description: Is the current commit a tag
-      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
     disable_job:
       default: "false"
       description: Whether to disable the job. This is useful when you want to conditionally disable this job in orchestration templates.
+    devguard_api_url:
+      description: The url of the API to send the scan request to (default 'https://api.devguard.org')
+      default: https://api.devguard.org
+    devguard_asset_name:
+      description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
+      default: $DEVGUARD_ASSET_NAME
+    devguard_token:
+      description: The DevGuard API token (use CI/CD variable, your private key)
+      default: $DEVGUARD_TOKEN
+    is_tag:
+      description: Is the current commit a tag
+      default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
     commit_ref:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
+    default_ref:
+      description: Default branch reference
+      default: $CI_DEFAULT_BRANCH
     attestations:
       description: |-
         List of attestations to create. Each item should have:
@@ -88,6 +82,12 @@ spec:
         - predicate_type: the predicate type URL
       default: []
       type: array
+    manifest_tags:
+      description: Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds.
+      default: ""
+    provenance_inputs:
+      description: Newline separated key=value pairs the build was configured with. Recorded in the provenance.
+      default: ""
     build_job_name:
       description: Name of the build job to depend on
     build_stage:
@@ -161,8 +161,6 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     echo "Image Tag: ${IMAGE_REF}"
 
     /crane push image.tar "${IMAGE_REF}"
-
-    /devguard-scanner intoto run --step=deploy --materials="image.tar" --products="" --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" --supplyChainId="$[[ inputs.supply_chain_id ]]" --supplyChainOutputDigest="${DIGEST}" --defaultRef="$[[ inputs.default_ref ]]" --ref="$[[ inputs.ref ]]" --isTag="$[[ inputs.is_tag ]]"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: $[[ inputs.attest_stage ]]
@@ -288,3 +286,91 @@ devguard:attest$[[ inputs.job_suffix ]]:
 
     echo ""
     echo "All attestations completed"
+devguard:provenance$[[ inputs.job_suffix ]]:
+  tags: $[[ inputs.runner_tags ]]
+  stage: $[[ inputs.attest_stage ]]
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.build_job_name ]]
+    - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
+      optional: true
+  dependencies:
+    - devguard:generate_tag$[[ inputs.job_suffix ]]
+    - $[[ inputs.build_job_name ]]
+  image:
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
+    pull_policy: $[[ inputs.pull_policy ]]
+    entrypoint:
+      - ""
+  id_tokens:
+    DEVGUARD_ID_TOKEN:
+      aud: $[[ inputs.devguard_api_url ]]
+  variables:
+    GIT_STRATEGY: none
+    DEVGUARD_API_URL: $[[ inputs.devguard_api_url ]]
+    REGISTRY: $[[ inputs.registry ]]
+    REGISTRY_USER: $[[ inputs.registry_user ]]
+    REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
+    IMAGE_TARS: image.tar
+    IMAGE_TAG: $IMAGE_TAG
+    MANIFEST_TAGS: $[[ inputs.manifest_tags ]]
+    PROVENANCE_INPUTS: $[[ inputs.provenance_inputs ]]
+  script:
+    - |-
+      set -eu
+
+      # like the push job: drop a digest suffix and the tag, and lowercase the repository
+      IMAGE_NAME="${IMAGE_TAG%@*}"
+      IMAGE_NAME=$(echo "${IMAGE_NAME%:*}" | tr '[:upper:]' '[:lower:]')
+
+      crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+      # the digests are computed from the tarballs - nothing the build job wrote about its images is trusted
+      BUILT_DIGESTS=""
+      for TAR in $IMAGE_TARS; do
+        if [ -f "$TAR" ]; then
+          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest --tarball="$TAR")"
+        else
+          # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+          echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
+          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest "$IMAGE_TAG")"
+        fi
+      done
+      SUBJECT_DIGESTS="$BUILT_DIGESTS"
+
+      # a multi-arch manifest is only attested if it references exactly the built images
+      EXPECTED_DIGESTS=$(printf '%s\n' $BUILT_DIGESTS | sort | tr '\n' ' ')
+      for TAG in $MANIFEST_TAGS; do
+        LISTED_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest' | sort | tr '\n' ' ')
+        if [ "$LISTED_DIGESTS" != "$EXPECTED_DIGESTS" ]; then
+          echo "manifest $TAG references $LISTED_DIGESTS but the build produced $EXPECTED_DIGESTS" >&2
+          exit 1
+        fi
+        INDEX_DIGEST=$(crane digest "$TAG")
+        case " $SUBJECT_DIGESTS " in
+          *" $INDEX_DIGEST "*) ;;
+          *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $INDEX_DIGEST" ;;
+        esac
+      done
+
+      SUBJECT_IMAGES=""
+      for DIGEST in $SUBJECT_DIGESTS; do
+        SUBJECT_IMAGES="$SUBJECT_IMAGES,$IMAGE_NAME@$DIGEST"
+      done
+      set -- --image "${SUBJECT_IMAGES#,}"
+      OLD_IFS="$IFS"
+      IFS='
+      '
+      for INPUT in $PROVENANCE_INPUTS; do
+        set -- "$@" --input "$INPUT"
+      done
+      IFS="$OLD_IFS"
+
+      devguard-scanner provenance generate "$@" --output provenance.json
+      devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
+
+      for DIGEST in $SUBJECT_DIGESTS; do
+        echo "Attaching build provenance to $IMAGE_NAME@$DIGEST"
+        devguard-scanner attest provenance.dsse.json "$IMAGE_NAME@$DIGEST" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
+      done

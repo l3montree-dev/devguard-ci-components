@@ -5,21 +5,6 @@
 on:
   workflow_call:
     inputs:
-      devguard-api-url:
-        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-        type: string
-        required: false
-        default: https://api.devguard.org
-      devguard-asset-name:
-        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-        type: string
-        required: false
-        default: $DEVGUARD_ASSET_NAME
-      supply-chain-id:
-        description: The supply chain ID to use for the in-toto attestation
-        type: string
-        required: false
-        default: ${{ github.sha }}
       image-destination-path:
         description: Destination of the image.tar file
         type: string
@@ -45,16 +30,6 @@ on:
         type: number
         required: false
         default: 1
-      default-ref:
-        description: Default branch reference
-        type: string
-        required: false
-        default: ${{ github.event.repository.default_branch }}
-      commit-ref:
-        description: Current commit reference
-        type: string
-        required: false
-        default: ${{ github.ref_name }}
       is-tag:
         description: Is the current commit a tag
         type: string
@@ -71,9 +46,6 @@ on:
         required: false
         default: false
     secrets:
-      devguard-token:
-        description: DevGuard API token
-        required: true
       build-args:
         description: Build arguments. Useful to overwrite context and dockerfile. Maybe even add additional build args.
         required: false
@@ -83,6 +55,9 @@ on:
 jobs:
   devguard_build_oci_image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Set BUILD_ARGS
         run: |-
@@ -109,21 +84,15 @@ jobs:
           submodules: recursive
           persist-credentials: false
           fetch-depth: ${{ inputs.fetch-depth }}
-      - name: In-Toto permission fix
+      - name: Container user permission fix
         run: |-
           mkdir -p ${HOME}/.docker
           # Ensure the .docker directory is owned by the container user (UID 53111)
           sudo chown -R 53111:53111 ${HOME}/.docker || true
           sudo chmod 700 ${HOME}/.docker || true
-          # Make the workspace writable by the in-toto/container user (UID 53111)
+          # Make the workspace writable by the container user (UID 53111)
           sudo chown -R 53111:53111 $GITHUB_WORKSPACE || true
           sudo chmod -R u+rwX $GITHUB_WORKSPACE || true
-      - name: In-Toto Provenance record start
-        id: in-toto-start
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        with:
-          args: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }}
-        continue-on-error: true
       - name: Build Docker image with Kaniko
         id: build_image
         uses: docker://ghcr.io/osscontainertools/kaniko:v1.27.3-debug@sha256:a7e2df20e8ee98874f9856a04622de6a76e93609f7e5cba5949eb5436959720c
@@ -255,19 +224,9 @@ jobs:
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: image-tag.txt
-      - name: In-Toto Provenance record stop
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        with:
-          args: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --generateSlsaProvenance --defaultRef=${{ inputs.default-ref }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }}
-        continue-on-error: true
-      - name: Fix workspace permissions (after provenance)
+      - name: Fix workspace permissions (after build)
         run: |-
           sudo chown -R $(id -u):$(id -g) $GITHUB_WORKSPACE || true
           sudo chmod -R u+rw,g+r,o+r $GITHUB_WORKSPACE || true
         continue-on-error: true
-      - name: Upload SLSA Provenance
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          path: build.provenance.json
-          name: build${{ inputs.image-suffix }}.provenance.json
     name: devguard:build-oci-image

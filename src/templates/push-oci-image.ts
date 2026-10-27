@@ -7,10 +7,6 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const PushOciImageJobInputs = defineInputsGitLab({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
-  devguard_token: Inputs.devguard_token,
-
   runner_tags: Inputs.runner_tags,
   stage: {
     ...Inputs.stage,
@@ -41,23 +37,11 @@ export const PushOciImageJobInputs = defineInputsGitLab({
       "The tag to use for the built image. Leave empty to use the generated tag from the 'generate-tag' component." as const,
   },
 
-  supply_chain_id: Inputs.supply_chain_id,
-
-  default_ref: Inputs.default_ref,
-  ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
-
   disable_job: Inputs.disable_job,
 });
 
 export const PushOciImageJobInputsGitHub = defineInputsGitHub({
-  devguard_api_url: Inputs.devguard_api_url,
-  devguard_asset_name: Inputs.devguard_asset_name,
   image_suffix: Inputs.image_suffix,
-  supply_chain_id: Inputs.supply_chain_id,
-  commit_ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
-  default_ref: Inputs.default_ref,
   should_deploy: {
     description: "Should the push job run",
     default: true,
@@ -68,7 +52,6 @@ export const PushOciImageJobInputsGitHub = defineInputsGitHub({
 export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsGitHub, (inputValues) => ({
   name: "devguard:push-oci-image",
   secrets: {
-    "devguard-token": Secrets["devguard-token"],
     "submodule-ssh-key": Secrets["submodule-ssh-key"],
   },
   job: {
@@ -129,14 +112,6 @@ docker run --rm \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
   crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"`,
       },
-      {
-        name: "In-Toto Provenance run",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        with: {
-          args: `devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --supplyChainOutputDigest="$(cat image-digest.txt)" --defaultRef=${inputValues.default_ref} --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
-        },
-        "continue-on-error": true,
-      },
     ],
   },
 }));
@@ -183,8 +158,6 @@ echo "Image: ${inputValues.image}"
 echo "Image Tag: \${IMAGE_REF}"
 
 /crane push ${inputValues.image} "\${IMAGE_REF}"
-
-/devguard-scanner intoto run --step=deploy --materials="${inputValues.image}" --products="" --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --supplyChainOutputDigest="\${DIGEST}" --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"
 `,
   },
 }));

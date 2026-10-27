@@ -5,16 +5,6 @@
 on:
   workflow_call:
     inputs:
-      devguard-api-url:
-        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-        type: string
-        required: false
-        default: https://api.devguard.org
-      devguard-asset-name:
-        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-        type: string
-        required: false
-        default: $DEVGUARD_ASSET_NAME
       image-name:
         description: Full OCI image name without tag (e.g. ghcr.io/org/repo/image)
         type: string
@@ -54,11 +44,6 @@ on:
         type: string
         required: false
         default: 2.34.4
-      commit-ref:
-        description: Current commit reference
-        type: string
-        required: false
-        default: ${{ github.ref_name }}
       is-tag:
         description: Is the current commit a tag
         type: string
@@ -69,6 +54,16 @@ on:
         type: string
         required: false
         default: "0"
+      devguard-api-url:
+        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
+        type: string
+        required: false
+        default: https://api.devguard.org
+      devguard-asset-name:
+        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
+        type: string
+        required: false
+        default: $DEVGUARD_ASSET_NAME
       devguard-web-ui:
         description: The DevGuard Web-UI Instance URL
         type: string
@@ -99,6 +94,11 @@ on:
         type: string
         required: false
         default: ${{ github.event.repository.default_branch }}
+      commit-ref:
+        description: Current commit reference
+        type: string
+        required: false
+        default: ${{ github.ref_name }}
       fail-on-risk:
         description: "The risk level to fail the job on. Options are: none, low, medium, high, critical"
         type: string
@@ -125,15 +125,10 @@ on:
         required: false
         default: ""
       should-deploy:
-        description: Should the attestation job run
+        description: Should the provenance job run
         type: boolean
         required: false
         default: true
-      supply-chain-id:
-        description: The supply chain ID to use for the in-toto attestation
-        type: string
-        required: false
-        default: ${{ github.sha }}
       create-root-manifest:
         description: Whether to also create a manifest without the branch ref in the tag.
         type: string
@@ -173,9 +168,6 @@ on:
         required: false
         default: ""
     secrets:
-      devguard-token:
-        description: DevGuard API token
-        required: true
       nix-cache-secret-key:
         description: Nix binary cache signing secret key.
         required: false
@@ -188,12 +180,17 @@ on:
       submodule-ssh-key:
         description: SSH private deploy key used to check out private git submodules. Leave unset if the repo has no private submodules.
         required: false
+      devguard-token:
+        description: DevGuard API token
+        required: true
       registry-password:
-        description: Registry password for pulling the image.
+        description: Registry password for pushing the provenance. Defaults to the github token.
         required: false
 jobs:
   devguard_build_nix_amd64:
     runs-on: ${{ inputs.runner-amd64 }}
+    permissions:
+      contents: read
     steps:
       - name: Set up SSH for private git submodules
         env:
@@ -221,12 +218,6 @@ jobs:
             ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
       - name: Install crane and devguard-scanner
         run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
-      - name: In-Toto Provenance record start
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
-        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA
-        continue-on-error: true
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
@@ -301,23 +292,11 @@ jobs:
         with:
           name: artifact-purl-safe${{ inputs.artifact-name-suffix }}-amd64
           path: artifact-purl-safe.txt
-      - name: In-Toto Provenance record stop
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          IS_TAG: ${{ inputs.is-tag }}
-          COMMIT_REF: ${{ inputs.commit-ref }}
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF
-        continue-on-error: true
-      - name: Upload SLSA Provenance
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          path: build.provenance.json
-          name: build${{ inputs.artifact-name-suffix }}-amd64.provenance.json
     name: devguard:build-nix-amd64
   devguard_build_nix_arm64:
     runs-on: ${{ inputs.runner-arm64 }}
+    permissions:
+      contents: read
     steps:
       - name: Set up SSH for private git submodules
         env:
@@ -345,12 +324,6 @@ jobs:
             ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
       - name: Install crane and devguard-scanner
         run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
-      - name: In-Toto Provenance record start
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
-        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA
-        continue-on-error: true
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
@@ -425,20 +398,6 @@ jobs:
         with:
           name: artifact-purl-safe${{ inputs.artifact-name-suffix }}-arm64
           path: artifact-purl-safe.txt
-      - name: In-Toto Provenance record stop
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          IS_TAG: ${{ inputs.is-tag }}
-          COMMIT_REF: ${{ inputs.commit-ref }}
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF
-        continue-on-error: true
-      - name: Upload SLSA Provenance
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          path: build.provenance.json
-          name: build${{ inputs.artifact-name-suffix }}-arm64.provenance.json
     name: devguard:build-nix-arm64
   devguard_container_scanning_amd64:
     runs-on: ubuntu-latest
@@ -594,14 +553,6 @@ jobs:
         with:
           name: image-digest${{ inputs.artifact-name-suffix }}-amd64
           path: .
-      - name: Read image-digest.txt
-        id: read-digest
-        run: echo "DIGEST=$(cat image-digest.txt)" >> $GITHUB_ENV
-      - name: In-Toto Provenance run
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        with:
-          args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ inputs.default-ref }} --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
-        continue-on-error: true
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
@@ -647,14 +598,6 @@ jobs:
         with:
           name: image-digest${{ inputs.artifact-name-suffix }}-arm64
           path: .
-      - name: Read image-digest.txt
-        id: read-digest
-        run: echo "DIGEST=$(cat image-digest.txt)" >> $GITHUB_ENV
-      - name: In-Toto Provenance run
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        with:
-          args: devguard-scanner intoto run --step=deploy --materials=image-tag.txt --products=image-tag.txt --products=image-digest.txt --token=${{ secrets.devguard-token }} --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --supplyChainId=${{ inputs.supply-chain-id }} --supplyChainOutputDigest="${{ env.DIGEST }}" --defaultRef=${{ inputs.default-ref }} --isTag=${{ inputs.is-tag }} --ref=${{ inputs.commit-ref }}
-        continue-on-error: true
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Push oci image to GitHub image Registry
@@ -668,6 +611,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    outputs:
+      manifest-tags: ${{ steps.create-manifest.outputs.manifest-tags }}
     steps:
       - name: Resolve registry password
         run: |-
@@ -696,6 +641,7 @@ jobs:
           username: ${{ inputs.registry-user }}
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: Create and push multi-arch manifest
+        id: create-manifest
         env:
           CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}
         run: |-
@@ -729,6 +675,7 @@ jobs:
           fi
 
           echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
+          echo "manifest-tags=$MANIFEST_TAGS" >> $GITHUB_OUTPUT
       - name: Sign multi-arch manifest(s)
         env:
           DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
@@ -739,20 +686,6 @@ jobs:
             echo "Signing manifest: $TAG"
             docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
           done
-      - name: Download amd64 build provenance
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: build${{ inputs.artifact-name-suffix }}-amd64.provenance.json
-        continue-on-error: true
-      - name: Rename amd64 build provenance
-        run: "[ -f build.provenance.json ] && mv build.provenance.json amd64.provenance.json || true"
-      - name: Download arm64 build provenance
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: build${{ inputs.artifact-name-suffix }}-arm64.provenance.json
-        continue-on-error: true
-      - name: Rename arm64 build provenance
-        run: "[ -f build.provenance.json ] && mv build.provenance.json arm64.provenance.json || true"
       - name: Download amd64 artifact purl (can be created by build-image)
         uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
@@ -888,36 +821,6 @@ jobs:
                 echo 'Attesting SAST results for manifest:' \"$TAG\" &&
                 devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" /tmp/sarif.json \"$TAG\" --predicateType='https://www.schemastore.org/schemas/json/sarif-2.1.0.json' --token='${{ secrets.devguard-token }}' --offline
               done
-            "
-        env:
-          MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
-      - name: Attest amd64 build provenance
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        continue-on-error: true
-        with:
-          args: |-
-            sh -c "
-              if [ -f amd64.provenance.json ]; then
-                for TAG in $MANIFEST_TAGS; do
-                  echo 'Attesting amd64 provenance for manifest:' \"$TAG\" &&
-                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" amd64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --offline
-                done
-              fi
-            "
-        env:
-          MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
-      - name: Attest arm64 build provenance
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        continue-on-error: true
-        with:
-          args: |-
-            sh -c "
-              if [ -f arm64.provenance.json ]; then
-                for TAG in $MANIFEST_TAGS; do
-                  echo 'Attesting arm64 provenance for manifest:' \"$TAG\" &&
-                  devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" arm64.provenance.json \"$TAG\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --offline
-                done
-              fi
             "
         env:
           MANIFEST_TAGS: ${{ env.MANIFEST_TAGS }}
@@ -1143,28 +1046,6 @@ jobs:
             "
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
-      - name: Download and Attest build-provenance.json
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: build${{ inputs.artifact-name-suffix }}-amd64.provenance.json
-      - name: Attest build-provenance.json
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        continue-on-error: true
-        with:
-          args: |-
-            sh -c "
-              artifact_name="$ARTIFACT_NAME" &&
-              echo 'Building provenance attestation for artifact:' '${{ env.ARTIFACT_NAME }}' &&
-              if [ -f image-digest.txt ]; then
-                echo 'Attesting provenance with image digest present' &&
-                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" build.provenance.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
-              else
-                echo 'Attesting provenance without image digest' &&
-                devguard-scanner attest build.provenance.json --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --predicateType='https://slsa.dev/provenance/v1' --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
-              fi
-            "
-        env:
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
     needs:
       - devguard_build_nix_amd64
       - devguard_create_manifest_multi_arch
@@ -1287,29 +1168,134 @@ jobs:
             "
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
-      - name: Download and Attest build-provenance.json
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: build${{ inputs.artifact-name-suffix }}-arm64.provenance.json
-      - name: Attest build-provenance.json
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
-        continue-on-error: true
-        with:
-          args: |-
-            sh -c "
-              artifact_name="$ARTIFACT_NAME" &&
-              echo 'Building provenance attestation for artifact:' '${{ env.ARTIFACT_NAME }}' &&
-              if [ -f image-digest.txt ]; then
-                echo 'Attesting provenance with image digest present' &&
-                devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" build.provenance.json \"$(cat image-tag.txt)@$(cat image-digest.txt)\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
-              else
-                echo 'Attesting provenance without image digest' &&
-                devguard-scanner attest build.provenance.json --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --predicateType='https://slsa.dev/provenance/v1' --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$artifact_name"
-              fi
-            "
-        env:
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
     needs:
       - devguard_build_nix_arm64
       - devguard_create_manifest_multi_arch
     name: devguard:attest-arm64
+  devguard_provenance:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    permissions:
+      id-token: write
+      packages: write
+    steps:
+      - name: Resolve registry password
+        run: |-
+          if [ -n "$SECRET_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
+          fi
+        env:
+          SECRET_PASSWORD: ${{ secrets.registry-password }}
+          FALLBACK_TOKEN: ${{ github.token }}
+      - name: Download oci-image${{ inputs.artifact-name-suffix }}-amd64
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: oci-image${{ inputs.artifact-name-suffix }}-amd64
+          path: build-0
+        continue-on-error: true
+      - name: Download image-tag${{ inputs.artifact-name-suffix }}-amd64
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
+          path: build-0
+      - name: Download oci-image${{ inputs.artifact-name-suffix }}-arm64
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: oci-image${{ inputs.artifact-name-suffix }}-arm64
+          path: build-1
+        continue-on-error: true
+      - name: Download image-tag${{ inputs.artifact-name-suffix }}-arm64
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
+          path: build-1
+      - name: Generate, sign and attach build provenance
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          REGISTRY: ${{ inputs.registry }}
+          REGISTRY_USER: ${{ inputs.registry-user }}
+          IMAGE_TARS: build-0/image.tar build-1/image.tar
+          MANIFEST_TAGS: ${{ needs.devguard_create_manifest_multi_arch.outputs.manifest-tags }}
+          PROVENANCE_INPUTS: |-
+            nix-target-amd64=${{ inputs.nix-target-amd64 }}
+            nix-target-arm64=${{ inputs.nix-target-arm64 }}
+            nix-impure=${{ inputs.nix-impure }}
+        run: |-
+          IMAGE_TAG=$(cat build-0/image-tag.txt)
+          export IMAGE_TAG
+
+          AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
+          DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          echo "::add-mask::$DEVGUARD_ID_TOKEN"
+          export DEVGUARD_ID_TOKEN
+
+          cat > provenance.sh << 'PROVENANCE_SCRIPT'
+          set -eu
+
+          # like the push job: drop a digest suffix and the tag, and lowercase the repository
+          IMAGE_NAME="${IMAGE_TAG%@*}"
+          IMAGE_NAME=$(echo "${IMAGE_NAME%:*}" | tr '[:upper:]' '[:lower:]')
+
+          crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+          # the digests are computed from the tarballs - nothing the build job wrote about its images is trusted
+          BUILT_DIGESTS=""
+          for TAR in $IMAGE_TARS; do
+            if [ -f "$TAR" ]; then
+              BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest --tarball="$TAR")"
+            else
+              # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+              echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
+              BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest "$IMAGE_TAG")"
+            fi
+          done
+          SUBJECT_DIGESTS="$BUILT_DIGESTS"
+
+          # a multi-arch manifest is only attested if it references exactly the built images
+          EXPECTED_DIGESTS=$(printf '%s\n' $BUILT_DIGESTS | sort | tr '\n' ' ')
+          for TAG in $MANIFEST_TAGS; do
+            LISTED_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest' | sort | tr '\n' ' ')
+            if [ "$LISTED_DIGESTS" != "$EXPECTED_DIGESTS" ]; then
+              echo "manifest $TAG references $LISTED_DIGESTS but the build produced $EXPECTED_DIGESTS" >&2
+              exit 1
+            fi
+            INDEX_DIGEST=$(crane digest "$TAG")
+            case " $SUBJECT_DIGESTS " in
+              *" $INDEX_DIGEST "*) ;;
+              *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $INDEX_DIGEST" ;;
+            esac
+          done
+
+          SUBJECT_IMAGES=""
+          for DIGEST in $SUBJECT_DIGESTS; do
+            SUBJECT_IMAGES="$SUBJECT_IMAGES,$IMAGE_NAME@$DIGEST"
+          done
+          set -- --image "${SUBJECT_IMAGES#,}"
+          OLD_IFS="$IFS"
+          IFS='
+          '
+          for INPUT in $PROVENANCE_INPUTS; do
+            set -- "$@" --input "$INPUT"
+          done
+          IFS="$OLD_IFS"
+
+          devguard-scanner provenance generate "$@" --output provenance.json
+          devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
+
+          for DIGEST in $SUBJECT_DIGESTS; do
+            echo "Attaching build provenance to $IMAGE_NAME@$DIGEST"
+            devguard-scanner attest provenance.dsse.json "$IMAGE_NAME@$DIGEST" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
+          done
+          PROVENANCE_SCRIPT
+
+          docker run --rm -v "$PWD:/work" -w /work \
+            -e IMAGE_TARS -e IMAGE_TAG -e MANIFEST_TAGS -e PROVENANCE_INPUTS \
+            -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
+            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main provenance.sh
+    needs:
+      - devguard_build_nix_amd64
+      - devguard_build_nix_arm64
+      - devguard_create_manifest_multi_arch
+    name: devguard:provenance

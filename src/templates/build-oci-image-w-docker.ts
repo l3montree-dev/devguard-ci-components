@@ -7,9 +7,6 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
-  ...InputGroups.devguardCore,
-  devguard_token: Inputs.devguard_token,
-
   docker_buildkit: Inputs.docker_buildkit,
 
   stage: {
@@ -34,17 +31,9 @@ export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   image_tag: Inputs.image_tag,
   build_args: Inputs.build_args,
   push_image: Inputs.push_image,
-  supply_chain_id: Inputs.supply_chain_id,
-
-  default_ref: Inputs.default_ref,
-  ref: Inputs.commit_ref,
-  is_tag: Inputs.is_tag,
 });
 
 export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
-  ...InputGroups.devguardCore,
-  ...InputGroups.ref,
-
   image: {
     ...Inputs.image,
     description: "The image file to build (e.g. image.tar)" as const,
@@ -53,14 +42,11 @@ export const BuildOciImageWDockerJobInputsGitHub = defineInputsGitHub({
   image_suffix: Inputs.image_suffix,
   image_tag: Inputs.image_tag,
   push_image: Inputs.push_image,
-  supply_chain_id: Inputs.supply_chain_id,
-  default_ref: Inputs.default_ref,
 });
 
 export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageWDockerJobInputsGitHub, (inputValues) => ({
   name: "devguard:build-oci-image-w-docker",
   secrets: {
-    "devguard-token": Secrets["devguard-token"],
     "build-args": {
       description: "Build arguments passed to docker buildx build.",
       required: false,
@@ -74,6 +60,12 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
   },
   job: {
     "runs-on": "ubuntu-latest",
+    // the build runs code of the built project - it must not get an id-token. Provenance is created by the
+    // separate provenance job. packages:write is only used with push_image
+    permissions: {
+      contents: "read",
+      packages: "write",
+    },
     steps: [
       GitHubReusableSteps.SetupSubmoduleSsh,
       {
@@ -90,14 +82,6 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
         uses: DOCKER_SETUP_BUILDX_ACTION,
       },
       {
-        name: "In-Toto Provenance record start",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        with: {
-          args: `devguard-scanner intoto start --step=build --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id}`,
-        },
-        "continue-on-error": true,
-      },
-      {
         name: "Build Docker image",
         env: {
           IMAGE: `${ inputValues.image }`,
@@ -107,7 +91,8 @@ export const BuildOciImageWDockerTemplateGitHub = defineJobGitHub(BuildOciImageW
 if [ -z "$BUILD_ARGS" ]; then
   BUILD_ARGS="--context=. --file=Dockerfile"
 fi
-docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG`,
+docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG
+echo "$IMAGE_TAG" > image-tag.txt`,
       },
       {
         name: "Get image digest",
@@ -148,19 +133,11 @@ docker push $IMAGE_TAG`,
         },
       },
       {
-        name: "In-Toto Provenance record stop",
-        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
-        with: {
-          args: `devguard-scanner intoto stop --step=build --products=image-digest.txt --token=\${{ secrets.devguard-token }} --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --supplyChainId=${inputValues.supply_chain_id} --generateSlsaProvenance --defaultRef=${inputValues.default_ref} --isTag=${inputValues.is_tag} --ref=${inputValues.commit_ref}`,
-        },
-        "continue-on-error": true,
-      },
-      {
-        name: "Upload SLSA Provenance",
+        name: "Upload image-tag artifact",
         uses: ACTIONS_UPLOAD_ARTIFACT,
         with: {
-          path: "build.provenance.json",
-          name: `build${ inputValues.image_suffix }.provenance.json`,
+          name: `image-tag${ inputValues.image_suffix }`,
+          path: "image-tag.txt",
         },
       },
     ],
@@ -200,7 +177,6 @@ export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDocker
     },
     before_script: [
       `echo "Uses Docker DIND to build Docker images inside a secured kata container.\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
-      `/devguard-scanner intoto start --step=build --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}"`,
     ],
     script: [
       `echo "$CI_JOB_TOKEN" | docker login $CI_REGISTRY -u gitlab-ci-token --password-stdin`,
@@ -209,12 +185,10 @@ export const BuildOciImageWDockerTemplate = defineJobGitLab(BuildOciImageWDocker
       `if [[ "${inputValues.push_image}" == "true" ]]; then docker load -i ./${inputValues.image} && docker push ${inputValues.image_tag}; fi`,
       `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
       `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
-      `echo "Running DevGuard Intoto Build...stopping..."`,
-      `/devguard-scanner intoto stop --step=build --products=image-digest.txt --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" --supplyChainId="${inputValues.supply_chain_id}" --generateSlsaProvenance --defaultRef="${inputValues.default_ref}" --ref="${inputValues.ref}" --isTag="${inputValues.is_tag}"`,
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
     artifacts: {
-      paths: [inputValues.image, "image-digest.txt", "build.provenance.json", "variables.env"],
+      paths: [inputValues.image, "image-digest.txt", "variables.env"],
       reports: {
         dotenv: "variables.env",
       },

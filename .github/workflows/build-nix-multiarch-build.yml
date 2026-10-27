@@ -5,16 +5,6 @@
 on:
   workflow_call:
     inputs:
-      devguard-asset-name:
-        description: DevGuard asset name (e.g., @opencode/projects/oci/assets/k8s-tools)
-        type: string
-        required: false
-        default: $DEVGUARD_ASSET_NAME
-      devguard-api-url:
-        description: The url of the API to send the scan request to (default 'https://api.devguard.org')
-        type: string
-        required: false
-        default: https://api.devguard.opencode.de
       image-name:
         description: Full OCI image name without tag (e.g. ghcr.io/org/repo/image)
         type: string
@@ -78,9 +68,6 @@ on:
         required: false
         default: 2.34.4
     secrets:
-      devguard-token:
-        description: DevGuard API token
-        required: false
       nix-cache-secret-key:
         description: Nix binary cache signing secret key.
         required: false
@@ -96,6 +83,8 @@ on:
 jobs:
   devguard_build_nix_multiarch:
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
@@ -132,12 +121,6 @@ jobs:
             ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
       - name: Install crane and devguard-scanner
         run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
-      - name: In-Toto Provenance record start
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
-        run: devguard-scanner intoto start --step=build --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA
-        continue-on-error: true
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
@@ -194,18 +177,4 @@ jobs:
         with:
           name: image-digest${{ inputs.image-suffix }}-${{ matrix.arch }}
           path: image-digest.txt
-      - name: In-Toto Provenance record stop
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          DEVGUARD_ASSET_NAME: ${{ inputs.devguard-asset-name }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          IS_TAG: ${{ inputs.is-tag }}
-          COMMIT_REF: ${{ inputs.commit-ref }}
-        run: devguard-scanner intoto stop --step=build --products=image-digest.txt --products=image-tag.txt --token=${{ secrets.devguard-token }} --apiUrl=$DEVGUARD_API_URL --assetName=$DEVGUARD_ASSET_NAME --supplyChainId=$GITHUB_SHA --generateSlsaProvenance --defaultRef=$DEFAULT_BRANCH --isTag=$IS_TAG --ref=$COMMIT_REF
-        continue-on-error: true
-      - name: Upload SLSA Provenance
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          path: build.provenance.json
-          name: build${{ inputs.image-suffix }}-${{ matrix.arch }}.provenance.json
     name: devguard:build-nix-multiarch
