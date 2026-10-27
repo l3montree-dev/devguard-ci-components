@@ -326,32 +326,66 @@ devguard:provenance$[[ inputs.job_suffix ]]:
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # the digests are computed from the tarballs - nothing the build job wrote about its images is trusted
-      BUILT_DIGESTS=""
+      # images are matched by their config digest. The tarballs hold uncompressed layers which get compressed on push, and
+      # different crane versions compress differently - so the manifest digest of a tarball is not necessarily the pushed one.
+      # The config lists the uncompressed layer digests, which identifies the image independent of the compression.
+      tarball_config_digest() {
+        CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
+        echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+      }
+      config_digest() {
+        crane manifest "$1" | jq -r '.config.digest'
+      }
+      sorted() {
+        printf '%s\n' "$@" | sort | tr '\n' ' '
+      }
+      SUBJECT_DIGESTS=""
+      add_subject() {
+        case " $SUBJECT_DIGESTS " in
+          *" $1 "*) ;;
+          *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $1" ;;
+        esac
+      }
+
+      # computed from the tarballs - nothing the build job wrote about its images is trusted
+      BUILT_CONFIGS=""
       for TAR in $IMAGE_TARS; do
         if [ -f "$TAR" ]; then
-          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest --tarball="$TAR")"
+          BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
         else
           # builds which push directly to the registry publish no tarball - the build job decided what was pushed
           echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
-          BUILT_DIGESTS="$BUILT_DIGESTS $(crane digest "$IMAGE_TAG")"
+          BUILT_CONFIGS="$BUILT_CONFIGS $(config_digest "$IMAGE_TAG")"
         fi
       done
-      SUBJECT_DIGESTS="$BUILT_DIGESTS"
+      EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
 
-      # a multi-arch manifest is only attested if it references exactly the built images
-      EXPECTED_DIGESTS=$(printf '%s\n' $BUILT_DIGESTS | sort | tr '\n' ' ')
-      for TAG in $MANIFEST_TAGS; do
-        LISTED_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest' | sort | tr '\n' ' ')
-        if [ "$LISTED_DIGESTS" != "$EXPECTED_DIGESTS" ]; then
-          echo "manifest $TAG references $LISTED_DIGESTS but the build produced $EXPECTED_DIGESTS" >&2
+      if [ -z "$(echo $MANIFEST_TAGS)" ]; then
+        # single-arch: the tag has to point to the built image
+        PUSHED_CONFIGS=$(sorted "$(config_digest "$IMAGE_TAG")")
+        if [ "$PUSHED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
+          echo "$IMAGE_TAG has the config $PUSHED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
           exit 1
         fi
-        INDEX_DIGEST=$(crane digest "$TAG")
-        case " $SUBJECT_DIGESTS " in
-          *" $INDEX_DIGEST "*) ;;
-          *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $INDEX_DIGEST" ;;
-        esac
+        add_subject "$(crane digest "$IMAGE_TAG")"
+      fi
+
+      # a multi-arch manifest is only attested if it references exactly the built images
+      for TAG in $MANIFEST_TAGS; do
+        PLATFORM_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest')
+        LISTED_CONFIGS=""
+        for DIGEST in $PLATFORM_DIGESTS; do
+          LISTED_CONFIGS="$LISTED_CONFIGS $(config_digest "$IMAGE_NAME@$DIGEST")"
+        done
+        LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
+        if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
+          echo "manifest $TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
+          exit 1
+        fi
+        for DIGEST in $PLATFORM_DIGESTS; do
+          add_subject "$DIGEST"
+        done
+        add_subject "$(crane digest "$TAG")"
       done
 
       SUBJECT_IMAGES=""
