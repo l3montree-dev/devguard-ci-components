@@ -125,7 +125,7 @@ on:
         required: false
         default: ""
       should-deploy:
-        description: Should the provenance job run
+        description: Should the attestation job run
         type: boolean
         required: false
         default: true
@@ -184,7 +184,7 @@ on:
         description: DevGuard API token
         required: true
       registry-password:
-        description: Registry password for pushing the provenance. Defaults to the github token.
+        description: Registry password for pulling the image.
         required: false
 jobs:
   devguard_build_nix_amd64:
@@ -611,8 +611,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-    outputs:
-      manifest-tags: ${{ steps.create-manifest.outputs.manifest-tags }}
     steps:
       - name: Resolve registry password
         run: |-
@@ -641,7 +639,6 @@ jobs:
           username: ${{ inputs.registry-user }}
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: Create and push multi-arch manifest
-        id: create-manifest
         env:
           CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}
         run: |-
@@ -675,7 +672,6 @@ jobs:
           fi
 
           echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
-          echo "manifest-tags=$MANIFEST_TAGS" >> $GITHUB_OUTPUT
       - name: Sign multi-arch manifest(s)
         env:
           DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
@@ -928,6 +924,208 @@ jobs:
       - devguard_build_nix_arm64
       - devguard_create_manifest_multi_arch
     name: devguard:sign-arm64
+  devguard_provenance_amd64:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    permissions:
+      id-token: write
+      packages: read
+    steps:
+      - name: Resolve registry password
+        run: |-
+          if [ -n "$SECRET_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
+          fi
+        env:
+          SECRET_PASSWORD: ${{ secrets.registry-password }}
+          FALLBACK_TOKEN: ${{ github.token }}
+      - name: Download oci-image
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: oci-image${{ inputs.artifact-name-suffix }}-amd64
+        continue-on-error: true
+      - name: Download image-tag artifact
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
+          path: .
+      - name: Generate and sign build provenance
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          REGISTRY: ${{ inputs.registry }}
+          REGISTRY_USER: ${{ inputs.registry-user }}
+          IMAGE_TAR: image.tar
+          PROVENANCE_INPUTS: |-
+            nix-target=${{ inputs.nix-target-amd64 }}
+            nix-impure=${{ inputs.nix-impure }}
+        run: |-
+          IMAGE_TAG=$(cat image-tag.txt)
+          export IMAGE_TAG
+
+          AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
+          DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          echo "::add-mask::$DEVGUARD_ID_TOKEN"
+          export DEVGUARD_ID_TOKEN
+
+          cat > provenance.sh << 'PROVENANCE_SCRIPT'
+          set -eu
+
+          # like the push job: lowercase the reference, the subject is named after the repository
+          IMAGE_REF=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="${IMAGE_REF%@*}"
+          IMAGE_NAME="${IMAGE_NAME%:*}"
+
+          crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+          # resolved once - everything below refers to the digest, so the tag moving in between does not matter
+          DIGEST=$(crane digest "$IMAGE_REF")
+
+          if [ -f "$IMAGE_TAR" ]; then
+            # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
+            # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
+            # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
+            CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
+            BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+            PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
+            if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
+              echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
+              exit 1
+            fi
+          else
+            # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+            echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
+          fi
+
+          set -- --image "$IMAGE_NAME@$DIGEST"
+          OLD_IFS="$IFS"
+          IFS='
+          '
+          for INPUT in $PROVENANCE_INPUTS; do
+            set -- "$@" --input "$INPUT"
+          done
+          IFS="$OLD_IFS"
+
+          devguard-scanner provenance generate "$@" --output provenance.json
+          devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
+          PROVENANCE_SCRIPT
+
+          # run as the runner user - the scanner image user can not write to the workspace
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \
+            -e IMAGE_TAR -e IMAGE_TAG -e PROVENANCE_INPUTS \
+            -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
+            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main provenance.sh
+      - name: Upload build provenance
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: provenance${{ inputs.artifact-name-suffix }}-amd64
+          path: provenance.dsse.json
+    needs:
+      - devguard_build_nix_amd64
+      - devguard_deploy_amd64
+    name: devguard:provenance-amd64
+  devguard_provenance_arm64:
+    runs-on: ubuntu-latest
+    if: inputs.should-deploy
+    permissions:
+      id-token: write
+      packages: read
+    steps:
+      - name: Resolve registry password
+        run: |-
+          if [ -n "$SECRET_PASSWORD" ]; then
+            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
+          fi
+        env:
+          SECRET_PASSWORD: ${{ secrets.registry-password }}
+          FALLBACK_TOKEN: ${{ github.token }}
+      - name: Download oci-image
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: oci-image${{ inputs.artifact-name-suffix }}-arm64
+        continue-on-error: true
+      - name: Download image-tag artifact
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
+          path: .
+      - name: Generate and sign build provenance
+        env:
+          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
+          REGISTRY: ${{ inputs.registry }}
+          REGISTRY_USER: ${{ inputs.registry-user }}
+          IMAGE_TAR: image.tar
+          PROVENANCE_INPUTS: |-
+            nix-target=${{ inputs.nix-target-arm64 }}
+            nix-impure=${{ inputs.nix-impure }}
+        run: |-
+          IMAGE_TAG=$(cat image-tag.txt)
+          export IMAGE_TAG
+
+          AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
+          DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          echo "::add-mask::$DEVGUARD_ID_TOKEN"
+          export DEVGUARD_ID_TOKEN
+
+          cat > provenance.sh << 'PROVENANCE_SCRIPT'
+          set -eu
+
+          # like the push job: lowercase the reference, the subject is named after the repository
+          IMAGE_REF=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="${IMAGE_REF%@*}"
+          IMAGE_NAME="${IMAGE_NAME%:*}"
+
+          crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
+
+          # resolved once - everything below refers to the digest, so the tag moving in between does not matter
+          DIGEST=$(crane digest "$IMAGE_REF")
+
+          if [ -f "$IMAGE_TAR" ]; then
+            # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
+            # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
+            # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
+            CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
+            BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+            PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
+            if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
+              echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
+              exit 1
+            fi
+          else
+            # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+            echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
+          fi
+
+          set -- --image "$IMAGE_NAME@$DIGEST"
+          OLD_IFS="$IFS"
+          IFS='
+          '
+          for INPUT in $PROVENANCE_INPUTS; do
+            set -- "$@" --input "$INPUT"
+          done
+          IFS="$OLD_IFS"
+
+          devguard-scanner provenance generate "$@" --output provenance.json
+          devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
+          PROVENANCE_SCRIPT
+
+          # run as the runner user - the scanner image user can not write to the workspace
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \
+            -e IMAGE_TAR -e IMAGE_TAG -e PROVENANCE_INPUTS \
+            -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
+            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main provenance.sh
+      - name: Upload build provenance
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: provenance${{ inputs.artifact-name-suffix }}-arm64
+          path: provenance.dsse.json
+    needs:
+      - devguard_build_nix_arm64
+      - devguard_deploy_arm64
+    name: devguard:provenance-arm64
   devguard_attest_amd64:
     runs-on: ubuntu-latest
     if: inputs.should-deploy
@@ -1046,9 +1244,29 @@ jobs:
             "
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+      - name: Download build provenance (created by the provenance job)
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: provenance${{ inputs.artifact-name-suffix }}-amd64
+        continue-on-error: true
+      - name: Resolve build provenance subject
+        id: provenance-subject
+        run: |-
+          if [ -f provenance.dsse.json ]; then
+            echo "subject=$(jq -r '.payload' provenance.dsse.json | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')" >> $GITHUB_OUTPUT
+          fi
+      - name: Attest build provenance
+        if: steps.provenance-subject.outputs.subject != ''
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: sh -c "devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" provenance.dsse.json \"$PROVENANCE_SUBJECT\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME""
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          PROVENANCE_SUBJECT: ${{ steps.provenance-subject.outputs.subject }}
     needs:
       - devguard_build_nix_amd64
       - devguard_create_manifest_multi_arch
+      - devguard_provenance_amd64
     name: devguard:attest-amd64
   devguard_attest_arm64:
     runs-on: ubuntu-latest
@@ -1168,168 +1386,27 @@ jobs:
             "
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+      - name: Download build provenance (created by the provenance job)
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: provenance${{ inputs.artifact-name-suffix }}-arm64
+        continue-on-error: true
+      - name: Resolve build provenance subject
+        id: provenance-subject
+        run: |-
+          if [ -f provenance.dsse.json ]; then
+            echo "subject=$(jq -r '.payload' provenance.dsse.json | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')" >> $GITHUB_OUTPUT
+          fi
+      - name: Attest build provenance
+        if: steps.provenance-subject.outputs.subject != ''
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: sh -c "devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" provenance.dsse.json \"$PROVENANCE_SUBJECT\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME""
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          PROVENANCE_SUBJECT: ${{ steps.provenance-subject.outputs.subject }}
     needs:
       - devguard_build_nix_arm64
       - devguard_create_manifest_multi_arch
+      - devguard_provenance_arm64
     name: devguard:attest-arm64
-  devguard_provenance:
-    runs-on: ubuntu-latest
-    if: inputs.should-deploy
-    permissions:
-      id-token: write
-      packages: write
-    steps:
-      - name: Resolve registry password
-        run: |-
-          if [ -n "$SECRET_PASSWORD" ]; then
-            echo "REGISTRY_PASSWORD=$SECRET_PASSWORD" >> $GITHUB_ENV
-          else
-            echo "REGISTRY_PASSWORD=$FALLBACK_TOKEN" >> $GITHUB_ENV
-          fi
-        env:
-          SECRET_PASSWORD: ${{ secrets.registry-password }}
-          FALLBACK_TOKEN: ${{ github.token }}
-      - name: Download oci-image${{ inputs.artifact-name-suffix }}-amd64
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: oci-image${{ inputs.artifact-name-suffix }}-amd64
-          path: build-0
-        continue-on-error: true
-      - name: Download image-tag${{ inputs.artifact-name-suffix }}-amd64
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: image-tag${{ inputs.artifact-name-suffix }}-amd64
-          path: build-0
-      - name: Download oci-image${{ inputs.artifact-name-suffix }}-arm64
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: oci-image${{ inputs.artifact-name-suffix }}-arm64
-          path: build-1
-        continue-on-error: true
-      - name: Download image-tag${{ inputs.artifact-name-suffix }}-arm64
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: image-tag${{ inputs.artifact-name-suffix }}-arm64
-          path: build-1
-      - name: Generate, sign and attach build provenance
-        env:
-          DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
-          REGISTRY: ${{ inputs.registry }}
-          REGISTRY_USER: ${{ inputs.registry-user }}
-          IMAGE_TARS: build-0/image.tar build-1/image.tar
-          MANIFEST_TAGS: ${{ needs.devguard_create_manifest_multi_arch.outputs.manifest-tags }}
-          PROVENANCE_INPUTS: |-
-            nix-target-amd64=${{ inputs.nix-target-amd64 }}
-            nix-target-arm64=${{ inputs.nix-target-arm64 }}
-            nix-impure=${{ inputs.nix-impure }}
-        run: |-
-          IMAGE_TAG=$(cat build-0/image-tag.txt)
-          export IMAGE_TAG
-
-          AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
-          DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
-          echo "::add-mask::$DEVGUARD_ID_TOKEN"
-          export DEVGUARD_ID_TOKEN
-
-          cat > provenance.sh << 'PROVENANCE_SCRIPT'
-          set -eu
-
-          # like the push job: drop a digest suffix and the tag, and lowercase the repository
-          IMAGE_NAME="${IMAGE_TAG%@*}"
-          IMAGE_NAME=$(echo "${IMAGE_NAME%:*}" | tr '[:upper:]' '[:lower:]')
-
-          crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
-
-          # images are matched by their config digest. The tarballs hold uncompressed layers which get compressed on push, and
-          # different crane versions compress differently - so the manifest digest of a tarball is not necessarily the pushed one.
-          # The config lists the uncompressed layer digests, which identifies the image independent of the compression.
-          tarball_config_digest() {
-            CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
-            echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-          }
-          config_digest() {
-            crane manifest "$1" | jq -r '.config.digest'
-          }
-          sorted() {
-            printf '%s\n' "$@" | sort | tr '\n' ' '
-          }
-          SUBJECT_DIGESTS=""
-          add_subject() {
-            case " $SUBJECT_DIGESTS " in
-              *" $1 "*) ;;
-              *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $1" ;;
-            esac
-          }
-
-          # computed from the tarballs - nothing the build job wrote about its images is trusted
-          BUILT_CONFIGS=""
-          for TAR in $IMAGE_TARS; do
-            if [ -f "$TAR" ]; then
-              BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
-            else
-              # builds which push directly to the registry publish no tarball - the build job decided what was pushed
-              echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
-              BUILT_CONFIGS="$BUILT_CONFIGS $(config_digest "$IMAGE_TAG")"
-            fi
-          done
-          EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
-
-          if [ -z "$(echo $MANIFEST_TAGS)" ]; then
-            # single-arch: the tag has to point to the built image
-            PUSHED_CONFIGS=$(sorted "$(config_digest "$IMAGE_TAG")")
-            if [ "$PUSHED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-              echo "$IMAGE_TAG has the config $PUSHED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-              exit 1
-            fi
-            add_subject "$(crane digest "$IMAGE_TAG")"
-          fi
-
-          # a multi-arch manifest is only attested if it references exactly the built images
-          for TAG in $MANIFEST_TAGS; do
-            PLATFORM_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest')
-            LISTED_CONFIGS=""
-            for DIGEST in $PLATFORM_DIGESTS; do
-              LISTED_CONFIGS="$LISTED_CONFIGS $(config_digest "$IMAGE_NAME@$DIGEST")"
-            done
-            LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
-            if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-              echo "manifest $TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-              exit 1
-            fi
-            for DIGEST in $PLATFORM_DIGESTS; do
-              add_subject "$DIGEST"
-            done
-            add_subject "$(crane digest "$TAG")"
-          done
-
-          SUBJECT_IMAGES=""
-          for DIGEST in $SUBJECT_DIGESTS; do
-            SUBJECT_IMAGES="$SUBJECT_IMAGES,$IMAGE_NAME@$DIGEST"
-          done
-          set -- --image "${SUBJECT_IMAGES#,}"
-          OLD_IFS="$IFS"
-          IFS='
-          '
-          for INPUT in $PROVENANCE_INPUTS; do
-            set -- "$@" --input "$INPUT"
-          done
-          IFS="$OLD_IFS"
-
-          devguard-scanner provenance generate "$@" --output provenance.json
-          devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
-
-          for DIGEST in $SUBJECT_DIGESTS; do
-            echo "Attaching build provenance to $IMAGE_NAME@$DIGEST"
-            devguard-scanner attest provenance.dsse.json "$IMAGE_NAME@$DIGEST" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
-          done
-          PROVENANCE_SCRIPT
-
-          docker run --rm -v "$PWD:/work" -w /work \
-            -e IMAGE_TARS -e IMAGE_TAG -e MANIFEST_TAGS -e PROVENANCE_INPUTS \
-            -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
-            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main provenance.sh
-    needs:
-      - devguard_build_nix_amd64
-      - devguard_build_nix_arm64
-      - devguard_create_manifest_multi_arch
-    name: devguard:provenance

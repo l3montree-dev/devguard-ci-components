@@ -112,9 +112,6 @@ spec:
         - predicate_type: the predicate type URL
       default: []
       type: array
-    manifest_tags:
-      description: Space separated multi-arch manifest tags pointing to the built images. Leave empty for single-arch builds.
-      default: ""
     provenance_inputs:
       description: Newline separated key=value pairs the build was configured with. Recorded in the provenance.
       default: ""
@@ -394,12 +391,14 @@ devguard:attest$[[ inputs.job_suffix ]]:
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
+    - devguard:provenance$[[ inputs.job_suffix ]]
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
       optional: true
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
     - devguard:container_scanning$[[ inputs.job_suffix ]]
   dependencies:
+    - devguard:provenance$[[ inputs.job_suffix ]]
     - devguard:generate_tag$[[ inputs.job_suffix ]]
     - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
   variables:
@@ -487,6 +486,21 @@ devguard:attest$[[ inputs.job_suffix ]]:
       echo "========================================"
     done
 
+    # the build provenance signed by the provenance job - attached as-is to the image its signed subject names
+    if [ -f "provenance.dsse.json" ]; then
+      PROVENANCE_SUBJECT=$(jq -r '.payload' provenance.dsse.json | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')
+      echo "Attaching build provenance to $PROVENANCE_SUBJECT"
+      devguard-scanner attest provenance.dsse.json "$PROVENANCE_SUBJECT" \
+        --predicateType="https://slsa.dev/provenance/v1" \
+        --defaultRef="$[[ inputs.default_ref ]]" \
+        --ref="$[[ inputs.commit_ref ]]" \
+        --isTag="$[[ inputs.is_tag ]]" \
+        --token="$[[ inputs.devguard_token ]]" \
+        --apiUrl="$[[ inputs.devguard_api_url ]]" \
+        --assetName="$[[ inputs.devguard_asset_name ]]" \
+        --artifactName="$ARTIFACT_NAME"
+    fi
+
     echo ""
     echo "All attestations completed"
 devguard:provenance$[[ inputs.job_suffix ]]:
@@ -515,87 +529,40 @@ devguard:provenance$[[ inputs.job_suffix ]]:
     REGISTRY: $[[ inputs.registry ]]
     REGISTRY_USER: $[[ inputs.registry_user ]]
     REGISTRY_PASSWORD: $[[ inputs.registry_password ]]
-    IMAGE_TARS: image.tar
+    IMAGE_TAR: image.tar
     IMAGE_TAG: $IMAGE_TAG
-    MANIFEST_TAGS: $[[ inputs.manifest_tags ]]
     PROVENANCE_INPUTS: $[[ inputs.provenance_inputs ]]
   script:
     - |-
       set -eu
 
-      # like the push job: drop a digest suffix and the tag, and lowercase the repository
-      IMAGE_NAME="${IMAGE_TAG%@*}"
-      IMAGE_NAME=$(echo "${IMAGE_NAME%:*}" | tr '[:upper:]' '[:lower:]')
+      # like the push job: lowercase the reference, the subject is named after the repository
+      IMAGE_REF=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
+      IMAGE_NAME="${IMAGE_REF%@*}"
+      IMAGE_NAME="${IMAGE_NAME%:*}"
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # images are matched by their config digest. The tarballs hold uncompressed layers which get compressed on push, and
-      # different crane versions compress differently - so the manifest digest of a tarball is not necessarily the pushed one.
-      # The config lists the uncompressed layer digests, which identifies the image independent of the compression.
-      tarball_config_digest() {
-        CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
-        echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-      }
-      config_digest() {
-        crane manifest "$1" | jq -r '.config.digest'
-      }
-      sorted() {
-        printf '%s\n' "$@" | sort | tr '\n' ' '
-      }
-      SUBJECT_DIGESTS=""
-      add_subject() {
-        case " $SUBJECT_DIGESTS " in
-          *" $1 "*) ;;
-          *) SUBJECT_DIGESTS="$SUBJECT_DIGESTS $1" ;;
-        esac
-      }
+      # resolved once - everything below refers to the digest, so the tag moving in between does not matter
+      DIGEST=$(crane digest "$IMAGE_REF")
 
-      # computed from the tarballs - nothing the build job wrote about its images is trusted
-      BUILT_CONFIGS=""
-      for TAR in $IMAGE_TARS; do
-        if [ -f "$TAR" ]; then
-          BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
-        else
-          # builds which push directly to the registry publish no tarball - the build job decided what was pushed
-          echo "WARNING: $TAR not found, attesting the image the build pushed to $IMAGE_TAG instead" >&2
-          BUILT_CONFIGS="$BUILT_CONFIGS $(config_digest "$IMAGE_TAG")"
-        fi
-      done
-      EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
-
-      if [ -z "$(echo $MANIFEST_TAGS)" ]; then
-        # single-arch: the tag has to point to the built image
-        PUSHED_CONFIGS=$(sorted "$(config_digest "$IMAGE_TAG")")
-        if [ "$PUSHED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-          echo "$IMAGE_TAG has the config $PUSHED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
+      if [ -f "$IMAGE_TAR" ]; then
+        # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
+        # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
+        # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
+        CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
+        BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
+        PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
+        if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
+          echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
           exit 1
         fi
-        add_subject "$(crane digest "$IMAGE_TAG")"
+      else
+        # builds which push directly to the registry publish no tarball - the build job decided what was pushed
+        echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
       fi
 
-      # a multi-arch manifest is only attested if it references exactly the built images
-      for TAG in $MANIFEST_TAGS; do
-        PLATFORM_DIGESTS=$(crane manifest "$TAG" | jq -r '.manifests[].digest')
-        LISTED_CONFIGS=""
-        for DIGEST in $PLATFORM_DIGESTS; do
-          LISTED_CONFIGS="$LISTED_CONFIGS $(config_digest "$IMAGE_NAME@$DIGEST")"
-        done
-        LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
-        if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-          echo "manifest $TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-          exit 1
-        fi
-        for DIGEST in $PLATFORM_DIGESTS; do
-          add_subject "$DIGEST"
-        done
-        add_subject "$(crane digest "$TAG")"
-      done
-
-      SUBJECT_IMAGES=""
-      for DIGEST in $SUBJECT_DIGESTS; do
-        SUBJECT_IMAGES="$SUBJECT_IMAGES,$IMAGE_NAME@$DIGEST"
-      done
-      set -- --image "${SUBJECT_IMAGES#,}"
+      set -- --image "$IMAGE_NAME@$DIGEST"
       OLD_IFS="$IFS"
       IFS='
       '
@@ -606,8 +573,7 @@ devguard:provenance$[[ inputs.job_suffix ]]:
 
       devguard-scanner provenance generate "$@" --output provenance.json
       devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output provenance.dsse.json
-
-      for DIGEST in $SUBJECT_DIGESTS; do
-        echo "Attaching build provenance to $IMAGE_NAME@$DIGEST"
-        devguard-scanner attest provenance.dsse.json "$IMAGE_NAME@$DIGEST" --predicateType=https://slsa.dev/provenance/v1 -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --offline
-      done
+  artifacts:
+    paths:
+      - provenance.dsse.json
+    expire_in: 1 week

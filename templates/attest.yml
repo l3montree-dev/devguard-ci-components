@@ -172,5 +172,20 @@ devguard:attest$[[ inputs.job_suffix ]]:
       echo "========================================"
     done
 
+    # the build provenance signed by the provenance job - attached as-is to the image its signed subject names
+    if [ -f "provenance.dsse.json" ]; then
+      PROVENANCE_SUBJECT=$(jq -r '.payload' provenance.dsse.json | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')
+      echo "Attaching build provenance to $PROVENANCE_SUBJECT"
+      devguard-scanner attest provenance.dsse.json "$PROVENANCE_SUBJECT" \
+        --predicateType="https://slsa.dev/provenance/v1" \
+        --defaultRef="$[[ inputs.default_ref ]]" \
+        --ref="$[[ inputs.commit_ref ]]" \
+        --isTag="$[[ inputs.is_tag ]]" \
+        --token="$[[ inputs.devguard_token ]]" \
+        --apiUrl="$[[ inputs.devguard_api_url ]]" \
+        --assetName="$[[ inputs.devguard_asset_name ]]" \
+        --artifactName="$[[ inputs.devguard_artifact_name ]]"
+    fi
+
     echo ""
     echo "All attestations completed"

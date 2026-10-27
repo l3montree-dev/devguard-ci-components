@@ -176,4 +176,23 @@ jobs:
             "
         env:
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+      - name: Download build provenance (created by the provenance job)
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: provenance${{ inputs.image-suffix }}
+        continue-on-error: true
+      - name: Resolve build provenance subject
+        id: provenance-subject
+        run: |-
+          if [ -f provenance.dsse.json ]; then
+            echo "subject=$(jq -r '.payload' provenance.dsse.json | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')" >> $GITHUB_OUTPUT
+          fi
+      - name: Attest build provenance
+        if: steps.provenance-subject.outputs.subject != ''
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        with:
+          args: sh -c "devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" provenance.dsse.json \"$PROVENANCE_SUBJECT\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME""
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          PROVENANCE_SUBJECT: ${{ steps.provenance-subject.outputs.subject }}
     name: devguard:attest

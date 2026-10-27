@@ -57,8 +57,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-    outputs:
-      manifest-tags: ${{ steps.create-manifest.outputs.manifest-tags }}
     steps:
       - name: Resolve registry password
         run: |-
@@ -87,7 +85,6 @@ jobs:
           username: ${{ inputs.registry-user }}
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: Create and push multi-arch manifest
-        id: create-manifest
         env:
           CREATE_ROOT_MANIFEST: ${{ inputs.create-root-manifest }}
         run: |-
@@ -121,7 +118,6 @@ jobs:
           fi
 
           echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
-          echo "manifest-tags=$MANIFEST_TAGS" >> $GITHUB_OUTPUT
       - name: Sign multi-arch manifest(s)
         env:
           DEVGUARD_TOKEN: ${{ secrets.devguard-token }}

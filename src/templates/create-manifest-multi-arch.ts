@@ -43,10 +43,6 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
     permissions: {
       packages: "write",
     },
-    // the provenance job attests the manifests as well
-    outputs: {
-      "manifest-tags": "${{ steps.create-manifest.outputs.manifest-tags }}",
-    },
     steps: [
       GitHubReusableSteps.ResolveRegistryPassword,
       {
@@ -68,7 +64,6 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
       GitHubReusableSteps.DockerLogin(inputValues.registry, inputValues.registry_user),
       {
         name: "Create and push multi-arch manifest",
-        id: "create-manifest",
         env: {
           CREATE_ROOT_MANIFEST: `${ inputValues.create_root_manifest }`,
         },
@@ -101,8 +96,7 @@ if [ "$CREATE_ROOT_MANIFEST" = "true" ]; then
   fi
 fi
 
-echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
-echo "manifest-tags=$MANIFEST_TAGS" >> $GITHUB_OUTPUT`,
+echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
       },
       {
         name: "Sign multi-arch manifest(s)",

@@ -4,6 +4,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { PROVENANCE_FILE, SLSA_PROVENANCE_PREDICATE_TYPE } from "./provenance";
 
 const AttestConfig = {
   ...InputGroups.devguardCore,
@@ -142,6 +143,21 @@ echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
   echo "========================================"
 done
 
+# the build provenance signed by the provenance job - attached as-is to the image its signed subject names
+if [ -f "${PROVENANCE_FILE}" ]; then
+  PROVENANCE_SUBJECT=$(jq -r '.payload' ${PROVENANCE_FILE} | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')
+  echo "Attaching build provenance to $PROVENANCE_SUBJECT"
+  devguard-scanner attest ${PROVENANCE_FILE} "$PROVENANCE_SUBJECT" \\
+    --predicateType="${SLSA_PROVENANCE_PREDICATE_TYPE}" \\
+    --defaultRef="${inputValues.default_ref}" \\
+    --ref="${inputValues.commit_ref}" \\
+    --isTag="${inputValues.is_tag}" \\
+    --token="${inputValues.devguard_token}" \\
+    --apiUrl="${inputValues.devguard_api_url}" \\
+    --assetName="${inputValues.devguard_asset_name}" \\
+    --artifactName="${inputValues.devguard_artifact_name}"
+fi
+
 echo ""
 echo "All attestations completed"
 `,
@@ -275,6 +291,34 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         },
         env: {
           ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+        } as Record<string, string>,
+      },
+      {
+        name: "Download build provenance (created by the provenance job)",
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
+        with: {
+          name: `provenance${inputValues.image_suffix}`,
+        },
+        "continue-on-error": true,
+      },
+      {
+        // attached as-is to the image its signed subject names
+        name: "Resolve build provenance subject",
+        id: "provenance-subject",
+        run: `if [ -f ${PROVENANCE_FILE} ]; then
+  echo "subject=$(jq -r '.payload' ${PROVENANCE_FILE} | base64 -d | jq -r '.subject[0] | .name + "@sha256:" + .digest.sha256')" >> $GITHUB_OUTPUT
+fi`,
+      },
+      {
+        name: "Attest build provenance",
+        if: "steps.provenance-subject.outputs.subject != ''",
+        uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
+        with: {
+          args: `sh -c "devguard-scanner attest -u ${inputValues.registry_user} -r ${inputValues.registry} -p "\${{ env.REGISTRY_PASSWORD }}" ${PROVENANCE_FILE} \\"$PROVENANCE_SUBJECT\\" --predicateType='${SLSA_PROVENANCE_PREDICATE_TYPE}' --token='\${{ secrets.devguard-token }}' --apiUrl=${inputValues.devguard_api_url} --assetName=${inputValues.devguard_asset_name} --ref=${inputValues.commit_ref} --isTag=${inputValues.is_tag} --artifactName="$ARTIFACT_NAME""`,
+        },
+        env: {
+          ARTIFACT_NAME: "${{ env.ARTIFACT_NAME }}",
+          PROVENANCE_SUBJECT: "${{ steps.provenance-subject.outputs.subject }}",
         } as Record<string, string>,
       },
     ],
