@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.17.2]
+
+### Added
+
+- **Multi-arch manifests get their own signed SLSA build provenance.** `build-nix-multiarch` and `sign-manifest-multi-arch` (GitLab) as well as `create-manifest-multi-arch` and `full-nix` (GitHub) now create provenance for the manifest, after checking that it references exactly the built per-architecture images, and attach it to the manifest
+
+### Changed
+
+- The signed provenance is published as a pipeline artifact, and the `attest` jobs pick it up from there
+
+### Fixed
+
+- Provenance image digests were calculated incorrectly in the `provenance` job
+- GitLab: variable expansion in the `provenance` job scripts across all orchestration templates
+- GitHub `full-nix`, GitLab `full`, `container-lifecycle` and `container-lifecycle-with-base-image-inspection`: missing or wrong `needs` relationships around the provenance job
+
 ## [v1.17.1]
 
 ### Changed
