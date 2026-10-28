@@ -124,7 +124,7 @@ jobs:
           docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \
             -e IMAGE_TAR -e IMAGE_TAG -e PROVENANCE_INPUTS \
             -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
-            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 provenance.sh
+            --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main provenance.sh
       - name: Upload build provenance
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

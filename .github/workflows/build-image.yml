@@ -120,7 +120,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane digest --tarball="${IMAGE_DESTINATION_PATH}" > image-digest.txt
         env:
           IMAGE_DESTINATION_PATH: ${{ inputs.image-destination-path }}
@@ -152,7 +152,7 @@ jobs:
               -e IMAGE_PATH \
               -e GITHUB_REF_NAME \
               -e UPSTREAM_VERSION \
-              ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
+              ghcr.io/l3montree-dev/devguard/scanner:main \
               devguard-scanner generate-tag \
                 --imagePath="$IMAGE_PATH" \
                 --ref="$GITHUB_REF_NAME" \
@@ -175,7 +175,7 @@ jobs:
           docker run --rm \
             --user 53111:53111 \
             -v "${HOME}/.docker:/tmp/.docker" \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
         if: inputs.disable-artifact-registry-as-image-store == true
       - name: Upload to container registry
@@ -184,7 +184,7 @@ jobs:
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
             -v "${HOME}/.docker:/tmp/.docker:ro" \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane push "${IMAGE_DESTINATION_PATH}" "$(cat image-tag.txt)"
         env:
           IMAGE_DESTINATION_PATH: ${{ inputs.image-destination-path }}

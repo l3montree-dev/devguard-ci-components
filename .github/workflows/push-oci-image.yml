@@ -63,7 +63,7 @@ jobs:
           docker run --rm \
             --user 53111:53111 \
             -v "${HOME}/.docker:/tmp/.docker" \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
       - name: Push OCI image
         run: |-
@@ -71,6 +71,6 @@ jobs:
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
             -v "${HOME}/.docker:/tmp/.docker:ro" \
-            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
             crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"
     name: devguard:push-oci-image
