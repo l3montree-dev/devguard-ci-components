@@ -74,7 +74,7 @@ jobs:
             -e COMMIT_REF \
             -e IS_TAG \
             -e UPSTREAM_VERSION \
-            ghcr.io/l3montree-dev/devguard/scanner:main \
+            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
             devguard-scanner generate-tag \
               --imageSuffix="$IMAGE_SUFFIX" \
               --imageVariant="$IMAGE_VARIANT" \

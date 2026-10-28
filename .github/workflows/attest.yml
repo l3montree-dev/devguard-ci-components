@@ -115,7 +115,7 @@ jobs:
           fi
           echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"
       - name: Get and Attest SBOM
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.17.2
         with:
           args: |-
             sh -c "
@@ -136,7 +136,7 @@ jobs:
           API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
       - name: Get and Attest VeX
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.17.2
         with:
           args: |-
             sh -c "
@@ -157,7 +157,7 @@ jobs:
           API_ARTIFACT_NAME: ${{ env.API_ARTIFACT_NAME }}
           ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
       - name: Get and Attest SAST-Results
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.17.2
         with:
           args: |-
             sh -c "
@@ -189,7 +189,7 @@ jobs:
           fi
       - name: Attest build provenance
         if: steps.provenance-subject.outputs.subject != ''
-        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
+        uses: docker://ghcr.io/l3montree-dev/devguard/scanner:v1.17.2
         with:
           args: sh -c "devguard-scanner attest -u ${{ inputs.registry-user }} -r ${{ inputs.registry }} -p "${{ env.REGISTRY_PASSWORD }}" provenance.dsse.json \"$PROVENANCE_SUBJECT\" --predicateType='https://slsa.dev/provenance/v1' --token='${{ secrets.devguard-token }}' --apiUrl=${{ inputs.devguard-api-url }} --assetName=${{ inputs.devguard-asset-name }} --ref=${{ inputs.commit-ref }} --isTag=${{ inputs.is-tag }} --artifactName="$ARTIFACT_NAME""
         env:

@@ -81,7 +81,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
-            ghcr.io/l3montree-dev/devguard/scanner:main \
+            ghcr.io/l3montree-dev/devguard/scanner:v1.17.2 \
             crane digest --tarball="$IMAGE" > image-digest.txt
       - name: Push image to registry
         if: inputs.push-image == 'true'
