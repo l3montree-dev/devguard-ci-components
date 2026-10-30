@@ -166,6 +166,25 @@ const fullAttest = AttestTemplate({
 // included (outside gitlab.opencode.de). Artifacts are selected via `needs` instead.
 delete fullAttest.job.dependencies;
 
+// sbom, vex and sarif report attested to the image by default, there is a file check in the attest job to check if the provenancse.dsse.json exists
+const defaultAttestations = [
+  {
+    source:
+      "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/sbom.json/",
+    predicate_type: "https://cyclonedx.org/bom",
+  },
+  {
+    source:
+      "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/artifacts/ARTIFACT_NAME/vex.json/",
+    predicate_type: "https://cyclonedx.org/vex",
+  },
+  {
+    source:
+      "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/COMMIT_REF/sarif.json/",
+    predicate_type: "https://www.schemastore.org/schemas/json/sarif-2.1.0.json",
+  },
+];
+
 // ── container-lifecycle ───────────────────────────────────────────────────────
 const clGenerateTag = GenerateTagTemplate({
   stage: "oci-image",
@@ -244,6 +263,7 @@ const clAttest = AttestTemplate({
     clContainerScanning.name,
   ],
   dependencies: [clProvenance.name, clGenerateTag.name, clBuildOciImage.name],
+  attestations: defaultAttestations,
 });
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
@@ -306,6 +326,7 @@ const clnAttest = AttestTemplate({
     clnContainerScanning.name,
   ],
   dependencies: [clnProvenance.name, clnGenerateTag.name, clnBuildOciImage.name],
+  attestations: defaultAttestations,
 });
 
 // ── push-and-attest ───────────────────────────────────────────────────────────
@@ -347,6 +368,7 @@ const paAttest = AttestTemplate({
     { job: paPushOciImage.name, optional: true },
   ],
   dependencies: [paProvenance.name, paGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+  attestations: defaultAttestations,
 });
 
 // ── container-scanning-and-attest ─────────────────────────────────────────────
@@ -396,6 +418,7 @@ const csaAttest = AttestTemplate({
     { job: csaPushOciImage.name, optional: true },
   ],
   dependencies: [csaProvenance.name, csaGenerateTag.name, "$[[ inputs.build_job_name ]]"],
+  attestations: defaultAttestations,
 });
 
 // ── build-nix-multiarch ───────────────────────────────────────────────────────
@@ -690,6 +713,7 @@ const clbiAttest = AttestTemplate({
     clbiContainerScanning.name,
   ],
   dependencies: [clbiProvenance.name, clbiGenerateTag.name, clbiBuildOciImage.name],
+  attestations: defaultAttestations,
 });
 // sbom/vex upload depend on discover_baseimage_attestations; file paths use $[[ inputs.output ]] (added via inputOverrides)
 const clbiSbomUpload = SbomUploadTemplate({
