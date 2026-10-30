@@ -1,9 +1,0 @@
-## Release Test Pipeline
-# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/release/.gitlab-ci.yml
-
-trigger_release_test_pipeline:
-  extends: .trigger_and_wait
-  variables:
-    REF_NAME: 'release'
-    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
-  allow_failure: false

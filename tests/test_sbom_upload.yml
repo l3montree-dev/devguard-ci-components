@@ -1,9 +1,0 @@
-## SBOM Upload Test Pipeline
-# See https://gitlab.com/l3montree/devguard-ci-components-test-project/-/blob/sbom-upload/.gitlab-ci.yml
-
-trigger_sbom_upload_test_pipeline:
-  extends: .trigger_and_wait
-  variables:
-    REF_NAME: 'sbom-upload'
-    CI_COMPONENT_BRANCH: '$CI_COMMIT_REF_NAME'
-  allow_failure: true
