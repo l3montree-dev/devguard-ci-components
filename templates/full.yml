@@ -129,6 +129,9 @@ include:
       image: $IMAGE_TAG
       needs:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
+        - $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]
+        - job: devguard:push_oci_image$[[ inputs.job_suffix ]]
+          optional: true
       dependencies:
         - devguard:generate_tag$[[ inputs.job_suffix ]]
       stage: attestation
