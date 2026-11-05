@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.18.0]
+
+### Changed
+
+- **BREAKING (GitLab): the `attestations` input is removed from the `attest` jobs of the container orchestrations.** The SBOM (`https://cyclonedx.org/bom`), VEX (`https://cyclonedx.org/vex`) and SARIF (`https://www.schemastore.org/schemas/json/sarif-2.1.0.json`) reports are now always attested to the image, sourced from the DevGuard API. Pipelines that passed `attestations` to one of these templates have to drop the input, otherwise the include fails. Custom attestations are no longer possible through these templates
+  - Affected templates: `container-lifecycle`, `container-lifecycle-nix`, `container-lifecycle-with-base-image-inspection`, `container-scanning-and-attest` and `push-and-attest`
+  - The standalone `attest` template keeps its `attestations` input
+
 ## [v1.17.2]
 
 ### Added
