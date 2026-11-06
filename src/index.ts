@@ -1,5 +1,5 @@
 import { AttestJobInputs, AttestTemplate } from "./templates/attest";
-import { BuildNixExtractScannerTemplate, BuildNixGenerateTagTemplate, BuildNixTemplate } from "./templates/build-nix";
+import { BuildNixGenerateTagTemplate, BuildNixTemplate } from "./templates/build-nix";
 import { BuildOciImageJobInputs, BuildOciImageTemplate } from "./templates/build-oci-image";
 import { ContainerScanningJobInputs, ContainerScanningTemplate } from "./templates/container-scanning";
 import { GenerateTagJobInputs, GenerateTagTemplate } from "./templates/generate-tag";
@@ -267,7 +267,6 @@ const clAttest = AttestTemplate({
 });
 
 // ── container-lifecycle-nix ───────────────────────────────────────────────────
-const clnExtractScanner = BuildNixExtractScannerTemplate({});
 const clnGenerateTag = BuildNixGenerateTagTemplate({
   stage: "oci-image",
   git_strategy: "fetch",
@@ -424,17 +423,14 @@ const csaAttest = AttestTemplate({
 // ── build-nix-multiarch ───────────────────────────────────────────────────────
 // job_suffix is user-provided at include time (e.g. ":scanner") and prepended
 // to the arch suffix so each inclusion gets globally unique job names.
-const bnmaExtractScannerAmd64 = BuildNixExtractScannerTemplate({ job_suffix: "$[[ inputs.job_suffix ]]-amd64" });
-const bnmaExtractScannerArm64 = BuildNixExtractScannerTemplate({ job_suffix: "$[[ inputs.job_suffix ]]-arm64" });
-
 const bnmaGenerateTagAmd64 = BuildNixGenerateTagTemplate({
   stage: "build",
   git_strategy: "fetch",
   job_suffix: "$[[ inputs.job_suffix ]]-amd64",
   architecture: "amd64",
   runner_tags: ["$[[ inputs.amd64_runner_tag ]]"],
-  needs: [bnmaExtractScannerAmd64.name],
-  dependencies: [bnmaExtractScannerAmd64.name],
+  needs: [],
+  dependencies: [],
 });
 const bnmaBuildAmd64 = BuildNixTemplate({
   stage: "build",
@@ -526,8 +522,8 @@ const bnmaGenerateTagArm64 = BuildNixGenerateTagTemplate({
   job_suffix: "$[[ inputs.job_suffix ]]-arm64",
   architecture: "arm64",
   runner_tags: ["$[[ inputs.arm64_runner_tag ]]"],
-  needs: [bnmaExtractScannerArm64.name],
-  dependencies: [bnmaExtractScannerArm64.name],
+  needs: [],
+  dependencies: [],
 });
 const bnmaBuildArm64 = BuildNixTemplate({
   stage: "build",
@@ -795,7 +791,6 @@ export const templates: CIComponentGroupTemplateGitLab = {
     clProvenance,
   ],
   "container-lifecycle-nix": [
-    clnExtractScanner,
     clnGenerateTag,
     clnBuildOciImage,
     clnContainerScanning,
@@ -826,10 +821,8 @@ export const templates: CIComponentGroupTemplateGitLab = {
     clbiSbomUpload,
     clbiVexUpload,
   ],
-  "build-nix": [BuildNixExtractScannerTemplate({}), BuildNixGenerateTagTemplate({}), BuildNixTemplate({})],
+  "build-nix": [BuildNixGenerateTagTemplate({}), BuildNixTemplate({})],
   "build-nix-multiarch": [
-    bnmaExtractScannerAmd64,
-    bnmaExtractScannerArm64,
     bnmaGenerateTagAmd64,
     bnmaBuildAmd64,
     bnmaContainerScanningAmd64,
