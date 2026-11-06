@@ -121,37 +121,13 @@ spec:
 ---
 
 include: []
-devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64:
-  stage: .pre
-  image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
-    entrypoint:
-      - ""
-  script:
-    - cp /sbin/devguard-scanner ./devguard-scanner
-  artifacts:
-    paths:
-      - devguard-scanner
-devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64:
-  stage: .pre
-  image:
-    name: ghcr.io/l3montree-dev/devguard/scanner:main
-    entrypoint:
-      - ""
-  script:
-    - cp /sbin/devguard-scanner ./devguard-scanner
-  artifacts:
-    paths:
-      - devguard-scanner
 devguard:generate_tag$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
-  needs:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
-  dependencies:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
+  needs: []
+  dependencies: []
   variables:
     GIT_STRATEGY: fetch
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]
@@ -173,10 +149,8 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
   dependencies:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-amd64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
@@ -184,7 +158,6 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64:
       - /bin/sh
       - -c
   before_script:
-    - chmod +x ./devguard-scanner
     - mkdir -p /etc/nix
     - |-
       cat > /etc/nix/nix.conf << EOF
@@ -571,10 +544,8 @@ devguard:generate_tag$[[ inputs.job_suffix ]]-arm64:
     - $[[ inputs.arm64_runner_tag ]]
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
-  needs:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
-  dependencies:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
+  needs: []
+  dependencies: []
   variables:
     GIT_STRATEGY: fetch
     IMAGE_SUFFIX: $[[ inputs.image_suffix ]]
@@ -596,10 +567,8 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
   stage: build
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
   dependencies:
-    - devguard:extract_scanner$[[ inputs.job_suffix ]]-arm64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
   image:
     name: nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1
@@ -607,7 +576,6 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64:
       - /bin/sh
       - -c
   before_script:
-    - chmod +x ./devguard-scanner
     - mkdir -p /etc/nix
     - |-
       cat > /etc/nix/nix.conf << EOF

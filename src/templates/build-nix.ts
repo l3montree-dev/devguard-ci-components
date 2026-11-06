@@ -4,27 +4,7 @@ import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
-// Job 1: extract the devguard-scanner binary once and share as artifact
-export const BuildNixExtractScannerJobInputs = defineInputsGitLab({
-  job_suffix: Inputs.job_suffix,
-});
-
-export const BuildNixExtractScannerTemplate = defineJobGitLab(BuildNixExtractScannerJobInputs, (inputValues) => ({
-  name: `devguard:extract_scanner${inputValues.job_suffix}`,
-  job: {
-    stage: ".pre",
-    image: {
-      name: "ghcr.io/l3montree-dev/devguard/scanner:main",
-      entrypoint: [""],
-    },
-    script: [`cp /sbin/devguard-scanner ./devguard-scanner`],
-    artifacts: {
-      paths: [`devguard-scanner`],
-    },
-  },
-}));
-
-// Job 2: generate image tag (Nix variant - uses scanner:main directly)
+// Job 1: generate image tag (Nix variant - uses scanner:main directly)
 export const BuildNixGenerateTagJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
   stage: {
@@ -78,7 +58,7 @@ export const BuildNixGenerateTagTemplate = defineJobGitLab(BuildNixGenerateTagJo
   },
 }));
 
-// Job 3: build OCI image using Nix (dockerTools.buildLayeredImage)
+// Job 2: build OCI image using Nix (dockerTools.buildLayeredImage)
 export const BuildNixJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
   stage: {
@@ -284,20 +264,13 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
     tags: inputValues.runner_tags,
     stage: inputValues.stage,
     allow_failure: inputValues.allow_failure,
-    needs: [
-      `devguard:extract_scanner${inputValues.job_suffix}`,
-      ...(Array.isArray(inputValues.needs) ? inputValues.needs : inputValues.needs ? [inputValues.needs] : []),
-    ],
-    dependencies: [
-      `devguard:extract_scanner${inputValues.job_suffix}`,
-      ...(Array.isArray(inputValues.dependencies) ? inputValues.dependencies : inputValues.dependencies ? [inputValues.dependencies] : []),
-    ],
+    needs: inputValues.needs,
+    dependencies: inputValues.dependencies,
     image: {
       name: "nixos/nix@sha256:0b1530edf840d9af519c7f3970cafbbed68d9d9554a83cc9adc04099753117e1",
       entrypoint: ["/bin/sh", "-c"],
     },
     before_script: [
-      `chmod +x ./devguard-scanner`,
       `mkdir -p /etc/nix`,
       `cat > /etc/nix/nix.conf << EOF\nsandbox = false\nfilter-syscalls = false\nexperimental-features = nix-command flakes\n$([[ -n "${inputValues.nix_cache_substituter}" ]] && echo "substituters = https://cache.nixos.org ${inputValues.nix_cache_substituter}" || true)\n$([[ -n "${inputValues.nix_cache_public_key}" ]] && echo "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ${inputValues.nix_cache_public_key}" || true)\nEOF`,
       `if [[ -n "$NIX_CACHE_SECRET_KEY" ]]; then\n  echo "$NIX_CACHE_SECRET_KEY" > /tmp/nix-cache-priv-key.pem\nfi`,
