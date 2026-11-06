@@ -158,7 +158,7 @@ const fullAttest = AttestTemplate({
     {
       source: "artifacts/attestation-report.json",
       predicate_type:
-        "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.0.1.json",
+        "https://gitlab.opencode.de/open-code/badgebackend/source-provenance-attestation-service/-/raw/main/schema/source-provenance-schema-1.2.0.json",
     },
   ],
 });
