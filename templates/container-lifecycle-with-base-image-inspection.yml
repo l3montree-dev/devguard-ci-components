@@ -386,10 +386,11 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
 
         echo "Attesting floating root tag: $ROOT_TAG"
         SLUG=$(/devguard-scanner slug "$[[ inputs.commit_ref ]]")
+        ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
 
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
+        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
       /tmp/vex.json|https://cyclonedx.org/vex
@@ -467,7 +468,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
         URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
 
         # Also handle any environment variable substitution
-        URL=$(echo "$URL" | envsubst)
+        URL=$(echo "$URL" | envsubst | sed -E 's#/organizations/([^/]+)/([^/]+)/([^/]+)/refs/#/organizations/\1/projects/\2/assets/\3/refs/#')
 
         # Extract filename from URL or use a default
         FILENAME=$(basename "$URL" | cut -d'?' -f1)

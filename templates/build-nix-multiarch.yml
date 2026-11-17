@@ -483,7 +483,7 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
         URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
 
         # Also handle any environment variable substitution
-        URL=$(echo "$URL" | envsubst)
+        URL=$(echo "$URL" | envsubst | sed -E 's#/organizations/([^/]+)/([^/]+)/([^/]+)/refs/#/organizations/\1/projects/\2/assets/\3/refs/#')
 
         # Extract filename from URL or use a default
         FILENAME=$(basename "$URL" | cut -d'?' -f1)
@@ -901,7 +901,7 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
         URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
 
         # Also handle any environment variable substitution
-        URL=$(echo "$URL" | envsubst)
+        URL=$(echo "$URL" | envsubst | sed -E 's#/organizations/([^/]+)/([^/]+)/([^/]+)/refs/#/organizations/\1/projects/\2/assets/\3/refs/#')
 
         # Extract filename from URL or use a default
         FILENAME=$(basename "$URL" | cut -d'?' -f1)
@@ -1045,15 +1045,16 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
       fi
 
       SLUG=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
+      ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
 
       AMD64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$AMD64_ARTIFACT_NAME', safe=''))")
       ARM64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARM64_ARTIFACT_NAME', safe=''))")
 
-      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/amd64.sbom.json
-      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/amd64.vex.json
-      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/arm64.sbom.json
-      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/arm64.vex.json
-      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$[[ inputs.devguard_asset_name ]]/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/amd64.sbom.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/amd64.vex.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/arm64.sbom.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/arm64.vex.json
+      devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
       ATTESTATIONS="/tmp/amd64.sbom.json|https://cyclonedx.org/bom
       /tmp/amd64.vex.json|https://cyclonedx.org/vex

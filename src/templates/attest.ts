@@ -5,6 +5,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { PROVENANCE_FILE, SLSA_PROVENANCE_PREDICATE_TYPE } from "./provenance";
+import { ASSET_API_URL_SED } from "../lib/asset-path";
 
 const AttestConfig = {
   ...InputGroups.devguardCore,
@@ -104,7 +105,7 @@ echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
     URL="\${URL//COMMIT_REF/$API_COMMIT_REF}"
 
     # Also handle any environment variable substitution
-    URL=$(echo "$URL" | envsubst)
+    URL=$(echo "$URL" | envsubst | ${ASSET_API_URL_SED})
 
     # Extract filename from URL or use a default
     FILENAME=$(basename "$URL" | cut -d'?' -f1)
@@ -181,6 +182,7 @@ export const AttestTemplateGitHub = defineJobGitHub(AttestJobInputsGitHub, (inpu
     if: "inputs.should_deploy",
     steps: [
       GitHubReusableSteps.ResolveRegistryPassword,
+      GitHubReusableSteps.ResolveAssetPath(inputValues.devguard_asset_name),
       GitHubReusableSteps.DownloadImageDigest(inputValues.image_suffix, true),
       GitHubReusableSteps.DownloadImageTag(inputValues.image_suffix),
       {
@@ -230,7 +232,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching SBOM for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/sbom.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/sbom.json &&
   echo 'SBOM downloaded to /tmp/sbom.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting SBOM with image digest present' &&
@@ -254,7 +256,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching VeX for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/vex.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/vex.json &&
   echo 'VeX downloaded to /tmp/vex.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting VeX with image digest present' &&
@@ -278,7 +280,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
   slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching SAST results for artifact:' '\${{ env.ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/${ inputValues.devguard_asset_name }/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
   echo 'SAST results downloaded to /tmp/sarif.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting SAST results with image digest present' &&

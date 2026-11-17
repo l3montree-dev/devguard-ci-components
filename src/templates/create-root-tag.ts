@@ -4,6 +4,7 @@ import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { assetApiPath } from "../lib/asset-path";
 
 // Single-arch counterpart of create-manifest-multi-arch: instead of combining
 // two arch-specific images into a manifest list, it just re-tags the already
@@ -142,10 +143,11 @@ fi
 echo "Attesting for artifact: $ARTIFACT_NAME"
 
 SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "$COMMIT_REF")
+ASSET_PATH=${assetApiPath("$DEVGUARD_ASSET_NAME")}
 
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$DEVGUARD_ASSET_NAME/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
 
 ATTESTATIONS=("sbom.json:https://cyclonedx.org/bom" "vex.json:https://cyclonedx.org/vex" "sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
 
@@ -195,10 +197,11 @@ else
 
   echo "Attesting floating root tag: $ROOT_TAG"
   SLUG=$(/devguard-scanner slug "${inputValues.commit_ref}")
+  ASSET_PATH=${assetApiPath(inputValues.devguard_asset_name)}
 
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/sbom.json
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/${inputValues.devguard_asset_name}/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
+  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/sbom.json
+  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
+  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
 
   ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
 /tmp/vex.json|https://cyclonedx.org/vex

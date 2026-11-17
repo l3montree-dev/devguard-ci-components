@@ -1,4 +1,5 @@
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "./actions-versions";
+import { assetApiPath } from "./lib/asset-path";
 
 export class GitHubReusableSteps {
   static SetupSubmoduleSsh = {
@@ -38,6 +39,17 @@ fi`,
       FALLBACK_TOKEN: "${{ github.token }}",
     } as Record<string, string>,
   };
+
+  // Result is stored in ${{ env.DEVGUARD_ASSET_PATH }}.
+  static ResolveAssetPath(assetName: string) {
+    return {
+      name: "Resolve DevGuard asset API path",
+      env: {
+        DEVGUARD_ASSET_NAME: assetName,
+      },
+      run: `echo "DEVGUARD_ASSET_PATH=${assetApiPath("$DEVGUARD_ASSET_NAME")}" >> $GITHUB_ENV`,
+    };
+  }
 
   static DownloadImageTag(imageSuffix: string) {
     return {

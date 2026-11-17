@@ -237,7 +237,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
         URL="${URL//COMMIT_REF/$API_COMMIT_REF}"
 
         # Also handle any environment variable substitution
-        URL=$(echo "$URL" | envsubst)
+        URL=$(echo "$URL" | envsubst | sed -E 's#/organizations/([^/]+)/([^/]+)/([^/]+)/refs/#/organizations/\1/projects/\2/assets/\3/refs/#')
 
         # Extract filename from URL or use a default
         FILENAME=$(basename "$URL" | cut -d'?' -f1)
