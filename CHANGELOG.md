@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.19.0]
+
+### Fixed
+
+- **The short asset name `org/project/asset` is now expanded to the API path `org/projects/<project>/assets/<asset>` before it is used in DevGuard API urls.** The API routes only accept the long form, so fetching the SBOM, VeX and SARIF reports for the attestations failed when the asset was given in the short form the scanner accepts.
+
+### Removed
+
+- The unused `extract_scanner` jobs from the Nix build templates
+
 ## [v1.18.0]
 
 ### Changed
