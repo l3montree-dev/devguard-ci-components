@@ -98,9 +98,9 @@ devguard:attest$[[ inputs.job_suffix ]]:
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$[[ inputs.devguard_artifact_name ]]', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-    # Slugify the commit ref (replace special characters with hyphens)
-    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
-    echo "Slugified Commit Ref: $API_COMMIT_REF"
+    # URL encode commit ref for API calls (DevGuard resolves the ref by its name)
+    API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
+    echo "API Encoded Commit Ref: $API_COMMIT_REF"
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]

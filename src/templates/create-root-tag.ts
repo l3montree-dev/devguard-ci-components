@@ -142,12 +142,12 @@ else
 fi
 echo "Attesting for artifact: $ARTIFACT_NAME"
 
-SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "$COMMIT_REF")
+API_COMMIT_REF=$(jq -rn --arg ref "$COMMIT_REF" '$ref | @uri')
 ASSET_PATH=${assetApiPath("$DEVGUARD_ASSET_NAME")}
 
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
-docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$DEVGUARD_TOKEN" > vex.json
+docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/sarif.json" --token="$DEVGUARD_TOKEN" > sarif.json
 
 ATTESTATIONS=("sbom.json:https://cyclonedx.org/bom" "vex.json:https://cyclonedx.org/vex" "sarif.json:https://www.schemastore.org/schemas/json/sarif-2.1.0.json")
 
@@ -196,12 +196,12 @@ else
   /devguard-scanner sign --token="${inputValues.devguard_token}" "$ROOT_TAG" --offline
 
   echo "Attesting floating root tag: $ROOT_TAG"
-  SLUG=$(/devguard-scanner slug "${inputValues.commit_ref}")
+  API_COMMIT_REF=$(jq -rn --arg ref "${inputValues.commit_ref}" '$ref | @uri')
   ASSET_PATH=${assetApiPath(inputValues.devguard_asset_name)}
 
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/sbom.json
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
+  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/${inputValues.devguard_artifact_name}/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/sbom.json
+  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/${inputValues.devguard_artifact_name}/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
+  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
 
   ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
 /tmp/vex.json|https://cyclonedx.org/vex

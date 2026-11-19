@@ -221,9 +221,9 @@ fi`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   echo 'Fetching SBOM for artifact:' '\${{ env.AMD64_API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.AMD64_API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/amd64.sbom.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/\${{ env.AMD64_API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/amd64.sbom.json &&
   echo 'SBOM downloaded to /tmp/amd64.sbom.json' &&
   for TAG in $MANIFEST_TAGS; do
     echo 'Attesting amd64 SBOM for manifest:' \\"$TAG\\" &&
@@ -241,9 +241,9 @@ fi`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   echo 'Fetching VeX for artifact:' '\${{ env.AMD64_API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.AMD64_API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/amd64.vex.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/\${{ env.AMD64_API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/amd64.vex.json &&
   echo 'VeX downloaded to /tmp/amd64.vex.json' &&
   for TAG in $MANIFEST_TAGS; do
     echo 'Attesting amd64 VeX for manifest:' \\"$TAG\\" &&
@@ -261,9 +261,9 @@ fi`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   echo 'Fetching SBOM for artifact:' '\${{ env.ARM64_API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.ARM64_API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/arm64.sbom.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/\${{ env.ARM64_API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/arm64.sbom.json &&
   echo 'SBOM downloaded to /tmp/arm64.sbom.json' &&
   for TAG in $MANIFEST_TAGS; do
     echo 'Attesting arm64 SBOM for manifest:' \\"$TAG\\" &&
@@ -281,9 +281,9 @@ fi`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   echo 'Fetching VeX for artifact:' '\${{ env.ARM64_API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.ARM64_API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/arm64.vex.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/\${{ env.ARM64_API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/arm64.vex.json &&
   echo 'VeX downloaded to /tmp/arm64.vex.json' &&
   for TAG in $MANIFEST_TAGS; do
     echo 'Attesting arm64 VeX for manifest:' \\"$TAG\\" &&
@@ -301,9 +301,9 @@ fi`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   echo 'Fetching SAST results' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
   echo 'SAST results downloaded to /tmp/sarif.json' &&
   for TAG in $MANIFEST_TAGS; do
     echo 'Attesting SAST results for manifest:' \\"$TAG\\" &&
@@ -420,17 +420,17 @@ if [ -n "$MANIFEST_WITHOUT_REF_TAG" ]; then
   MANIFEST_TAGS="$MANIFEST_TAGS $MANIFEST_WITHOUT_REF_TAG"
 fi
 
-SLUG=$(devguard-scanner slug "${inputValues.commit_ref}")
+API_COMMIT_REF=$(jq -rn --arg ref "${inputValues.commit_ref}" '$ref | @uri')
 ASSET_PATH=${assetApiPath(inputValues.devguard_asset_name)}
 
 AMD64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$AMD64_ARTIFACT_NAME', safe=''))")
 ARM64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARM64_ARTIFACT_NAME', safe=''))")
 
-devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/amd64.sbom.json
-devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$AMD64_API_ARTIFACT_NAME/vex.json/" --token="${inputValues.devguard_token}" > /tmp/amd64.vex.json
-devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/arm64.sbom.json
-devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARM64_API_ARTIFACT_NAME/vex.json/" --token="${inputValues.devguard_token}" > /tmp/arm64.vex.json
-devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
+devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$AMD64_API_ARTIFACT_NAME/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/amd64.sbom.json
+devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$AMD64_API_ARTIFACT_NAME/vex.json/" --token="${inputValues.devguard_token}" > /tmp/amd64.vex.json
+devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$ARM64_API_ARTIFACT_NAME/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/arm64.sbom.json
+devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$ARM64_API_ARTIFACT_NAME/vex.json/" --token="${inputValues.devguard_token}" > /tmp/arm64.vex.json
+devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
 
 ATTESTATIONS="/tmp/amd64.sbom.json|https://cyclonedx.org/bom
 /tmp/amd64.vex.json|https://cyclonedx.org/vex

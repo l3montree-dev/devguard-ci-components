@@ -273,9 +273,9 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              api_ref=$(jq -rn --arg ref ${{ inputs.commit-ref }} '$ref | @uri') &&
               echo 'Fetching SBOM for artifact:' '${{ env.AMD64_API_ARTIFACT_NAME }}' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/${{ env.AMD64_API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/amd64.sbom.json &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/${{ env.AMD64_API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/amd64.sbom.json &&
               echo 'SBOM downloaded to /tmp/amd64.sbom.json' &&
               for TAG in $MANIFEST_TAGS; do
                 echo 'Attesting amd64 SBOM for manifest:' \"$TAG\" &&
@@ -290,9 +290,9 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              api_ref=$(jq -rn --arg ref ${{ inputs.commit-ref }} '$ref | @uri') &&
               echo 'Fetching VeX for artifact:' '${{ env.AMD64_API_ARTIFACT_NAME }}' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/${{ env.AMD64_API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/amd64.vex.json &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/${{ env.AMD64_API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/amd64.vex.json &&
               echo 'VeX downloaded to /tmp/amd64.vex.json' &&
               for TAG in $MANIFEST_TAGS; do
                 echo 'Attesting amd64 VeX for manifest:' \"$TAG\" &&
@@ -307,9 +307,9 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              api_ref=$(jq -rn --arg ref ${{ inputs.commit-ref }} '$ref | @uri') &&
               echo 'Fetching SBOM for artifact:' '${{ env.ARM64_API_ARTIFACT_NAME }}' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/${{ env.ARM64_API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/arm64.sbom.json &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/${{ env.ARM64_API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/arm64.sbom.json &&
               echo 'SBOM downloaded to /tmp/arm64.sbom.json' &&
               for TAG in $MANIFEST_TAGS; do
                 echo 'Attesting arm64 SBOM for manifest:' \"$TAG\" &&
@@ -324,9 +324,9 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              api_ref=$(jq -rn --arg ref ${{ inputs.commit-ref }} '$ref | @uri') &&
               echo 'Fetching VeX for artifact:' '${{ env.ARM64_API_ARTIFACT_NAME }}' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/${{ env.ARM64_API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/arm64.vex.json &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/${{ env.ARM64_API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/arm64.vex.json &&
               echo 'VeX downloaded to /tmp/arm64.vex.json' &&
               for TAG in $MANIFEST_TAGS; do
                 echo 'Attesting arm64 VeX for manifest:' \"$TAG\" &&
@@ -341,9 +341,9 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              api_ref=$(jq -rn --arg ref ${{ inputs.commit-ref }} '$ref | @uri') &&
               echo 'Fetching SAST results' &&
-              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/sarif.json' --token='${{ secrets.devguard-token }}' > /tmp/sarif.json &&
+              devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/sarif.json' --token='${{ secrets.devguard-token }}' > /tmp/sarif.json &&
               echo 'SAST results downloaded to /tmp/sarif.json' &&
               for TAG in $MANIFEST_TAGS; do
                 echo 'Attesting SAST results for manifest:' \"$TAG\" &&
