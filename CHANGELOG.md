@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING (GitLab): the `image_tar` and `image_tars` inputs are removed.** Provenance is no longer created from the image tarball (see below). Pipelines that still pass one of these inputs have to drop it, otherwise the include fails
+  - `provenance`: `image_tar`
+  - `sign-manifest-multi-arch` and `build-nix-multiarch`: `image_tars`
+- **BREAKING (GitHub): the standalone `provenance` and `create-manifest-multi-arch` workflows need the `image-digest` artifact of the build.** `provenance` downloads `image-digest<suffix>` next to `image-tag<suffix>`, `create-manifest-multi-arch` downloads `image-digest<suffix>-amd64` and `image-digest<suffix>-arm64`. All builds of this repository upload it. Callers with their own build job have to upload the digest of the image as well (`crane digest --tarball=image.tar > image-digest.txt`)
+- **Signatures, attestations and provenance name the pushed image by its digest - no longer by a tag, which can point to another image by the time the job runs.**
+  - GitHub: all jobs name `image-tag@image-digest`. The push fails if the pushed image got another digest (see Fixed)
+  - GitLab Nix builds (`container-lifecycle-nix`, `build-nix-multiarch`) and `push-and-attest` / `container-scanning-and-attest`: the push job writes the digest it pushed to `image_digest_<upstream_version>_<architecture>.txt`, and sign, attest and provenance name `IMAGE_TAG@<that digest>`. **If no image was pushed (merge request pipelines), these jobs now do nothing** instead of signing whatever image the tag pointed to
+  - GitLab Kaniko builds already hand over `IMAGE_TAG` with the digest and behave as before
+  - The standalone `sign-oci-image`, `attest` and `provenance` templates get the optional input `pushed_digest_file` for this. Empty (default): the image is used as given
+- **Provenance is created for the image in the registry, not from the image tarball.** The provenance job no longer downloads the tarball of the build. When it gets a digest, it first checks that the registry has it - provenance for an image that was not pushed fails
+- **Multi-arch manifests are created from the per-architecture digests instead of tags.** A per-architecture tag pushed again by another pipeline in between can no longer end up in the manifest. The manifest provenance is still only created if the manifest references exactly the built images - now checked against the digests, without downloading the image tarballs
+  - GitHub `create-manifest-multi-arch` and `full-nix`: digests from the `image-digest<suffix>-<arch>` artifacts
+  - GitLab `create-manifest-multi-arch`, `sign-manifest-multi-arch` and `build-nix-multiarch`: digests from the push jobs (`image_digest_<upstream_version>_<arch>.txt`), handed to the sign job as `EXPECTED_DIGESTS`. Without them (push jobs of an older version, merge request pipelines) the manifest is created from the tags as before, and the check is skipped with a warning
+- **GitHub: all jobs use the same pinned crane (`v0.22.1`, `CRANE_VERSION`).** The digest of an image with uncompressed layers (Nix builds) depends on how the crane binary compresses them. `deploy`, `push-oci-image`, `container-scanning`, the root tag job, `build-image-w-docker` and the Nix builds install it with `setup-crane`, instead of whichever crane `setup-crane`, `nixpkgs` or the devguard-scanner image provided
+- GitLab `push-oci-image`: new optional inputs `architecture` and `upstream_version`, which name the digest file
+- GitLab `push-oci-image` and `deploy` run in the devguard-scanner image instead of the Kaniko image - they only need crane
+- Kaniko image updated to Kaniko `v1.29.0`, devguard-scanner `v1.19.2` and crane `v0.22.1`
+- The manifest, provenance and attest jobs of `build-nix-multiarch` and `container-lifecycle-nix` no longer download the image tarballs of the builds
+
+### Fixed
+
+- **Signatures and attestations could name an image that was never pushed.** The build computes the digest from the tarball, but the push could produce another one: crane builds compress uncompressed layers differently, and `docker push` compresses the layers itself. The push now fails on a mismatch, instead of the pipeline signing a digest that is not in the registry
+  - GitHub `deploy`, `push-oci-image` and `build-image-w-docker` with `push_image: true`, which now pushes with crane instead of `docker push`
+  - GitLab `push-oci-image`, when `IMAGE_TAG` carries the digest of the build (Kaniko)
+- GitLab Nix builds signed and attested whatever image the tag pointed to at that moment - an image pushed by another pipeline under the same tag, or an older image in merge request pipelines, where nothing is pushed
+
 ## [v1.19.0]
 
 ### Fixed

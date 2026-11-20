@@ -4,6 +4,7 @@ import { Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_CHECKOUT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { resolvePushedImageScript } from "./push-oci-image";
 
 const SignOciImageConfig = {
   devguard_api_url: Inputs.devguard_api_url,
@@ -19,6 +20,7 @@ export const SignOciImageJobInputs = defineInputsGitLab({
     description: "The container image to sign (e.g., registry.example.com/project/image:tag)" as const,
     default: "$CI_REGISTRY_IMAGE:latest" as const,
   },
+  pushed_digest_file: Inputs.pushed_digest_file,
   devguard_token: Inputs.devguard_token,
 
   runner_tags: Inputs.runner_tags,
@@ -62,7 +64,8 @@ export const SignOciImageTemplate = defineJobGitLab(SignOciImageJobInputs, (inpu
     },
     script: [
       `devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `devguard-scanner sign --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" "${inputValues.image}"`,
+      `${resolvePushedImageScript(inputValues.image, inputValues.pushed_digest_file)}
+devguard-scanner sign --token="${inputValues.devguard_token}" --apiUrl="${inputValues.devguard_api_url}" --assetName="${inputValues.devguard_asset_name}" "$IMAGE_REF"`,
     ],
   },
 }));

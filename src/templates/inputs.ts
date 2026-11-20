@@ -344,6 +344,12 @@ export const Inputs = {
     default: "." as const,
     description: "Directory to store generated artifacts in (relative to project root)." as const,
   },
+
+  pushed_digest_file: {
+    default: "" as const,
+    description:
+      "File the push-oci-image job wrote the pushed digest to (image_digest_<upstream_version>_<architecture>.txt). If set and the image has no digest, the job names the pushed digest - and does nothing if the file is missing, as no image was pushed (e.g. merge request pipelines). Empty: the image as given." as const,
+  },
 } satisfies ConfigInputs;
 
 export const InputGroups = {

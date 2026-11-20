@@ -54,25 +54,45 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
         exit 1
       fi
 
-      echo "amd64: $AMD64_TAG"
-      echo "arm64: $ARM64_TAG"
+      # the index references the pushed images by the digests the push jobs wrote - the per-arch tags can be repushed in
+      # the meantime. repository@digest, not tag@digest: docker manifest resolves a tag@digest reference by its tag
+      AMD64_DIGEST_FILE="$[[ inputs.artifacts_subdirectory ]]/image_digest_$[[ inputs.upstream_version ]]_amd64.txt"
+      ARM64_DIGEST_FILE="$[[ inputs.artifacts_subdirectory ]]/image_digest_$[[ inputs.upstream_version ]]_arm64.txt"
+      if [ -f "$AMD64_DIGEST_FILE" ] && [ -f "$ARM64_DIGEST_FILE" ]; then
+        EXPECTED_DIGESTS="$(cat "$AMD64_DIGEST_FILE") $(cat "$ARM64_DIGEST_FILE")"
+        AMD64_REF="${AMD64_TAG%:*}@$(cat "$AMD64_DIGEST_FILE")"
+        ARM64_REF="${ARM64_TAG%:*}@$(cat "$ARM64_DIGEST_FILE")"
+      else
+        # push jobs of an older version, or none ran (merge request pipelines)
+        echo "WARNING: $AMD64_DIGEST_FILE or $ARM64_DIGEST_FILE not found - the manifest references the per-arch tags and its provenance is not checked against the pushed images"
+        EXPECTED_DIGESTS=""
+        AMD64_REF="$AMD64_TAG"
+        ARM64_REF="$ARM64_TAG"
+      fi
+
+      echo "amd64: $AMD64_REF"
+      echo "arm64: $ARM64_REF"
 
       # Strip the -amd64 suffix to get the base tag
       BASE_TAG="${AMD64_TAG%-amd64}"
 
-      echo "Creating manifest: $BASE_TAG -> $AMD64_TAG + $ARM64_TAG"
-      docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
+      echo "Creating manifest: $BASE_TAG -> $AMD64_REF + $ARM64_REF"
+      docker manifest create "$BASE_TAG" "$AMD64_REF" "$ARM64_REF"
       docker manifest push "$BASE_TAG"
 
       echo "MANIFEST_IMAGE_TAG=$BASE_TAG" > manifest_image_tag.env
       echo "AMD64_ARTIFACT_NAME=$AMD64_ARTIFACT_NAME" >> manifest_image_tag.env
       echo "ARM64_ARTIFACT_NAME=$ARM64_ARTIFACT_NAME" >> manifest_image_tag.env
+      # the sign job only attests the provenance of an index which references exactly these images
+      if [ -n "$EXPECTED_DIGESTS" ]; then
+        echo "EXPECTED_DIGESTS=$EXPECTED_DIGESTS" >> manifest_image_tag.env
+      fi
 
       if [ "$[[ inputs.create_root_manifest ]]" = "true" ]; then
         ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${CI_COMMIT_REF_NAME}//")
         if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
           echo "Creating root manifest: $ROOT_TAG"
-          docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
+          docker manifest create "$ROOT_TAG" "$AMD64_REF" "$ARM64_REF"
           docker manifest push "$ROOT_TAG"
           echo "MANIFEST_WITHOUT_REF_TAG=$ROOT_TAG" >> manifest_image_tag.env
         fi

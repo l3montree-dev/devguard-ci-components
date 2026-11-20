@@ -2,21 +2,23 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
+import { ACTIONS_UPLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { resolvePushedImageScript } from "./push-oci-image";
 
 // The signed provenance the provenance job hands over to the attest job
 export const PROVENANCE_FILE = "provenance.dsse.json";
 export const SLSA_PROVENANCE_PREDICATE_TYPE = "https://slsa.dev/provenance/v1";
 
 // Generates and signs SLSA build provenance for one image. Runs in the devguard-scanner image (busybox sh, crane, jq).
-// The job never runs code of the built project: it only reads the image tarball the build produced, so a
-// compromised build can not influence what gets signed (SLSA Build L3 on GitHub, L2 on GitLab).
+// The job never runs code of the built project (SLSA Build L3 on GitHub, L2 on GitLab).
 // Attaching the signed provenance to the image is left to the attest job - the signature protects it on the way.
 //
+// The provenance names the image the sign job signs, given by the same reference: a reference with a digest names that
+// digest - which has to be in the registry - a tag the image it points to in the registry.
+//
 // Expects in the environment:
-//   IMAGE_TAR           the image tarball the build produced
-//   IMAGE_TAG           the tag the image got pushed to
+//   IMAGE_TAG           the image reference the sign job signs - repository:tag or repository:tag@digest
 //   PROVENANCE_INPUTS   newline separated key=value pairs the build was configured with
 //   DEVGUARD_ID_TOKEN   the OIDC token of this job, issued for the audience DEVGUARD_API_URL
 //   DEVGUARD_API_URL, REGISTRY, REGISTRY_USER, REGISTRY_PASSWORD
@@ -29,24 +31,20 @@ IMAGE_NAME="\${IMAGE_NAME%:*}"
 
 crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-# resolved once - everything below refers to the digest, so the tag moving in between does not matter
-DIGEST=$(crane digest "$IMAGE_REF")
-
-if [ -f "$IMAGE_TAR" ]; then
-  # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
-  # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
-  # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
-  CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
-  BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-  PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
-  if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
-    echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
-    exit 1
-  fi
-else
-  # builds which push directly to the registry publish no tarball - the build job decided what was pushed
-  echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
-fi
+# like signing: a reference with a digest names that digest, a tag the image it points to
+case "$IMAGE_REF" in
+  *@*)
+    DIGEST="\${IMAGE_REF#*@}"
+    # the digest comes from the build - provenance is only signed for an image which got pushed
+    if ! crane manifest "$IMAGE_NAME@$DIGEST" > /dev/null; then
+      echo "$IMAGE_NAME@$DIGEST is not in the registry - the image which got pushed has another digest" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    DIGEST=$(crane digest "$IMAGE_REF")
+    ;;
+esac
 
 set -- --image "$IMAGE_NAME@$DIGEST"
 OLD_IFS="$IFS"
@@ -61,50 +59,46 @@ devguard-scanner provenance generate "$@" --output provenance.json
 devguard-scanner provenance sign provenance.json --apiUrl "$DEVGUARD_API_URL" --output ${PROVENANCE_FILE}`;
 
 // Generates, signs and attaches SLSA build provenance for multi-arch indexes - admission controllers verify the digest a
-// tag resolves to, which is the index. Run by the job which created the index, after it pushed it. Like the per image
-// provenance job it never runs code of the built project and trusts nothing but the image tarballs the build produced.
+// tag resolves to, which is the index. Run by the job which created the index, after it pushed and signed it. Like the
+// per image provenance job it never runs code of the built project.
+//
+// Like signing the index, the provenance names the index each tag points to in the registry - but only if that index
+// references exactly the built per-arch images, so a tag repushed in the meantime gets no provenance.
 //
 // Expects in the environment:
-//   IMAGE_TARS          space separated image tarballs the build produced, one per architecture
 //   MANIFEST_TAGS       space separated tags of the pushed index
+//   EXPECTED_DIGESTS    space separated digests of the built per-arch images (GitHub: image-digest.txt, GitLab: the
+//                       digests the push jobs wrote). Unset skips the check with a warning - on GitLab when the push
+//                       jobs are of an older version or did not run
 //   DEVGUARD_ID_TOKEN   the OIDC token of this job, issued for the audience DEVGUARD_API_URL
 //   DEVGUARD_API_URL, REGISTRY, REGISTRY_USER, REGISTRY_PASSWORD
 export const indexProvenanceScript = `set -eu
 
 crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-# images are matched by their config digest - see the provenance job
-tarball_config_digest() {
-  CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
-  echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-}
 sorted() {
   printf '%s\\n' "$@" | sort | tr '\\n' ' '
 }
-
-BUILT_CONFIGS=""
-for TAR in $IMAGE_TARS; do
-  BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
-done
-EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+EXPECTED_DIGESTS="\${EXPECTED_DIGESTS:-}"
+if [ -z "$EXPECTED_DIGESTS" ]; then
+  echo "WARNING: EXPECTED_DIGESTS is not set - not checking that the index references exactly the built images" >&2
+fi
+EXPECTED=$(sorted $EXPECTED_DIGESTS)
 
 INDEX_REFS=""
 for TAG in $MANIFEST_TAGS; do
   IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
   IMAGE_NAME="\${IMAGE_REF%@*}"
   IMAGE_NAME="\${IMAGE_NAME%:*}"
-  # resolved once - everything below refers to the digest
+  # like signing: the index the tag points to
   INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
 
-  # the index is only attested if it references exactly the built images
-  LISTED_CONFIGS=""
-  for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
-    LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
-  done
-  LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
-  if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-    echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-    exit 1
+  if [ -n "$EXPECTED_DIGESTS" ]; then
+    LISTED=$(sorted $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'))
+    if [ "$LISTED" != "$EXPECTED" ]; then
+      echo "$TAG references the images $LISTED but the build produced $EXPECTED" >&2
+      exit 1
+    fi
   fi
 
   # the root tag points to the same index - attest it once
@@ -156,26 +150,20 @@ export const ProvenanceTemplateGitHub = (options: ProvenanceOptionsGitHub = {}) 
       },
       steps: [
         GitHubReusableSteps.ResolveRegistryPassword,
-        {
-          name: "Download oci-image",
-          uses: ACTIONS_DOWNLOAD_ARTIFACT,
-          with: { name: `oci-image${inputValues.image_suffix}` },
-          // builds which push directly to the registry upload no image - the script falls back to the pushed tag
-          "continue-on-error": true,
-        },
         GitHubReusableSteps.DownloadImageTag(inputValues.image_suffix),
+        GitHubReusableSteps.DownloadImageDigest(inputValues.image_suffix),
         {
           name: "Generate and sign build provenance",
           env: {
             DEVGUARD_API_URL: inputValues.devguard_api_url,
             REGISTRY: inputValues.registry,
             REGISTRY_USER: inputValues.registry_user,
-            IMAGE_TAR: "image.tar",
             PROVENANCE_INPUTS: Object.entries(options.recordedInputs ?? {})
               .map(([key, value]) => `${key}=${value}`)
               .join("\n"),
           } as Record<string, string>,
-          run: `IMAGE_TAG=$(cat image-tag.txt)
+          run: `# the reference the sign job signs
+IMAGE_TAG="$(cat image-tag.txt)@$(cat image-digest.txt)"
 export IMAGE_TAG
 
 AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
@@ -189,7 +177,7 @@ PROVENANCE_SCRIPT
 
 # run as the runner user - the scanner image user can not write to the workspace
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \\
-  -e IMAGE_TAR -e IMAGE_TAG -e PROVENANCE_INPUTS \\
+  -e IMAGE_TAG -e PROVENANCE_INPUTS \\
   -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \\
   --entrypoint sh ${ContainerImages.DEVGUARD_SCANNER} provenance.sh`,
         },
@@ -215,15 +203,13 @@ export const ProvenanceJobInputsGitLab = defineInputsGitLab({
   ...InputGroups.jobControl,
   ...InputGroups.registry,
   registry_password: Inputs.registry_password,
-  image_tar: {
-    description: "The image tarball the build produced" as const,
-    default: "image.tar" as const,
-  },
   image_tag: {
     ...Inputs.image_tag,
-    description: "The tag the image got pushed to" as const,
+    description:
+      "The image the sign job signs - a tag (the provenance names the image it points to) or a tag with digest" as const,
     default: "$IMAGE_TAG" as const,
   },
+  pushed_digest_file: Inputs.pushed_digest_file,
   provenance_inputs: {
     description:
       "Newline separated key=value pairs the build was configured with. Recorded in the provenance." as const,
@@ -260,8 +246,8 @@ DEVGUARD_API_URL="${inputValues.devguard_api_url}"
 REGISTRY="${inputValues.registry}"
 REGISTRY_USER="${inputValues.registry_user}"
 REGISTRY_PASSWORD="${inputValues.registry_password}"
-IMAGE_TAR="${inputValues.image_tar}"
-IMAGE_TAG="${inputValues.image_tag}"
+${resolvePushedImageScript(inputValues.image_tag, inputValues.pushed_digest_file)}
+IMAGE_TAG="$IMAGE_REF"
 PROVENANCE_INPUTS="${inputValues.provenance_inputs}"
 ${provenanceScript}`,
     ],

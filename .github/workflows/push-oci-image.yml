@@ -55,22 +55,16 @@ jobs:
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
-      - name: Log in to ghcr.io
-        run: |-
-          mkdir -p ${HOME}/.docker
-          sudo chown -R 53111:53111 ${HOME}/.docker || true
-          sudo chmod 700 ${HOME}/.docker || true
-          docker run --rm \
-            --user 53111:53111 \
-            -v "${HOME}/.docker:/tmp/.docker" \
-            ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN
+      - name: Setup crane
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+        with:
+          version: v0.22.1
       - name: Push OCI image
         run: |-
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/workspace" \
-            -w /workspace \
-            -v "${HOME}/.docker:/tmp/.docker:ro" \
-            ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"
+          PUSHED=$(crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')")
+          echo "Pushed $PUSHED"
+          if [ "${PUSHED#*@}" != "$(cat image-digest.txt)" ]; then
+            echo "::error::crane computed ${PUSHED#*@} for the pushed image, but the build computed $(cat image-digest.txt) - signatures and attestations would name a different image. Build and push have to use the same crane (CRANE_VERSION)."
+            exit 1
+          fi
     name: devguard:push-oci-image

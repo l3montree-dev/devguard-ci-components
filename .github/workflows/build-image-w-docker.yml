@@ -74,23 +74,26 @@ jobs:
           fi
           docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG
           echo "$IMAGE_TAG" > image-tag.txt
+      - name: Setup crane
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+        with:
+          version: v0.22.1
       - name: Get image digest
         env:
           IMAGE: ${{ inputs.image }}
-        run: |-
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/workspace" \
-            -w /workspace \
-            ghcr.io/l3montree-dev/devguard/scanner:main \
-            crane digest --tarball="$IMAGE" > image-digest.txt
+        run: crane digest --tarball="$IMAGE" > image-digest.txt
       - name: Push image to registry
         if: inputs.push-image == 'true'
         env:
           IMAGE: ${{ inputs.image }}
           IMAGE_TAG: ${{ inputs.image-tag }}
         run: |-
-          docker load -i $IMAGE
-          docker push $IMAGE_TAG
+          PUSHED=$(crane push "$IMAGE" "$IMAGE_TAG")
+          echo "Pushed $PUSHED"
+          if [ "${PUSHED#*@}" != "$(cat image-digest.txt)" ]; then
+            echo "::error::crane computed ${PUSHED#*@} for the pushed image, but the build computed $(cat image-digest.txt) - signatures and attestations would name a different image. Build and push have to use the same crane (CRANE_VERSION)."
+            exit 1
+          fi
       - name: Upload oci-image artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

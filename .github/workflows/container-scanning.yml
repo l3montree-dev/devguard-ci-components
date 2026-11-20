@@ -144,6 +144,8 @@ jobs:
           fi
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+        with:
+          version: v0.22.1
       - name: Download OCI Image from registry
         run: crane pull $(cat image-tag.txt) image.tar
         if: format('{0}', inputs.fetch-image-from-registry) == 'true'

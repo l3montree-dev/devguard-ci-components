@@ -116,8 +116,8 @@ jobs:
             experimental-features = nix-command flakes
             ${{ inputs.nix-cache-substituter != '' && format('substituters = https://cache.nixos.org {0}', inputs.nix-cache-substituter) || '' }}
             ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
-      - name: Install crane and devguard-scanner
-        run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
+      - name: Install devguard-scanner
+        run: nix profile install github:l3montree-dev/devguard#devguardScanner
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
@@ -142,6 +142,10 @@ jobs:
             --to "s3://$NIX_CACHE_S3_BUCKET?endpoint=$NIX_CACHE_S3_ENDPOINT&region=$NIX_CACHE_REGION&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem" || true
       - name: Prepare image.tar
         run: gunzip -c "$(readlink -f result)" > image.tar
+      - name: Setup crane
+        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+        with:
+          version: v0.22.1
       - name: Get image digest
         run: crane digest --tarball=image.tar > image-digest.txt
       - name: Upload oci-image artifact

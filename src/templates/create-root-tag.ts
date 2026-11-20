@@ -2,7 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { assetApiPath } from "../lib/asset-path";
 
@@ -64,10 +64,7 @@ export const CreateRootTagTemplateGitHub = defineJobGitHub(CreateRootTagJobInput
           path: ".",
         },
       },
-      {
-        name: "Setup crane",
-        uses: IMJASONH_SETUP_CRANE,
-      },
+      GitHubReusableSteps.SetupCrane,
       {
         name: "Log in to registry",
         env: {

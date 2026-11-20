@@ -1,4 +1,10 @@
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "./actions-versions";
+import {
+  ACTIONS_CHECKOUT,
+  ACTIONS_DOWNLOAD_ARTIFACT,
+  CRANE_VERSION,
+  DOCKER_LOGIN_ACTION,
+  IMJASONH_SETUP_CRANE,
+} from "./actions-versions";
 import { assetApiPath } from "./lib/asset-path";
 
 export class GitHubReusableSteps {
@@ -13,6 +19,14 @@ export class GitHubReusableSteps {
   chmod 600 ~/.ssh/id_ed25519
   ssh-keyscan gitlab.com github.com >> ~/.ssh/known_hosts
 fi`,
+  };
+
+  static SetupCrane = {
+    name: "Setup crane",
+    uses: IMJASONH_SETUP_CRANE,
+    with: {
+      version: CRANE_VERSION,
+    },
   };
 
   static CheckoutCode = {

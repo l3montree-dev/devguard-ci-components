@@ -150,7 +150,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.29.0-devguard-scanner-v1.19.2@sha256:f0779d2d25e3575287f5aff27aaa8aebfe1b8683aa76f99bfb4bed7d27f5ea09
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -273,7 +273,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -284,19 +284,36 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
       when: never
     - when: on_success
   script: |
-    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
     # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
     IMAGE_REF="$IMAGE_TAG"
-    IMAGE_REF="${IMAGE_REF%@*}"
-    IMAGE_REF=$(echo "${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
+    BUILT_DIGEST=""
+    case "$IMAGE_REF" in
+      *@*) BUILT_DIGEST="${IMAGE_REF#*@}" ;;
+    esac
+    IMAGE_REF=$(echo "${IMAGE_REF%@*}" | tr '[:upper:]' '[:lower:]')
 
     echo "Image: image.tar"
     echo "Image Tag: ${IMAGE_REF}"
 
-    /crane push image.tar "${IMAGE_REF}"
+    # crane push prints the pushed reference with the digest it computed locally (repository@sha256:...) on stdout
+    PUSHED=$(crane push image.tar "${IMAGE_REF}")
+    echo "Pushed ${PUSHED}"
+
+    # sign, attest and provenance name the digest the build computed (IMAGE_TAG=repository:tag@digest)
+    if [ -n "$BUILT_DIGEST" ] && [ "${PUSHED#*@}" != "$BUILT_DIGEST" ]; then
+      echo "ERROR: crane computed ${PUSHED#*@} for the pushed image, but the build computed $BUILT_DIGEST - signatures and attestations would name a different image."
+      exit 1
+    fi
+
+    # the multi-arch manifest job references the pushed image by this digest
+    echo "${PUSHED#*@}" > image_digest_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].txt
+  artifacts:
+    paths:
+      - image_digest_$[[ inputs.upstream_version ]]_$[[ inputs.architecture ]].txt
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
@@ -320,7 +337,23 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]:
       - ""
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
+    - |-
+      IMAGE_REF="$IMAGE_TAG"
+      PUSHED_DIGEST_FILE=""
+      if [ -n "$PUSHED_DIGEST_FILE" ]; then
+        case "$IMAGE_REF" in
+          *@*) ;;
+          *)
+            if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+              echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+              exit 0
+            fi
+            IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+            ;;
+        esac
+      fi
+      echo "Image: $IMAGE_REF"
+      devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_REF"
 devguard:create_root_tag$[[ inputs.job_suffix ]]:
   stage: attestation
   image:
@@ -400,7 +433,22 @@ devguard:attest$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: none
   script: |
-    echo "Attesting artifacts for $IMAGE_TAG"
+    IMAGE_REF="$IMAGE_TAG"
+    PUSHED_DIGEST_FILE=""
+    if [ -n "$PUSHED_DIGEST_FILE" ]; then
+      case "$IMAGE_REF" in
+        *@*) ;;
+        *)
+          if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+            echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+            exit 0
+          fi
+          IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+          ;;
+      esac
+    fi
+    echo "Image: $IMAGE_REF"
+    echo "Attesting artifacts for $IMAGE_REF"
     echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
@@ -467,7 +515,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
         echo "Creating attestation for $FILE_PATH"
         devguard-scanner attest "$FILE_PATH" \
           --predicateType="$PREDICATE_TYPE" \
-          $IMAGE_TAG \
+          "$IMAGE_REF" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
@@ -528,8 +576,22 @@ devguard:provenance$[[ inputs.job_suffix ]]:
       REGISTRY="$[[ inputs.registry ]]"
       REGISTRY_USER="$[[ inputs.registry_user ]]"
       REGISTRY_PASSWORD="$[[ inputs.registry_password ]]"
-      IMAGE_TAR="image.tar"
-      IMAGE_TAG="$IMAGE_TAG"
+      IMAGE_REF="$IMAGE_TAG"
+      PUSHED_DIGEST_FILE=""
+      if [ -n "$PUSHED_DIGEST_FILE" ]; then
+        case "$IMAGE_REF" in
+          *@*) ;;
+          *)
+            if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+              echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+              exit 0
+            fi
+            IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+            ;;
+        esac
+      fi
+      echo "Image: $IMAGE_REF"
+      IMAGE_TAG="$IMAGE_REF"
       PROVENANCE_INPUTS="$[[ inputs.provenance_inputs ]]"
       set -eu
 
@@ -540,24 +602,20 @@ devguard:provenance$[[ inputs.job_suffix ]]:
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # resolved once - everything below refers to the digest, so the tag moving in between does not matter
-      DIGEST=$(crane digest "$IMAGE_REF")
-
-      if [ -f "$IMAGE_TAR" ]; then
-        # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
-        # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
-        # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
-        CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
-        BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-        PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
-        if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
-          echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
-          exit 1
-        fi
-      else
-        # builds which push directly to the registry publish no tarball - the build job decided what was pushed
-        echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
-      fi
+      # like signing: a reference with a digest names that digest, a tag the image it points to
+      case "$IMAGE_REF" in
+        *@*)
+          DIGEST="${IMAGE_REF#*@}"
+          # the digest comes from the build - provenance is only signed for an image which got pushed
+          if ! crane manifest "$IMAGE_NAME@$DIGEST" > /dev/null; then
+            echo "$IMAGE_NAME@$DIGEST is not in the registry - the image which got pushed has another digest" >&2
+            exit 1
+          fi
+          ;;
+        *)
+          DIGEST=$(crane digest "$IMAGE_REF")
+          ;;
+      esac
 
       set -- --image "$IMAGE_NAME@$DIGEST"
       OLD_IFS="$IFS"
