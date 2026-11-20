@@ -123,7 +123,7 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              slug=$(jq -rn --arg ref '${{ inputs.commit-ref }}' '$ref | @uri') &&
               artifact_name="$ARTIFACT_NAME" &&
               echo 'Fetching SBOM for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='${{ secrets.devguard-token }}' > /tmp/sbom.json &&
@@ -144,7 +144,7 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              slug=$(jq -rn --arg ref '${{ inputs.commit-ref }}' '$ref | @uri') &&
               artifact_name="$ARTIFACT_NAME" &&
               echo 'Fetching VeX for artifact:' '${{ env.API_ARTIFACT_NAME }}' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='${{ secrets.devguard-token }}' > /tmp/vex.json &&
@@ -165,7 +165,7 @@ jobs:
         with:
           args: |-
             sh -c "
-              slug=$(devguard-scanner slug ${{ inputs.commit-ref }}) &&
+              slug=$(jq -rn --arg ref '${{ inputs.commit-ref }}' '$ref | @uri') &&
               artifact_name="$ARTIFACT_NAME" &&
               echo 'Fetching SAST results for artifact:' '${{ env.ARTIFACT_NAME }}' &&
               devguard-scanner curl '${{ inputs.devguard-api-url }}/api/v1/organizations/${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/sarif.json' --token='${{ secrets.devguard-token }}' > /tmp/sarif.json &&

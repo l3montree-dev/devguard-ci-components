@@ -58,7 +58,7 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]:
         MANIFEST_TAGS="$MANIFEST_TAGS $MANIFEST_WITHOUT_REF_TAG"
       fi
 
-      SLUG=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
+      SLUG=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
       ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
 
       AMD64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$AMD64_ARTIFACT_NAME', safe=''))")

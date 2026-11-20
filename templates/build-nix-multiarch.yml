@@ -505,9 +505,9 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-    # Slugify the commit ref (replace special characters with hyphens)
-    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
-    echo "Slugified Commit Ref: $API_COMMIT_REF"
+    # the commit ref as url path segment
+    API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
+    echo "API Commit Ref: $API_COMMIT_REF"
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
@@ -983,9 +983,9 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-    # Slugify the commit ref (replace special characters with hyphens)
-    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
-    echo "Slugified Commit Ref: $API_COMMIT_REF"
+    # the commit ref as url path segment
+    API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
+    echo "API Commit Ref: $API_COMMIT_REF"
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
@@ -1181,7 +1181,7 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
         MANIFEST_TAGS="$MANIFEST_TAGS $MANIFEST_WITHOUT_REF_TAG"
       fi
 
-      SLUG=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
+      SLUG=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
       ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
 
       AMD64_API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$AMD64_ARTIFACT_NAME', safe=''))")

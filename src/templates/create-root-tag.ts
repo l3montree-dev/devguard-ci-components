@@ -4,7 +4,7 @@ import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
-import { assetApiPath } from "../lib/asset-path";
+import { apiRefPath, assetApiPath } from "../lib/asset-path";
 
 // Single-arch counterpart of create-manifest-multi-arch: instead of combining
 // two arch-specific images into a manifest list, it just re-tags the already
@@ -139,7 +139,7 @@ else
 fi
 echo "Attesting for artifact: $ARTIFACT_NAME"
 
-SLUG=$(docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner slug "$COMMIT_REF")
+SLUG=${apiRefPath('"$COMMIT_REF"')}
 ASSET_PATH=${assetApiPath("$DEVGUARD_ASSET_NAME")}
 
 docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner curl "$DEVGUARD_API_URL/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$DEVGUARD_TOKEN" > sbom.json
@@ -180,25 +180,28 @@ fi
 crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 IMAGE_TAG=$(echo "${inputValues.image_tag}" | tr '[:upper:]' '[:lower:]')
-ROOT_TAG=$(echo "$IMAGE_TAG" | sed "s/-\${CI_COMMIT_REF_NAME}//")
+# the root tag is derived from the tag - IMAGE_TAG can carry the digest of the build (repository:tag@digest)
+IMAGE_TAG_ONLY="\${IMAGE_TAG%@*}"
+ROOT_TAG=$(echo "$IMAGE_TAG_ONLY" | sed "s/-\${CI_COMMIT_REF_NAME}//")
 
-if [ "$ROOT_TAG" = "$IMAGE_TAG" ]; then
-  echo "No ref suffix found in $IMAGE_TAG; skipping floating root tag"
+if [ "$ROOT_TAG" = "$IMAGE_TAG_ONLY" ]; then
+  echo "No ref suffix found in $IMAGE_TAG_ONLY; skipping floating root tag"
 else
   ROOT_TAG_ONLY="\${ROOT_TAG##*:}"
   echo "Creating floating root tag: $ROOT_TAG_ONLY -> $IMAGE_TAG"
   crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
   echo "Signing floating root tag: $ROOT_TAG"
-  /devguard-scanner sign --token="${inputValues.devguard_token}" "$ROOT_TAG" --offline
+  devguard-scanner sign --token="${inputValues.devguard_token}" "$ROOT_TAG" --offline
 
   echo "Attesting floating root tag: $ROOT_TAG"
-  SLUG=$(/devguard-scanner slug "${inputValues.commit_ref}")
+  SLUG=${apiRefPath(`"${inputValues.commit_ref}"`)}
   ASSET_PATH=${assetApiPath(inputValues.devguard_asset_name)}
+  API_ARTIFACT_NAME=$(jq -rn --arg name "${inputValues.devguard_artifact_name}" '$name | @uri')
 
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/sbom.json
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/${inputValues.devguard_artifact_name}/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
-  /devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
+  devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="${inputValues.devguard_token}" > /tmp/sbom.json
+  devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="${inputValues.devguard_token}" > /tmp/vex.json
+  devguard-scanner curl "${inputValues.devguard_api_url}/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="${inputValues.devguard_token}" > /tmp/sarif.json
 
   ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
 /tmp/vex.json|https://cyclonedx.org/vex
@@ -207,7 +210,7 @@ else
   echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
     [ -z "$FILE" ] && continue
     echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-    /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="${inputValues.devguard_token}" --offline
+    devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="${inputValues.devguard_token}" --offline
   done
 fi`,
     ],

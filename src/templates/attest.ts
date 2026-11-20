@@ -5,7 +5,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { PROVENANCE_FILE, SLSA_PROVENANCE_PREDICATE_TYPE } from "./provenance";
-import { ASSET_API_URL_SED } from "../lib/asset-path";
+import { ASSET_API_URL_SED, apiRefPath } from "../lib/asset-path";
 import { resolvePushedImageScript } from "./push-oci-image";
 
 const AttestConfig = {
@@ -73,9 +73,9 @@ echo "Asset Name: ${inputValues.devguard_asset_name}"
 API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('${inputValues.devguard_artifact_name}', safe=''))")
 echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-# Slugify the commit ref (replace special characters with hyphens)
-API_COMMIT_REF=$(devguard-scanner slug "${inputValues.commit_ref}")
-echo "Slugified Commit Ref: $API_COMMIT_REF"
+# the commit ref as url path segment
+API_COMMIT_REF=${apiRefPath(`"${inputValues.commit_ref}"`)}
+echo "API Commit Ref: $API_COMMIT_REF"
 
 # Login to registry
 devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
@@ -232,7 +232,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  slug=${apiRefPath(`'${inputValues.commit_ref}'`)} &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching SBOM for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/sbom.json &&
@@ -256,7 +256,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  slug=${apiRefPath(`'${inputValues.commit_ref}'`)} &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching VeX for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/vex.json &&
@@ -280,7 +280,7 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=$(devguard-scanner slug ${inputValues.commit_ref}) &&
+  slug=${apiRefPath(`'${inputValues.commit_ref}'`)} &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching SAST results for artifact:' '\${{ env.ARTIFACT_NAME }}' &&
   devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&

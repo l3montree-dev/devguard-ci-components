@@ -461,25 +461,28 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
       crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
       IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]' '[:lower:]')
-      ROOT_TAG=$(echo "$IMAGE_TAG" | sed "s/-${CI_COMMIT_REF_NAME}//")
+      # the root tag is derived from the tag - IMAGE_TAG can carry the digest of the build (repository:tag@digest)
+      IMAGE_TAG_ONLY="${IMAGE_TAG%@*}"
+      ROOT_TAG=$(echo "$IMAGE_TAG_ONLY" | sed "s/-${CI_COMMIT_REF_NAME}//")
 
-      if [ "$ROOT_TAG" = "$IMAGE_TAG" ]; then
-        echo "No ref suffix found in $IMAGE_TAG; skipping floating root tag"
+      if [ "$ROOT_TAG" = "$IMAGE_TAG_ONLY" ]; then
+        echo "No ref suffix found in $IMAGE_TAG_ONLY; skipping floating root tag"
       else
         ROOT_TAG_ONLY="${ROOT_TAG##*:}"
         echo "Creating floating root tag: $ROOT_TAG_ONLY -> $IMAGE_TAG"
         crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
         echo "Signing floating root tag: $ROOT_TAG"
-        /devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$ROOT_TAG" --offline
+        devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$ROOT_TAG" --offline
 
         echo "Attesting floating root tag: $ROOT_TAG"
-        SLUG=$(/devguard-scanner slug "$[[ inputs.commit_ref ]]")
+        SLUG=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
         ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
+        API_ARTIFACT_NAME=$(jq -rn --arg name "$ARTIFACT_NAME" '$name | @uri')
 
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
       /tmp/vex.json|https://cyclonedx.org/vex
@@ -488,7 +491,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
           [ -z "$FILE" ] && continue
           echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-          /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$[[ inputs.devguard_token ]]" --offline
+          devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$[[ inputs.devguard_token ]]" --offline
         done
       fi
 devguard:attest$[[ inputs.job_suffix ]]:
@@ -535,9 +538,9 @@ devguard:attest$[[ inputs.job_suffix ]]:
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-    # Slugify the commit ref (replace special characters with hyphens)
-    API_COMMIT_REF=$(devguard-scanner slug "$[[ inputs.commit_ref ]]")
-    echo "Slugified Commit Ref: $API_COMMIT_REF"
+    # the commit ref as url path segment
+    API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
+    echo "API Commit Ref: $API_COMMIT_REF"
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
