@@ -5,7 +5,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { PROVENANCE_FILE, SLSA_PROVENANCE_PREDICATE_TYPE } from "./provenance";
-import { ASSET_API_URL_SED, apiRefPath } from "../lib/asset-path";
+import { ASSET_API_URL_SED } from "../lib/asset-path";
 import { resolvePushedImageScript } from "./push-oci-image";
 
 const AttestConfig = {
@@ -73,9 +73,9 @@ echo "Asset Name: ${inputValues.devguard_asset_name}"
 API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('${inputValues.devguard_artifact_name}', safe=''))")
 echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-# the commit ref as url path segment
-API_COMMIT_REF=${apiRefPath(`"${inputValues.commit_ref}"`)}
-echo "API Commit Ref: $API_COMMIT_REF"
+# URL encode commit ref for API calls (DevGuard resolves the ref by its name)
+API_COMMIT_REF=$(jq -rn --arg ref "${inputValues.commit_ref}" '$ref | @uri')
+echo "API Encoded Commit Ref: $API_COMMIT_REF"
 
 # Login to registry
 devguard-scanner login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
@@ -232,10 +232,10 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=${apiRefPath(`'${inputValues.commit_ref}'`)} &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching SBOM for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/sbom.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/\${{ env.API_ARTIFACT_NAME }}/sbom.json/' --token='\${{ secrets.devguard-token }}' > /tmp/sbom.json &&
   echo 'SBOM downloaded to /tmp/sbom.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting SBOM with image digest present' &&
@@ -256,10 +256,10 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=${apiRefPath(`'${inputValues.commit_ref}'`)} &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching VeX for artifact:' '\${{ env.API_ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/artifacts/\${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/vex.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/artifacts/\${{ env.API_ARTIFACT_NAME }}/vex.json/' --token='\${{ secrets.devguard-token }}' > /tmp/vex.json &&
   echo 'VeX downloaded to /tmp/vex.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting VeX with image digest present' &&
@@ -280,10 +280,10 @@ echo "Resolved artifact name for attestation: $DEVGUARD_ARTIFACT_NAME"`,
         uses: "docker://" + ContainerImages.DEVGUARD_SCANNER,
         with: {
           args: `sh -c "
-  slug=${apiRefPath(`'${inputValues.commit_ref}'`)} &&
+  api_ref=$(jq -rn --arg ref ${inputValues.commit_ref} '$ref | @uri') &&
   artifact_name="$ARTIFACT_NAME" &&
   echo 'Fetching SAST results for artifact:' '\${{ env.ARTIFACT_NAME }}' &&
-  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$slug'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
+  devguard-scanner curl '${ inputValues.devguard_api_url }/api/v1/organizations/\${{ env.DEVGUARD_ASSET_PATH }}/refs/'$api_ref'/sarif.json' --token='\${{ secrets.devguard-token }}' > /tmp/sarif.json &&
   echo 'SAST results downloaded to /tmp/sarif.json' &&
   if [ -f image-digest.txt ]; then
     echo 'Attesting SAST results with image digest present' &&

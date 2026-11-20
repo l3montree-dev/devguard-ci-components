@@ -476,13 +476,13 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$ROOT_TAG" --offline
 
         echo "Attesting floating root tag: $ROOT_TAG"
-        SLUG=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
+        API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
         ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
         API_ARTIFACT_NAME=$(jq -rn --arg name "$ARTIFACT_NAME" '$name | @uri')
 
-        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
-        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
-        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$SLUG/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$API_ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$API_ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
       /tmp/vex.json|https://cyclonedx.org/vex
@@ -538,9 +538,9 @@ devguard:attest$[[ inputs.job_suffix ]]:
     API_ARTIFACT_NAME=$(python3 -c "from urllib.parse import quote; print(quote('$ARTIFACT_NAME', safe=''))")
     echo "API Encoded Artifact Name: $API_ARTIFACT_NAME"
 
-    # the commit ref as url path segment
+    # URL encode commit ref for API calls (DevGuard resolves the ref by its name)
     API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
-    echo "API Commit Ref: $API_COMMIT_REF"
+    echo "API Encoded Commit Ref: $API_COMMIT_REF"
 
     # Login to registry
     devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]

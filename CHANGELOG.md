@@ -31,8 +31,13 @@ All notable changes to this project will be documented in this file.
   - GitHub `deploy`, `push-oci-image` and `build-image-w-docker` with `push_image: true`, which now pushes with crane instead of `docker push`
   - GitLab `push-oci-image`, when `IMAGE_TAG` carries the digest of the build (Kaniko)
 - GitLab Nix builds signed and attested whatever image the tag pointed to at that moment - an image pushed by another pipeline under the same tag, or an older image in merge request pipelines, where nothing is pushed
-- **The attest, multi-arch manifest and root tag jobs failed with devguard-scanner v1.19.2 and newer** (`unknown command "slug"`). The scanner no longer has a `slug` command. The ref in DevGuard API urls is now the ref name encoded as a url path segment (`feature/foo` -> `feature%2Ffoo`), which DevGuard resolves since v1.19.2. **Needs DevGuard v1.19.2 or newer** for refs that are not already their own slug (e.g. containing `/`, `.`, `+` or upper case letters)
 - GitLab `create_root_tag` (`full`, `container-lifecycle`, `container-lifecycle-with-base-image-inspection`): it called `/devguard-scanner`, which does not exist in the devguard-scanner image, put the artifact name into the API urls without encoding it, and named the floating tag after the digest when `IMAGE_TAG` carried one
+
+## [v1.19.1]
+
+### Fixed
+
+- **The commit ref is now URL-encoded instead of slugified before it is used in DevGuard API urls.**
 
 ## [v1.19.0]
 
