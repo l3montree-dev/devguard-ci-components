@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.19.1]
+
+### Fixed
+
+- **The commit ref is now URL-encoded instead of slugified before it is used in DevGuard API urls.** 
+
 ## [v1.19.0]
 
 ### Fixed
