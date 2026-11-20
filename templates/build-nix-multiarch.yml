@@ -105,9 +105,6 @@ spec:
     create_root_manifest:
       default: $(if [ "$CI_COMMIT_TAG" != "" ]; then echo "true"; else echo "false"; fi)
       description: Whether to also create a manifest without the branch ref in the tag.
-    image_tars:
-      description: Space separated image tarballs the build produced, one per architecture - the build provenance of the manifest is only signed if it references exactly these images
-      default: image-amd64.tar image-arm64.tar
     nix_target_amd64:
       description: Nix flake build target for amd64 (e.g. coreutils-amd64)
     nix_target_arm64:
@@ -295,7 +292,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
   variables:
     GIT_STRATEGY: none
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -306,19 +303,36 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64:
       when: never
     - when: on_success
   script: |
-    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
     # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
     IMAGE_REF="$IMAGE_TAG"
-    IMAGE_REF="${IMAGE_REF%@*}"
-    IMAGE_REF=$(echo "${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
+    BUILT_DIGEST=""
+    case "$IMAGE_REF" in
+      *@*) BUILT_DIGEST="${IMAGE_REF#*@}" ;;
+    esac
+    IMAGE_REF=$(echo "${IMAGE_REF%@*}" | tr '[:upper:]' '[:lower:]')
 
     echo "Image: image-amd64.tar"
     echo "Image Tag: ${IMAGE_REF}"
 
-    /crane push image-amd64.tar "${IMAGE_REF}"
+    # crane push prints the pushed reference with the digest it computed locally (repository@sha256:...) on stdout
+    PUSHED=$(crane push image-amd64.tar "${IMAGE_REF}")
+    echo "Pushed ${PUSHED}"
+
+    # sign, attest and provenance name the digest the build computed (IMAGE_TAG=repository:tag@digest)
+    if [ -n "$BUILT_DIGEST" ] && [ "${PUSHED#*@}" != "$BUILT_DIGEST" ]; then
+      echo "ERROR: crane computed ${PUSHED#*@} for the pushed image, but the build computed $BUILT_DIGEST - signatures and attestations would name a different image."
+      exit 1
+    fi
+
+    # the multi-arch manifest job references the pushed image by this digest
+    echo "${PUSHED#*@}" > image_digest_$[[ inputs.upstream_version ]]_amd64.txt
+  artifacts:
+    paths:
+      - image_digest_$[[ inputs.upstream_version ]]_amd64.txt
 devguard:sign_oci_image$[[ inputs.job_suffix ]]-amd64:
   tags:
     - $[[ inputs.amd64_runner_tag ]]
@@ -340,19 +354,36 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-amd64:
       - ""
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
+    - |-
+      IMAGE_REF="$IMAGE_TAG"
+      PUSHED_DIGEST_FILE="image_digest_$[[ inputs.upstream_version ]]_amd64.txt"
+      if [ -n "$PUSHED_DIGEST_FILE" ]; then
+        case "$IMAGE_REF" in
+          *@*) ;;
+          *)
+            if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+              echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+              exit 0
+            fi
+            IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+            ;;
+        esac
+      fi
+      echo "Image: $IMAGE_REF"
+      devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_REF"
 devguard:provenance$[[ inputs.job_suffix ]]-amd64:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - job: devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+      artifacts: false
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
       optional: true
   dependencies:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
@@ -370,8 +401,22 @@ devguard:provenance$[[ inputs.job_suffix ]]-amd64:
       REGISTRY="$[[ inputs.registry ]]"
       REGISTRY_USER="$[[ inputs.registry_user ]]"
       REGISTRY_PASSWORD="$[[ inputs.registry_password ]]"
-      IMAGE_TAR="image-amd64.tar"
-      IMAGE_TAG="$IMAGE_TAG"
+      IMAGE_REF="$IMAGE_TAG"
+      PUSHED_DIGEST_FILE="image_digest_$[[ inputs.upstream_version ]]_amd64.txt"
+      if [ -n "$PUSHED_DIGEST_FILE" ]; then
+        case "$IMAGE_REF" in
+          *@*) ;;
+          *)
+            if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+              echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+              exit 0
+            fi
+            IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+            ;;
+        esac
+      fi
+      echo "Image: $IMAGE_REF"
+      IMAGE_TAG="$IMAGE_REF"
       PROVENANCE_INPUTS="nix_target=$[[ inputs.nix_target_amd64 ]]
       nix_impure=$[[ inputs.nix_impure ]]"
       set -eu
@@ -383,24 +428,20 @@ devguard:provenance$[[ inputs.job_suffix ]]-amd64:
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # resolved once - everything below refers to the digest, so the tag moving in between does not matter
-      DIGEST=$(crane digest "$IMAGE_REF")
-
-      if [ -f "$IMAGE_TAR" ]; then
-        # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
-        # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
-        # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
-        CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
-        BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-        PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
-        if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
-          echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
-          exit 1
-        fi
-      else
-        # builds which push directly to the registry publish no tarball - the build job decided what was pushed
-        echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
-      fi
+      # like signing: a reference with a digest names that digest, a tag the image it points to
+      case "$IMAGE_REF" in
+        *@*)
+          DIGEST="${IMAGE_REF#*@}"
+          # the digest comes from the build - provenance is only signed for an image which got pushed
+          if ! crane manifest "$IMAGE_NAME@$DIGEST" > /dev/null; then
+            echo "$IMAGE_NAME@$DIGEST is not in the registry - the image which got pushed has another digest" >&2
+            exit 1
+          fi
+          ;;
+        *)
+          DIGEST=$(crane digest "$IMAGE_REF")
+          ;;
+      esac
 
       set -- --image "$IMAGE_NAME@$DIGEST"
       OLD_IFS="$IFS"
@@ -429,18 +470,34 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
   needs:
     - devguard:provenance$[[ inputs.job_suffix ]]-amd64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - job: devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+      artifacts: false
     - devguard:container_scanning$[[ inputs.job_suffix ]]-amd64
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
       optional: true
   dependencies:
     - devguard:provenance$[[ inputs.job_suffix ]]-amd64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-amd64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-amd64
   variables:
     GIT_STRATEGY: none
   script: |
-    echo "Attesting artifacts for $IMAGE_TAG"
+    IMAGE_REF="$IMAGE_TAG"
+    PUSHED_DIGEST_FILE="image_digest_$[[ inputs.upstream_version ]]_amd64.txt"
+    if [ -n "$PUSHED_DIGEST_FILE" ]; then
+      case "$IMAGE_REF" in
+        *@*) ;;
+        *)
+          if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+            echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+            exit 0
+          fi
+          IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+          ;;
+      esac
+    fi
+    echo "Image: $IMAGE_REF"
+    echo "Attesting artifacts for $IMAGE_REF"
     echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
@@ -507,7 +564,7 @@ devguard:attest$[[ inputs.job_suffix ]]-amd64:
         echo "Creating attestation for $FILE_PATH"
         devguard-scanner attest "$FILE_PATH" \
           --predicateType="$PREDICATE_TYPE" \
-          $IMAGE_TAG \
+          "$IMAGE_REF" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
@@ -713,7 +770,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
   variables:
     GIT_STRATEGY: none
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -724,19 +781,36 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64:
       when: never
     - when: on_success
   script: |
-    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
     # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
     IMAGE_REF="$IMAGE_TAG"
-    IMAGE_REF="${IMAGE_REF%@*}"
-    IMAGE_REF=$(echo "${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
+    BUILT_DIGEST=""
+    case "$IMAGE_REF" in
+      *@*) BUILT_DIGEST="${IMAGE_REF#*@}" ;;
+    esac
+    IMAGE_REF=$(echo "${IMAGE_REF%@*}" | tr '[:upper:]' '[:lower:]')
 
     echo "Image: image-arm64.tar"
     echo "Image Tag: ${IMAGE_REF}"
 
-    /crane push image-arm64.tar "${IMAGE_REF}"
+    # crane push prints the pushed reference with the digest it computed locally (repository@sha256:...) on stdout
+    PUSHED=$(crane push image-arm64.tar "${IMAGE_REF}")
+    echo "Pushed ${PUSHED}"
+
+    # sign, attest and provenance name the digest the build computed (IMAGE_TAG=repository:tag@digest)
+    if [ -n "$BUILT_DIGEST" ] && [ "${PUSHED#*@}" != "$BUILT_DIGEST" ]; then
+      echo "ERROR: crane computed ${PUSHED#*@} for the pushed image, but the build computed $BUILT_DIGEST - signatures and attestations would name a different image."
+      exit 1
+    fi
+
+    # the multi-arch manifest job references the pushed image by this digest
+    echo "${PUSHED#*@}" > image_digest_$[[ inputs.upstream_version ]]_arm64.txt
+  artifacts:
+    paths:
+      - image_digest_$[[ inputs.upstream_version ]]_arm64.txt
 devguard:sign_oci_image$[[ inputs.job_suffix ]]-arm64:
   tags:
     - $[[ inputs.arm64_runner_tag ]]
@@ -758,19 +832,36 @@ devguard:sign_oci_image$[[ inputs.job_suffix ]]-arm64:
       - ""
   script:
     - devguard-scanner login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_TAG"
+    - |-
+      IMAGE_REF="$IMAGE_TAG"
+      PUSHED_DIGEST_FILE="image_digest_$[[ inputs.upstream_version ]]_arm64.txt"
+      if [ -n "$PUSHED_DIGEST_FILE" ]; then
+        case "$IMAGE_REF" in
+          *@*) ;;
+          *)
+            if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+              echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+              exit 0
+            fi
+            IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+            ;;
+        esac
+      fi
+      echo "Image: $IMAGE_REF"
+      devguard-scanner sign --token="$[[ inputs.devguard_token ]]" --apiUrl="$[[ inputs.devguard_api_url ]]" --assetName="$[[ inputs.devguard_asset_name ]]" "$IMAGE_REF"
 devguard:provenance$[[ inputs.job_suffix ]]-arm64:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
   allow_failure: $[[ inputs.allow_failure ]]
   needs:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - job: devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+      artifacts: false
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
       optional: true
   dependencies:
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
@@ -788,8 +879,22 @@ devguard:provenance$[[ inputs.job_suffix ]]-arm64:
       REGISTRY="$[[ inputs.registry ]]"
       REGISTRY_USER="$[[ inputs.registry_user ]]"
       REGISTRY_PASSWORD="$[[ inputs.registry_password ]]"
-      IMAGE_TAR="image-arm64.tar"
-      IMAGE_TAG="$IMAGE_TAG"
+      IMAGE_REF="$IMAGE_TAG"
+      PUSHED_DIGEST_FILE="image_digest_$[[ inputs.upstream_version ]]_arm64.txt"
+      if [ -n "$PUSHED_DIGEST_FILE" ]; then
+        case "$IMAGE_REF" in
+          *@*) ;;
+          *)
+            if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+              echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+              exit 0
+            fi
+            IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+            ;;
+        esac
+      fi
+      echo "Image: $IMAGE_REF"
+      IMAGE_TAG="$IMAGE_REF"
       PROVENANCE_INPUTS="nix_target=$[[ inputs.nix_target_arm64 ]]
       nix_impure=$[[ inputs.nix_impure ]]"
       set -eu
@@ -801,24 +906,20 @@ devguard:provenance$[[ inputs.job_suffix ]]-arm64:
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # resolved once - everything below refers to the digest, so the tag moving in between does not matter
-      DIGEST=$(crane digest "$IMAGE_REF")
-
-      if [ -f "$IMAGE_TAR" ]; then
-        # the pushed image is matched by its config digest. The tarball holds uncompressed layers which get compressed on
-        # push, and different crane versions compress differently - so the manifest digest of the tarball is not necessarily
-        # the pushed one. The config lists the uncompressed layer digests, which identifies the image independent of that.
-        CONFIG=$(tar -xOf "$IMAGE_TAR" manifest.json | jq -r '.[0].Config')
-        BUILT_CONFIG="sha256:$(tar -xOf "$IMAGE_TAR" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-        PUSHED_CONFIG=$(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')
-        if [ "$PUSHED_CONFIG" != "$BUILT_CONFIG" ]; then
-          echo "$IMAGE_REF has the config $PUSHED_CONFIG but the build produced $BUILT_CONFIG" >&2
-          exit 1
-        fi
-      else
-        # builds which push directly to the registry publish no tarball - the build job decided what was pushed
-        echo "WARNING: $IMAGE_TAR not found, recording the image the build pushed to $IMAGE_REF instead" >&2
-      fi
+      # like signing: a reference with a digest names that digest, a tag the image it points to
+      case "$IMAGE_REF" in
+        *@*)
+          DIGEST="${IMAGE_REF#*@}"
+          # the digest comes from the build - provenance is only signed for an image which got pushed
+          if ! crane manifest "$IMAGE_NAME@$DIGEST" > /dev/null; then
+            echo "$IMAGE_NAME@$DIGEST is not in the registry - the image which got pushed has another digest" >&2
+            exit 1
+          fi
+          ;;
+        *)
+          DIGEST=$(crane digest "$IMAGE_REF")
+          ;;
+      esac
 
       set -- --image "$IMAGE_NAME@$DIGEST"
       OLD_IFS="$IFS"
@@ -847,18 +948,34 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
   needs:
     - devguard:provenance$[[ inputs.job_suffix ]]-arm64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - job: devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+      artifacts: false
     - devguard:container_scanning$[[ inputs.job_suffix ]]-arm64
     - job: devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
       optional: true
   dependencies:
     - devguard:provenance$[[ inputs.job_suffix ]]-arm64
     - devguard:generate_tag$[[ inputs.job_suffix ]]-arm64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - devguard:push_oci_image$[[ inputs.job_suffix ]]-arm64
   variables:
     GIT_STRATEGY: none
   script: |
-    echo "Attesting artifacts for $IMAGE_TAG"
+    IMAGE_REF="$IMAGE_TAG"
+    PUSHED_DIGEST_FILE="image_digest_$[[ inputs.upstream_version ]]_arm64.txt"
+    if [ -n "$PUSHED_DIGEST_FILE" ]; then
+      case "$IMAGE_REF" in
+        *@*) ;;
+        *)
+          if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+            echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+            exit 0
+          fi
+          IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+          ;;
+      esac
+    fi
+    echo "Image: $IMAGE_REF"
+    echo "Attesting artifacts for $IMAGE_REF"
     echo "Artifact Name: $ARTIFACT_NAME"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
@@ -925,7 +1042,7 @@ devguard:attest$[[ inputs.job_suffix ]]-arm64:
         echo "Creating attestation for $FILE_PATH"
         devguard-scanner attest "$FILE_PATH" \
           --predicateType="$PREDICATE_TYPE" \
-          $IMAGE_TAG \
+          "$IMAGE_REF" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \
@@ -990,25 +1107,45 @@ devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]:
         exit 1
       fi
 
-      echo "amd64: $AMD64_TAG"
-      echo "arm64: $ARM64_TAG"
+      # the index references the pushed images by the digests the push jobs wrote - the per-arch tags can be repushed in
+      # the meantime. repository@digest, not tag@digest: docker manifest resolves a tag@digest reference by its tag
+      AMD64_DIGEST_FILE="./image_digest_$[[ inputs.upstream_version ]]_amd64.txt"
+      ARM64_DIGEST_FILE="./image_digest_$[[ inputs.upstream_version ]]_arm64.txt"
+      if [ -f "$AMD64_DIGEST_FILE" ] && [ -f "$ARM64_DIGEST_FILE" ]; then
+        EXPECTED_DIGESTS="$(cat "$AMD64_DIGEST_FILE") $(cat "$ARM64_DIGEST_FILE")"
+        AMD64_REF="${AMD64_TAG%:*}@$(cat "$AMD64_DIGEST_FILE")"
+        ARM64_REF="${ARM64_TAG%:*}@$(cat "$ARM64_DIGEST_FILE")"
+      else
+        # push jobs of an older version, or none ran (merge request pipelines)
+        echo "WARNING: $AMD64_DIGEST_FILE or $ARM64_DIGEST_FILE not found - the manifest references the per-arch tags and its provenance is not checked against the pushed images"
+        EXPECTED_DIGESTS=""
+        AMD64_REF="$AMD64_TAG"
+        ARM64_REF="$ARM64_TAG"
+      fi
+
+      echo "amd64: $AMD64_REF"
+      echo "arm64: $ARM64_REF"
 
       # Strip the -amd64 suffix to get the base tag
       BASE_TAG="${AMD64_TAG%-amd64}"
 
-      echo "Creating manifest: $BASE_TAG -> $AMD64_TAG + $ARM64_TAG"
-      docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
+      echo "Creating manifest: $BASE_TAG -> $AMD64_REF + $ARM64_REF"
+      docker manifest create "$BASE_TAG" "$AMD64_REF" "$ARM64_REF"
       docker manifest push "$BASE_TAG"
 
       echo "MANIFEST_IMAGE_TAG=$BASE_TAG" > manifest_image_tag.env
       echo "AMD64_ARTIFACT_NAME=$AMD64_ARTIFACT_NAME" >> manifest_image_tag.env
       echo "ARM64_ARTIFACT_NAME=$ARM64_ARTIFACT_NAME" >> manifest_image_tag.env
+      # the sign job only attests the provenance of an index which references exactly these images
+      if [ -n "$EXPECTED_DIGESTS" ]; then
+        echo "EXPECTED_DIGESTS=$EXPECTED_DIGESTS" >> manifest_image_tag.env
+      fi
 
       if [ "$[[ inputs.create_root_manifest ]]" = "true" ]; then
         ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${CI_COMMIT_REF_NAME}//")
         if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
           echo "Creating root manifest: $ROOT_TAG"
-          docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
+          docker manifest create "$ROOT_TAG" "$AMD64_REF" "$ARM64_REF"
           docker manifest push "$ROOT_TAG"
           echo "MANIFEST_WITHOUT_REF_TAG=$ROOT_TAG" >> manifest_image_tag.env
         fi
@@ -1021,12 +1158,12 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
   stage: attestation
   needs:
     - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+    - job: devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
+      artifacts: false
+    - job: devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
+      artifacts: false
   dependencies:
     - devguard:create_manifest_multi_arch$[[ inputs.job_suffix ]]
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-amd64
-    - devguard:build_oci_image$[[ inputs.job_suffix ]]-arm64
   image:
     name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
@@ -1078,43 +1215,33 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]-manifest:
       REGISTRY="$CI_REGISTRY"
       REGISTRY_USER="$CI_REGISTRY_USER"
       REGISTRY_PASSWORD="$CI_REGISTRY_PASSWORD"
-      IMAGE_TARS="$[[ inputs.image_tars ]]"
       set -eu
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # images are matched by their config digest - see the provenance job
-      tarball_config_digest() {
-        CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
-        echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-      }
       sorted() {
         printf '%s\n' "$@" | sort | tr '\n' ' '
       }
-
-      BUILT_CONFIGS=""
-      for TAR in $IMAGE_TARS; do
-        BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
-      done
-      EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+      EXPECTED_DIGESTS="${EXPECTED_DIGESTS:-}"
+      if [ -z "$EXPECTED_DIGESTS" ]; then
+        echo "WARNING: EXPECTED_DIGESTS is not set - not checking that the index references exactly the built images" >&2
+      fi
+      EXPECTED=$(sorted $EXPECTED_DIGESTS)
 
       INDEX_REFS=""
       for TAG in $MANIFEST_TAGS; do
         IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
         IMAGE_NAME="${IMAGE_REF%@*}"
         IMAGE_NAME="${IMAGE_NAME%:*}"
-        # resolved once - everything below refers to the digest
+        # like signing: the index the tag points to
         INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
 
-        # the index is only attested if it references exactly the built images
-        LISTED_CONFIGS=""
-        for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
-          LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
-        done
-        LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
-        if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-          echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-          exit 1
+        if [ -n "$EXPECTED_DIGESTS" ]; then
+          LISTED=$(sorted $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'))
+          if [ "$LISTED" != "$EXPECTED" ]; then
+            echo "$TAG references the images $LISTED but the build produced $EXPECTED" >&2
+            exit 1
+          fi
         fi
 
         # the root tag points to the same index - attest it once

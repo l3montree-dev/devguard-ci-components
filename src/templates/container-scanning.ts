@@ -2,7 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub, githubInputEquals } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 export const ContainerScanningJobInputs = defineInputsGitLab({
   ...InputGroups.devguardCore,
@@ -120,10 +120,7 @@ else
   echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
 fi`,
       },
-      {
-        name: "Setup crane",
-        uses: IMJASONH_SETUP_CRANE,
-      },
+      GitHubReusableSteps.SetupCrane,
       {
         name: "Download OCI Image from registry",
         run: "crane pull $(cat image-tag.txt) image.tar",

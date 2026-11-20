@@ -73,6 +73,9 @@ spec:
     image:
       description: Container image to use for attestation
       default: $CI_REGISTRY_IMAGE
+    pushed_digest_file:
+      default: ""
+      description: "File the push-oci-image job wrote the pushed digest to (image_digest_<upstream_version>_<architecture>.txt). If set and the image has no digest, the job names the pushed digest - and does nothing if the file is missing, as no image was pushed (e.g. merge request pipelines). Empty: the image as given."
 ---
 
 include: []
@@ -90,7 +93,22 @@ devguard:attest$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   script: |
-    echo "Attesting artifacts for $[[ inputs.image ]]"
+    IMAGE_REF="$[[ inputs.image ]]"
+    PUSHED_DIGEST_FILE="$[[ inputs.pushed_digest_file ]]"
+    if [ -n "$PUSHED_DIGEST_FILE" ]; then
+      case "$IMAGE_REF" in
+        *@*) ;;
+        *)
+          if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+            echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+            exit 0
+          fi
+          IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+          ;;
+      esac
+    fi
+    echo "Image: $IMAGE_REF"
+    echo "Attesting artifacts for $IMAGE_REF"
     echo "Artifact Name: $[[ inputs.devguard_artifact_name ]]"
     echo "Asset Name: $[[ inputs.devguard_asset_name ]]"
 
@@ -157,7 +175,7 @@ devguard:attest$[[ inputs.job_suffix ]]:
         echo "Creating attestation for $FILE_PATH"
         devguard-scanner attest "$FILE_PATH" \
           --predicateType="$PREDICATE_TYPE" \
-          $[[ inputs.image ]] \
+          "$IMAGE_REF" \
           --defaultRef="$[[ inputs.default_ref ]]" \
           --ref="$[[ inputs.commit_ref ]]" \
           --isTag="$[[ inputs.is_tag ]]" \

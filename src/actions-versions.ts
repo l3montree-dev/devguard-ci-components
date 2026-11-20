@@ -13,3 +13,10 @@ export const DOCKER_LOGIN_ACTION = "docker/login-action@3864d6aed8ff134b2ed894ce
 export const CACHIX_INSTALL_NIX_ACTION = "cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3"; // v31.10.6
 
 export const IMJASONH_SETUP_CRANE = "imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2"; // v0.6
+
+// The one crane every GitHub job installs (GitHubReusableSteps.SetupCrane) - the official release binary.
+// The digest of an image is computed over its compressed layers, and crane compresses uncompressed layers (nix builds)
+// itself: how the bytes come out depends on the Go version the crane binary was built with (crane v0.22.1 built with
+// go1.26 and with go1.27 produce different ones). The build job computes image-digest.txt with crane and the deploy job
+// pushes with crane - only the very same binary makes image-digest.txt the digest of the pushed image.
+export const CRANE_VERSION = "v0.22.1";

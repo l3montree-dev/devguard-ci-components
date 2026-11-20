@@ -6,6 +6,7 @@ import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { PROVENANCE_FILE, SLSA_PROVENANCE_PREDICATE_TYPE } from "./provenance";
 import { ASSET_API_URL_SED } from "../lib/asset-path";
+import { resolvePushedImageScript } from "./push-oci-image";
 
 const AttestConfig = {
   ...InputGroups.devguardCore,
@@ -44,6 +45,7 @@ export const AttestJobInputs = defineInputsGitLab({
 
   attestations: Inputs.attestations,
   image: Inputs.image,
+  pushed_digest_file: Inputs.pushed_digest_file,
 });
 
 export const AttestTemplate = defineJobGitLab(AttestJobInputs, (inputValues) => ({
@@ -62,7 +64,8 @@ export const AttestTemplate = defineJobGitLab(AttestJobInputs, (inputValues) => 
     variables: {
       GIT_STRATEGY: inputValues.git_strategy,
     },
-    script: `echo "Attesting artifacts for ${inputValues.image}"
+    script: `${resolvePushedImageScript(inputValues.image, inputValues.pushed_digest_file)}
+echo "Attesting artifacts for $IMAGE_REF"
 echo "Artifact Name: ${inputValues.devguard_artifact_name}"
 echo "Asset Name: ${inputValues.devguard_asset_name}"
 
@@ -129,7 +132,7 @@ echo "$ATTESTATIONS_JSON" | jq -c '.[]' | while read -r attestation; do
     echo "Creating attestation for $FILE_PATH"
     devguard-scanner attest "$FILE_PATH" \\
       --predicateType="$PREDICATE_TYPE" \\
-      ${inputValues.image} \\
+      "$IMAGE_REF" \\
       --defaultRef="${inputValues.default_ref}" \\
       --ref="${inputValues.commit_ref}" \\
       --isTag="${inputValues.is_tag}" \\

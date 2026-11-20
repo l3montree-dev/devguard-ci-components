@@ -2,8 +2,18 @@ import { defineInputsGitHub, defineJobGitHub, githubInputEquals } from "../lib/J
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+
+// Pushes the image tarball to imageRef and fails if crane computes another digest than the build did (image-digest.txt).
+// Sign, attest and provenance name the build's digest - on a mismatch they would name a different image.
+// crane push prints the pushed reference with the digest it computed locally (repository@sha256:...) as its only output on stdout.
+export const pushImageTarballScript = (imageRef: string, tarball = "image.tar") => `PUSHED=$(crane push ${tarball} ${imageRef})
+echo "Pushed $PUSHED"
+if [ "\${PUSHED#*@}" != "$(cat image-digest.txt)" ]; then
+  echo "::error::crane computed \${PUSHED#*@} for the pushed image, but the build computed $(cat image-digest.txt) - signatures and attestations would name a different image. Build and push have to use the same crane (CRANE_VERSION)."
+  exit 1
+fi`;
 
 export const DeployJobInputsGitHub = defineInputsGitHub({
   image_suffix: {
@@ -60,7 +70,7 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
       GIT_STRATEGY: inputValues.git_strategy,
     },
     image: {
-      name: ContainerImages.KANIKO,
+      name: ContainerImages.DEVGUARD_SCANNER,
       pull_policy: inputValues.pull_policy,
       entrypoint: [""],
     },
@@ -78,8 +88,8 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
       },
     ],
     script: [
-      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `/crane push ${inputValues.image} ${inputValues.image_tag}`,
+      `crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
+      `crane push ${inputValues.image} ${inputValues.image_tag}`,
     ],
   },
 }));
@@ -128,13 +138,11 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
           path: ".",
         },
       },
-      {
-        name: "Setup crane",
-        uses: IMJASONH_SETUP_CRANE,
-      },
+      // the crane the build job computed image-digest.txt with - pushing with another one can produce another digest
+      GitHubReusableSteps.SetupCrane,
       {
         name: "Push oci image to GitHub image Registry",
-        run: 'crane push image.tar "$(cat image-tag.txt)"',
+        run: pushImageTarballScript(`"$(cat image-tag.txt)"`),
         if: githubInputEquals(inputValues.image_already_in_registry, "false"),
       },
     ],

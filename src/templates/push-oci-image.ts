@@ -5,6 +5,32 @@ import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { pushImageTarballScript } from "./deploy";
+
+// The digest the GitLab push job pushed, named like the env file of generate-tag - read by the multi-arch manifest job
+// and, through resolvePushedImageScript, by the sign, attest and provenance jobs
+export const pushedDigestFile = (upstreamVersion: string, architecture: string) =>
+  `image_digest_${upstreamVersion}_${architecture}.txt`;
+
+// Sets IMAGE_REF to the image a GitLab sign, attest or provenance job works on: the image this pipeline pushed, not
+// whatever a tag points to by now. A reference with a digest stays - the build computed it and the push job checked
+// it. A tag gets the digest of pushedDigestFile; without that file this pipeline pushed nothing (merge request
+// pipelines) and the job ends without doing anything. An empty pushedDigestFile keeps the image as given.
+export const resolvePushedImageScript = (image: string, digestFile: string) => `IMAGE_REF="${image}"
+PUSHED_DIGEST_FILE="${digestFile}"
+if [ -n "$PUSHED_DIGEST_FILE" ]; then
+  case "$IMAGE_REF" in
+    *@*) ;;
+    *)
+      if [ ! -f "$PUSHED_DIGEST_FILE" ]; then
+        echo "$PUSHED_DIGEST_FILE not found - this pipeline pushed no image (e.g. a merge request pipeline), nothing to do"
+        exit 0
+      fi
+      IMAGE_REF="$IMAGE_REF@$(cat "$PUSHED_DIGEST_FILE")"
+      ;;
+  esac
+fi
+echo "Image: $IMAGE_REF"`;
 
 export const PushOciImageJobInputs = defineInputsGitLab({
   runner_tags: Inputs.runner_tags,
@@ -36,6 +62,9 @@ export const PushOciImageJobInputs = defineInputsGitLab({
     description:
       "The tag to use for the built image. Leave empty to use the generated tag from the 'generate-tag' component." as const,
   },
+  // name the pushed digest like generate-tag names its env file - the multi-arch manifest job reads both per architecture
+  architecture: Inputs.architecture,
+  upstream_version: Inputs.upstream_version,
 
   disable_job: Inputs.disable_job,
 });
@@ -92,25 +121,10 @@ export const PushOciImageTemplateGitHub = defineJobGitHub(PushOciImageJobInputsG
           path: ".",
         },
       },
-      {
-        name: "Log in to ghcr.io",
-        run: `mkdir -p \${HOME}/.docker
-sudo chown -R 53111:53111 \${HOME}/.docker || true
-sudo chmod 700 \${HOME}/.docker || true
-docker run --rm \\
-  --user 53111:53111 \\
-  -v "\${HOME}/.docker:/tmp/.docker" \\
-  ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN`,
-      },
+      GitHubReusableSteps.SetupCrane,
       {
         name: "Push OCI image",
-        run: `docker run --rm \\
-  -v "$GITHUB_WORKSPACE:/workspace" \\
-  -w /workspace \\
-  -v "\${HOME}/.docker:/tmp/.docker:ro" \\
-  ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane push image.tar "$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"`,
+        run: pushImageTarballScript(`"$(cat image-tag.txt | tr '[:upper:]' '[:lower:]')"`),
       },
     ],
   },
@@ -128,7 +142,7 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
       GIT_STRATEGY: inputValues.git_strategy,
     },
     image: {
-      name: ContainerImages.KANIKO,
+      name: ContainerImages.DEVGUARD_SCANNER,
       pull_policy: inputValues.pull_policy,
       entrypoint: [""],
     },
@@ -145,19 +159,36 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
         when: "on_success",
       },
     ],
-    script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+    script: `crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
 # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
 # digest only, never creating the tag that downstream jobs (manifest/sign/attest) need.
 IMAGE_REF="${inputValues.image_tag}"
-IMAGE_REF="\${IMAGE_REF%@*}"
-IMAGE_REF=$(echo "\${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
+BUILT_DIGEST=""
+case "$IMAGE_REF" in
+  *@*) BUILT_DIGEST="\${IMAGE_REF#*@}" ;;
+esac
+IMAGE_REF=$(echo "\${IMAGE_REF%@*}" | tr '[:upper:]' '[:lower:]')
 
 echo "Image: ${inputValues.image}"
 echo "Image Tag: \${IMAGE_REF}"
 
-/crane push ${inputValues.image} "\${IMAGE_REF}"
+# crane push prints the pushed reference with the digest it computed locally (repository@sha256:...) on stdout
+PUSHED=$(crane push ${inputValues.image} "\${IMAGE_REF}")
+echo "Pushed \${PUSHED}"
+
+# sign, attest and provenance name the digest the build computed (IMAGE_TAG=repository:tag@digest)
+if [ -n "$BUILT_DIGEST" ] && [ "\${PUSHED#*@}" != "$BUILT_DIGEST" ]; then
+  echo "ERROR: crane computed \${PUSHED#*@} for the pushed image, but the build computed $BUILT_DIGEST - signatures and attestations would name a different image."
+  exit 1
+fi
+
+# the multi-arch manifest job references the pushed image by this digest
+echo "\${PUSHED#*@}" > ${pushedDigestFile(inputValues.upstream_version, inputValues.architecture)}
 `,
+    artifacts: {
+      paths: [pushedDigestFile(inputValues.upstream_version, inputValues.architecture)],
+    },
   },
 }));

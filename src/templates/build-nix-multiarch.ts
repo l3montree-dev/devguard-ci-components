@@ -145,8 +145,8 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
         },
       },
       {
-        name: "Install crane and devguard-scanner",
-        run: `nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner`,
+        name: "Install devguard-scanner",
+        run: `nix profile install github:l3montree-dev/devguard#devguardScanner`,
       },
       {
         name: "Write Nix cache secret key",
@@ -181,6 +181,9 @@ nix copy $(nix-store -qR $(readlink result)) \\
         name: "Prepare image.tar",
         run: `gunzip -c "$(readlink -f result)" > image.tar`,
       },
+      // the crane the image gets pushed with - another crane can compute another digest, see CRANE_VERSION.
+      // Installed after the build: setup-crane logs in to the registry, which the code of the built project must not see
+      GitHubReusableSteps.SetupCrane,
       {
         name: "Get image digest",
         run: `crane digest --tarball=image.tar > image-digest.txt`,

@@ -63,7 +63,15 @@ jobs:
           path: .
       - name: Setup crane
         uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+        with:
+          version: v0.22.1
       - name: Push oci image to GitHub image Registry
-        run: crane push image.tar "$(cat image-tag.txt)"
+        run: |-
+          PUSHED=$(crane push image.tar "$(cat image-tag.txt)")
+          echo "Pushed $PUSHED"
+          if [ "${PUSHED#*@}" != "$(cat image-digest.txt)" ]; then
+            echo "::error::crane computed ${PUSHED#*@} for the pushed image, but the build computed $(cat image-digest.txt) - signatures and attestations would name a different image. Build and push have to use the same crane (CRANE_VERSION)."
+            exit 1
+          fi
         if: format('{0}', inputs.image-already-in-registry) == 'false'
     name: devguard:deploy

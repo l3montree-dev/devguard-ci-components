@@ -5,6 +5,7 @@ import { ContainerImages } from "../container-image-versions";
 import { ACTIONS_DOWNLOAD_ARTIFACT, DOCKER_LOGIN_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { indexProvenanceScript } from "./provenance";
+import { pushedDigestFile } from "./push-oci-image";
 import { assetApiPath } from "../lib/asset-path";
 
 const CreateManifestMultiArchSigningInputs = {
@@ -66,6 +67,14 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
           path: "arm64",
         },
       },
+      ...["amd64", "arm64"].map((arch) => ({
+        name: `Download ${arch} image-digest`,
+        uses: ACTIONS_DOWNLOAD_ARTIFACT,
+        with: {
+          name: `image-digest${ inputValues.image_suffix }-${arch}`,
+          path: arch,
+        },
+      })),
       GitHubReusableSteps.DockerLogin(inputValues.registry, inputValues.registry_user),
       {
         name: "Create and push multi-arch manifest",
@@ -74,19 +83,26 @@ export const CreateManifestMultiArchTemplateGitHub = defineJobGitHub(CreateManif
         },
         run: `AMD64_TAG=$(cat amd64/image-tag.txt)
 ARM64_TAG=$(cat arm64/image-tag.txt)
+AMD64_DIGEST=$(cat amd64/image-digest.txt)
+ARM64_DIGEST=$(cat arm64/image-digest.txt)
 
-if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ]; then
-  echo "ERROR: Could not read arch-specific IMAGE_TAG from image-tag artifacts"
+if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ] || [ -z "$AMD64_DIGEST" ] || [ -z "$ARM64_DIGEST" ]; then
+  echo "ERROR: Could not read arch-specific IMAGE_TAG or digest from image-tag and image-digest artifacts"
   exit 1
 fi
 
-echo "amd64: $AMD64_TAG"
-echo "arm64: $ARM64_TAG"
+# the index references the built images by digest - the per-arch tags can be repushed in the meantime.
+# repository@digest, not tag@digest: docker manifest resolves a tag@digest reference by its tag
+AMD64_REF="\${AMD64_TAG%:*}@$AMD64_DIGEST"
+ARM64_REF="\${ARM64_TAG%:*}@$ARM64_DIGEST"
+
+echo "amd64: $AMD64_REF"
+echo "arm64: $ARM64_REF"
 
 BASE_TAG="\${AMD64_TAG%-amd64}"
 
-echo "Creating manifest: $BASE_TAG -> $AMD64_TAG + $ARM64_TAG"
-docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
+echo "Creating manifest: $BASE_TAG -> $AMD64_REF + $ARM64_REF"
+docker manifest create "$BASE_TAG" "$AMD64_REF" "$ARM64_REF"
 docker manifest push "$BASE_TAG"
 
 MANIFEST_TAGS="$BASE_TAG"
@@ -95,13 +111,14 @@ if [ "$CREATE_ROOT_MANIFEST" = "true" ]; then
   ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-\${GITHUB_REF_NAME}//")
   if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
     echo "Creating root manifest: $ROOT_TAG"
-    docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
+    docker manifest create "$ROOT_TAG" "$AMD64_REF" "$ARM64_REF"
     docker manifest push "$ROOT_TAG"
     MANIFEST_TAGS="$MANIFEST_TAGS $ROOT_TAG"
   fi
 fi
 
-echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
+echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
+echo "EXPECTED_DIGESTS=$AMD64_DIGEST $ARM64_DIGEST" >> $GITHUB_ENV`,
       },
       {
         name: "Sign multi-arch manifest(s)",
@@ -115,21 +132,12 @@ echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV`,
   docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
 done`,
       },
-      ...["amd64", "arm64"].map((arch) => ({
-        name: `Download ${arch} oci-image`,
-        uses: ACTIONS_DOWNLOAD_ARTIFACT,
-        with: {
-          name: `oci-image${inputValues.image_suffix}-${arch}`,
-          path: arch,
-        },
-      })),
       {
         name: "Generate, sign and attach build provenance of the multi-arch manifest(s)",
         env: {
           DEVGUARD_API_URL: inputValues.devguard_api_url,
           REGISTRY: inputValues.registry,
           REGISTRY_USER: inputValues.registry_user,
-          IMAGE_TARS: "amd64/image.tar arm64/image.tar",
         } as Record<string, string>,
         run: `AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
 DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
@@ -142,7 +150,7 @@ PROVENANCE_SCRIPT
 
 # run as the runner user - the scanner image user can not write to the workspace
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \\
-  -e IMAGE_TARS -e MANIFEST_TAGS \\
+  -e MANIFEST_TAGS -e EXPECTED_DIGESTS \\
   -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \\
   --entrypoint sh ${ContainerImages.DEVGUARD_SCANNER} index-provenance.sh`,
       },
@@ -344,25 +352,45 @@ if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ]; then
   exit 1
 fi
 
-echo "amd64: $AMD64_TAG"
-echo "arm64: $ARM64_TAG"
+# the index references the pushed images by the digests the push jobs wrote - the per-arch tags can be repushed in
+# the meantime. repository@digest, not tag@digest: docker manifest resolves a tag@digest reference by its tag
+AMD64_DIGEST_FILE="${inputValues.artifacts_subdirectory}/${pushedDigestFile(inputValues.upstream_version, "amd64")}"
+ARM64_DIGEST_FILE="${inputValues.artifacts_subdirectory}/${pushedDigestFile(inputValues.upstream_version, "arm64")}"
+if [ -f "$AMD64_DIGEST_FILE" ] && [ -f "$ARM64_DIGEST_FILE" ]; then
+  EXPECTED_DIGESTS="$(cat "$AMD64_DIGEST_FILE") $(cat "$ARM64_DIGEST_FILE")"
+  AMD64_REF="\${AMD64_TAG%:*}@$(cat "$AMD64_DIGEST_FILE")"
+  ARM64_REF="\${ARM64_TAG%:*}@$(cat "$ARM64_DIGEST_FILE")"
+else
+  # push jobs of an older version, or none ran (merge request pipelines)
+  echo "WARNING: $AMD64_DIGEST_FILE or $ARM64_DIGEST_FILE not found - the manifest references the per-arch tags and its provenance is not checked against the pushed images"
+  EXPECTED_DIGESTS=""
+  AMD64_REF="$AMD64_TAG"
+  ARM64_REF="$ARM64_TAG"
+fi
+
+echo "amd64: $AMD64_REF"
+echo "arm64: $ARM64_REF"
 
 # Strip the -amd64 suffix to get the base tag
 BASE_TAG="\${AMD64_TAG%-amd64}"
 
-echo "Creating manifest: $BASE_TAG -> $AMD64_TAG + $ARM64_TAG"
-docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
+echo "Creating manifest: $BASE_TAG -> $AMD64_REF + $ARM64_REF"
+docker manifest create "$BASE_TAG" "$AMD64_REF" "$ARM64_REF"
 docker manifest push "$BASE_TAG"
 
 echo "MANIFEST_IMAGE_TAG=$BASE_TAG" > manifest_image_tag.env
 echo "AMD64_ARTIFACT_NAME=$AMD64_ARTIFACT_NAME" >> manifest_image_tag.env
 echo "ARM64_ARTIFACT_NAME=$ARM64_ARTIFACT_NAME" >> manifest_image_tag.env
+# the sign job only attests the provenance of an index which references exactly these images
+if [ -n "$EXPECTED_DIGESTS" ]; then
+  echo "EXPECTED_DIGESTS=$EXPECTED_DIGESTS" >> manifest_image_tag.env
+fi
 
 if [ "${inputValues.create_root_manifest}" = "true" ]; then
   ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-\${CI_COMMIT_REF_NAME}//")
   if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
     echo "Creating root manifest: $ROOT_TAG"
-    docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
+    docker manifest create "$ROOT_TAG" "$AMD64_REF" "$ARM64_REF"
     docker manifest push "$ROOT_TAG"
     echo "MANIFEST_WITHOUT_REF_TAG=$ROOT_TAG" >> manifest_image_tag.env
   fi
@@ -388,11 +416,6 @@ export const SignManifestMultiArchJobInputs = defineInputsGitLab({
   pull_policy: Inputs.pull_policy,
   devguard_token: Inputs.devguard_token,
   ...CreateManifestMultiArchSigningInputs,
-  image_tars: {
-    description:
-      "Space separated image tarballs the build produced, one per architecture - the build provenance of the manifest is only signed if it references exactly these images" as const,
-    default: "image-amd64.tar image-arm64.tar" as const,
-  },
 });
 
 export const SignManifestMultiArchTemplate = defineJobGitLab(SignManifestMultiArchJobInputs, (inputValues) => ({
@@ -454,7 +477,6 @@ DEVGUARD_API_URL="${inputValues.devguard_api_url}"
 REGISTRY="$CI_REGISTRY"
 REGISTRY_USER="$CI_REGISTRY_USER"
 REGISTRY_PASSWORD="$CI_REGISTRY_PASSWORD"
-IMAGE_TARS="${inputValues.image_tars}"
 ${indexProvenanceScript}
 )`,
     ],

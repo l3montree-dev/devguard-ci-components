@@ -83,6 +83,16 @@ jobs:
         with:
           name: image-tag${{ inputs.image-suffix }}-arm64
           path: arm64
+      - name: Download amd64 image-digest
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-digest${{ inputs.image-suffix }}-amd64
+          path: amd64
+      - name: Download arm64 image-digest
+        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
+        with:
+          name: image-digest${{ inputs.image-suffix }}-arm64
+          path: arm64
       - name: Log in to registry
         uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870
         with:
@@ -95,19 +105,26 @@ jobs:
         run: |-
           AMD64_TAG=$(cat amd64/image-tag.txt)
           ARM64_TAG=$(cat arm64/image-tag.txt)
+          AMD64_DIGEST=$(cat amd64/image-digest.txt)
+          ARM64_DIGEST=$(cat arm64/image-digest.txt)
 
-          if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ]; then
-            echo "ERROR: Could not read arch-specific IMAGE_TAG from image-tag artifacts"
+          if [ -z "$AMD64_TAG" ] || [ -z "$ARM64_TAG" ] || [ -z "$AMD64_DIGEST" ] || [ -z "$ARM64_DIGEST" ]; then
+            echo "ERROR: Could not read arch-specific IMAGE_TAG or digest from image-tag and image-digest artifacts"
             exit 1
           fi
 
-          echo "amd64: $AMD64_TAG"
-          echo "arm64: $ARM64_TAG"
+          # the index references the built images by digest - the per-arch tags can be repushed in the meantime.
+          # repository@digest, not tag@digest: docker manifest resolves a tag@digest reference by its tag
+          AMD64_REF="${AMD64_TAG%:*}@$AMD64_DIGEST"
+          ARM64_REF="${ARM64_TAG%:*}@$ARM64_DIGEST"
+
+          echo "amd64: $AMD64_REF"
+          echo "arm64: $ARM64_REF"
 
           BASE_TAG="${AMD64_TAG%-amd64}"
 
-          echo "Creating manifest: $BASE_TAG -> $AMD64_TAG + $ARM64_TAG"
-          docker manifest create "$BASE_TAG" "$AMD64_TAG" "$ARM64_TAG"
+          echo "Creating manifest: $BASE_TAG -> $AMD64_REF + $ARM64_REF"
+          docker manifest create "$BASE_TAG" "$AMD64_REF" "$ARM64_REF"
           docker manifest push "$BASE_TAG"
 
           MANIFEST_TAGS="$BASE_TAG"
@@ -116,13 +133,14 @@ jobs:
             ROOT_TAG=$(echo "$BASE_TAG" | sed "s/-${GITHUB_REF_NAME}//")
             if [ "$ROOT_TAG" != "$BASE_TAG" ]; then
               echo "Creating root manifest: $ROOT_TAG"
-              docker manifest create "$ROOT_TAG" "$AMD64_TAG" "$ARM64_TAG"
+              docker manifest create "$ROOT_TAG" "$AMD64_REF" "$ARM64_REF"
               docker manifest push "$ROOT_TAG"
               MANIFEST_TAGS="$MANIFEST_TAGS $ROOT_TAG"
             fi
           fi
 
           echo "MANIFEST_TAGS=$MANIFEST_TAGS" >> $GITHUB_ENV
+          echo "EXPECTED_DIGESTS=$AMD64_DIGEST $ARM64_DIGEST" >> $GITHUB_ENV
       - name: Sign multi-arch manifest(s)
         env:
           DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
@@ -133,22 +151,11 @@ jobs:
             echo "Signing manifest: $TAG"
             docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$TAG" --offline
           done
-      - name: Download amd64 oci-image
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: oci-image${{ inputs.image-suffix }}-amd64
-          path: amd64
-      - name: Download arm64 oci-image
-        uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
-        with:
-          name: oci-image${{ inputs.image-suffix }}-arm64
-          path: arm64
       - name: Generate, sign and attach build provenance of the multi-arch manifest(s)
         env:
           DEVGUARD_API_URL: ${{ inputs.devguard-api-url }}
           REGISTRY: ${{ inputs.registry }}
           REGISTRY_USER: ${{ inputs.registry-user }}
-          IMAGE_TARS: amd64/image.tar arm64/image.tar
         run: |-
           AUDIENCE=$(jq -rn --arg audience "$DEVGUARD_API_URL" '$audience | @uri')
           DEVGUARD_ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
@@ -160,38 +167,29 @@ jobs:
 
           crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-          # images are matched by their config digest - see the provenance job
-          tarball_config_digest() {
-            CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
-            echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-          }
           sorted() {
             printf '%s\n' "$@" | sort | tr '\n' ' '
           }
-
-          BUILT_CONFIGS=""
-          for TAR in $IMAGE_TARS; do
-            BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
-          done
-          EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+          EXPECTED_DIGESTS="${EXPECTED_DIGESTS:-}"
+          if [ -z "$EXPECTED_DIGESTS" ]; then
+            echo "WARNING: EXPECTED_DIGESTS is not set - not checking that the index references exactly the built images" >&2
+          fi
+          EXPECTED=$(sorted $EXPECTED_DIGESTS)
 
           INDEX_REFS=""
           for TAG in $MANIFEST_TAGS; do
             IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
             IMAGE_NAME="${IMAGE_REF%@*}"
             IMAGE_NAME="${IMAGE_NAME%:*}"
-            # resolved once - everything below refers to the digest
+            # like signing: the index the tag points to
             INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
 
-            # the index is only attested if it references exactly the built images
-            LISTED_CONFIGS=""
-            for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
-              LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
-            done
-            LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
-            if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-              echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-              exit 1
+            if [ -n "$EXPECTED_DIGESTS" ]; then
+              LISTED=$(sorted $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'))
+              if [ "$LISTED" != "$EXPECTED" ]; then
+                echo "$TAG references the images $LISTED but the build produced $EXPECTED" >&2
+                exit 1
+              fi
             fi
 
             # the root tag points to the same index - attest it once
@@ -211,7 +209,7 @@ jobs:
 
           # run as the runner user - the scanner image user can not write to the workspace
           docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/work" -w /work \
-            -e IMAGE_TARS -e MANIFEST_TAGS \
+            -e MANIFEST_TAGS -e EXPECTED_DIGESTS \
             -e DEVGUARD_ID_TOKEN -e DEVGUARD_API_URL -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD \
             --entrypoint sh ghcr.io/l3montree-dev/devguard/scanner:main index-provenance.sh
       - name: Download amd64 artifact purl (can be created by build-image)

@@ -34,9 +34,6 @@ spec:
     commit_ref:
       description: Current commit reference
       default: $CI_COMMIT_REF_NAME
-    image_tars:
-      description: Space separated image tarballs the build produced, one per architecture - the build provenance of the manifest is only signed if it references exactly these images
-      default: image-amd64.tar image-arm64.tar
 ---
 
 include: []
@@ -95,43 +92,33 @@ devguard:sign_manifest_multi_arch$[[ inputs.job_suffix ]]:
       REGISTRY="$CI_REGISTRY"
       REGISTRY_USER="$CI_REGISTRY_USER"
       REGISTRY_PASSWORD="$CI_REGISTRY_PASSWORD"
-      IMAGE_TARS="$[[ inputs.image_tars ]]"
       set -eu
 
       crane auth login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY"
 
-      # images are matched by their config digest - see the provenance job
-      tarball_config_digest() {
-        CONFIG=$(tar -xOf "$1" manifest.json | jq -r '.[0].Config')
-        echo "sha256:$(tar -xOf "$1" "$CONFIG" | sha256sum | cut -d' ' -f1)"
-      }
       sorted() {
         printf '%s\n' "$@" | sort | tr '\n' ' '
       }
-
-      BUILT_CONFIGS=""
-      for TAR in $IMAGE_TARS; do
-        BUILT_CONFIGS="$BUILT_CONFIGS $(tarball_config_digest "$TAR")"
-      done
-      EXPECTED_CONFIGS=$(sorted $BUILT_CONFIGS)
+      EXPECTED_DIGESTS="${EXPECTED_DIGESTS:-}"
+      if [ -z "$EXPECTED_DIGESTS" ]; then
+        echo "WARNING: EXPECTED_DIGESTS is not set - not checking that the index references exactly the built images" >&2
+      fi
+      EXPECTED=$(sorted $EXPECTED_DIGESTS)
 
       INDEX_REFS=""
       for TAG in $MANIFEST_TAGS; do
         IMAGE_REF=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
         IMAGE_NAME="${IMAGE_REF%@*}"
         IMAGE_NAME="${IMAGE_NAME%:*}"
-        # resolved once - everything below refers to the digest
+        # like signing: the index the tag points to
         INDEX_REF="$IMAGE_NAME@$(crane digest "$IMAGE_REF")"
 
-        # the index is only attested if it references exactly the built images
-        LISTED_CONFIGS=""
-        for DIGEST in $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'); do
-          LISTED_CONFIGS="$LISTED_CONFIGS $(crane manifest "$IMAGE_NAME@$DIGEST" | jq -r '.config.digest')"
-        done
-        LISTED_CONFIGS=$(sorted $LISTED_CONFIGS)
-        if [ "$LISTED_CONFIGS" != "$EXPECTED_CONFIGS" ]; then
-          echo "$TAG references images with the configs $LISTED_CONFIGS but the build produced $EXPECTED_CONFIGS" >&2
-          exit 1
+        if [ -n "$EXPECTED_DIGESTS" ]; then
+          LISTED=$(sorted $(crane manifest "$INDEX_REF" | jq -r '.manifests[].digest'))
+          if [ "$LISTED" != "$EXPECTED" ]; then
+            echo "$TAG references the images $LISTED but the build produced $EXPECTED" >&2
+            exit 1
+          fi
         fi
 
         # the root tag points to the same index - attest it once

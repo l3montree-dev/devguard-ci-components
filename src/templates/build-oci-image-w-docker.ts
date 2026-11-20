@@ -5,6 +5,7 @@ import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, DOCKER_SETUP_BUILDX_ACTION }
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { pushImageTarballScript } from "./deploy";
 
 export const BuildOciImageWDockerJobInputs = defineInputsGitLab({
   docker_buildkit: Inputs.docker_buildkit,
@@ -94,26 +95,26 @@ fi
 docker buildx build $BUILD_ARGS --output type=docker,dest=./$IMAGE -t $IMAGE_TAG
 echo "$IMAGE_TAG" > image-tag.txt`,
       },
+      // the crane the image gets pushed with - another crane can compute another digest, see CRANE_VERSION.
+      // Installed after the build: setup-crane logs in to the registry, which the code of the built project must not see
+      GitHubReusableSteps.SetupCrane,
       {
         name: "Get image digest",
         env: {
           IMAGE: `${ inputValues.image }`,
         } as Record<string, string>,
-        run: `docker run --rm \\
-  -v "$GITHUB_WORKSPACE:/workspace" \\
-  -w /workspace \\
-  ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane digest --tarball="$IMAGE" > image-digest.txt`,
+        run: `crane digest --tarball="$IMAGE" > image-digest.txt`,
       },
       {
+        // with crane, not docker push: docker compresses the layers itself, the pushed image would get another digest
+        // than image-digest.txt, which sign, attest and provenance name
         name: "Push image to registry",
         if: "inputs.push_image == 'true'",
         env: {
           IMAGE: `${ inputValues.image }`,
           IMAGE_TAG: `${ inputValues.image_tag }`,
         } as Record<string, string>,
-        run: `docker load -i $IMAGE
-docker push $IMAGE_TAG`,
+        run: pushImageTarballScript(`"$IMAGE_TAG"`, `"$IMAGE"`),
       },
       {
         name: "Upload oci-image artifact",
