@@ -231,17 +231,15 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/osscontainertools/kaniko:v1.29.2-debug@sha256:b3cadc638a5b0a7e8ae7b3b76704821b2b5f191163222da401283541c8fa2d41
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
   script:
-    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --tarPath image.tar" )
-    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.small_artifact_registry ]]" == "false" ]] && echo "--tarball=image.tar" || echo "$IMAGE_TAG" ) > image-digest.txt
+    - mkdir -p /kaniko/.docker && echo "{\"auths\":{\"$[[ inputs.registry ]]\":{\"auth\":\"$(printf '%s:%s' "$[[ inputs.registry_user ]]" "$[[ inputs.registry_password ]]" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor $[[ inputs.build_args ]] --pre-cleanup --cleanup --preserve-context --destination $IMAGE_TAG --digest-file image-digest.txt $( [ "$[[ inputs.small_artifact_registry ]]" = "false" ] && echo "--no-push --image-format docker --tarPath image.tar" )
     - echo "IMAGE_TAG=$IMAGE_TAG@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:
@@ -354,7 +352,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -365,7 +363,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
       when: never
     - when: on_success
   script: |
-    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
@@ -377,7 +375,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     echo "Image: image.tar"
     echo "Image Tag: ${IMAGE_REF}"
 
-    /crane push image.tar "${IMAGE_REF}"
+    crane push image.tar "${IMAGE_REF}"
 devguard:sign_oci_image$[[ inputs.job_suffix ]]:
   tags: $[[ inputs.runner_tags ]]
   stage: attestation
@@ -438,15 +436,15 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
 
         echo "Signing floating root tag: $ROOT_TAG"
-        /devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$ROOT_TAG" --offline
+        devguard-scanner sign --token="$[[ inputs.devguard_token ]]" "$ROOT_TAG" --offline
 
         echo "Attesting floating root tag: $ROOT_TAG"
         API_COMMIT_REF=$(jq -rn --arg ref "$[[ inputs.commit_ref ]]" '$ref | @uri')
         ASSET_PATH=$(echo "$[[ inputs.devguard_asset_name ]]" | sed -E 's#^([^/]+)/([^/]+)/([^/]+)$#\1/projects/\2/assets/\3#')
 
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
-        /devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$ARTIFACT_NAME/sbom.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/sbom.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/artifacts/$ARTIFACT_NAME/vex.json/" --token="$[[ inputs.devguard_token ]]" > /tmp/vex.json
+        devguard-scanner curl "$[[ inputs.devguard_api_url ]]/api/v1/organizations/$ASSET_PATH/refs/$API_COMMIT_REF/sarif.json" --token="$[[ inputs.devguard_token ]]" > /tmp/sarif.json
 
         ATTESTATIONS="/tmp/sbom.json|https://cyclonedx.org/bom
       /tmp/vex.json|https://cyclonedx.org/vex
@@ -455,7 +453,7 @@ devguard:create_root_tag$[[ inputs.job_suffix ]]:
         echo "$ATTESTATIONS" | while IFS='|' read -r FILE PREDICATE_TYPE; do
           [ -z "$FILE" ] && continue
           echo "Attesting $FILE ($PREDICATE_TYPE) -> $ROOT_TAG"
-          /devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$[[ inputs.devguard_token ]]" --offline
+          devguard-scanner attest "$FILE" --predicateType="$PREDICATE_TYPE" "$ROOT_TAG" --token="$[[ inputs.devguard_token ]]" --offline
         done
       fi
 devguard:attest$[[ inputs.job_suffix ]]:

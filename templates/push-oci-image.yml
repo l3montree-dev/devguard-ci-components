@@ -63,7 +63,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/l3montree-dev/devguard/scanner:main
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
@@ -74,7 +74,7 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
       when: never
     - when: on_success
   script: |
-    /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
+    crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
 
     # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
     # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
@@ -86,4 +86,4 @@ devguard:push_oci_image$[[ inputs.job_suffix ]]:
     echo "Image: $[[ inputs.image ]]"
     echo "Image Tag: ${IMAGE_REF}"
 
-    /crane push $[[ inputs.image ]] "${IMAGE_REF}"
+    crane push $[[ inputs.image ]] "${IMAGE_REF}"

@@ -70,17 +70,15 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: $[[ inputs.git_strategy ]]
   image:
-    name: registry.gitlab.com/l3montree/devguard/osscontainertools-kaniko-crane:kaniko-v1.28.3-devguard-scanner-v1.12.4@sha256:07b0db85f1fe98a8ce05cc1855649d9e758cea3ebb40e98b6282148b48c1a350
+    name: ghcr.io/osscontainertools/kaniko:v1.29.2-debug@sha256:b3cadc638a5b0a7e8ae7b3b76704821b2b5f191163222da401283541c8fa2d41
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
   before_script:
     - echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."
   script:
-    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /kaniko/executor $[[ inputs.build_args ]] --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --tarPath $[[ inputs.image_destination_path ]]" )
-    - /crane auth login -u $[[ inputs.registry_user ]] -p $[[ inputs.registry_password ]] $[[ inputs.registry ]]
-    - /crane digest $([[ "$[[ inputs.push_image ]]" == "false" ]] && echo "--tarball=$[[ inputs.image_destination_path ]]" || echo "$[[ inputs.image_tag ]]" ) > image-digest.txt
+    - mkdir -p /kaniko/.docker && echo "{\"auths\":{\"$[[ inputs.registry ]]\":{\"auth\":\"$(printf '%s:%s' "$[[ inputs.registry_user ]]" "$[[ inputs.registry_password ]]" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor $[[ inputs.build_args ]] --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] --digest-file image-digest.txt $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --image-format docker --tarPath $[[ inputs.image_destination_path ]]" )
     - echo "IMAGE_TAG=$[[ inputs.image_tag ]]@$(cat image-digest.txt)" > variables.env
   artifacts:
     paths:

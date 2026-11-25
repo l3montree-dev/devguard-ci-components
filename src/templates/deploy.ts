@@ -60,7 +60,7 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
       GIT_STRATEGY: inputValues.git_strategy,
     },
     image: {
-      name: ContainerImages.KANIKO,
+      name: ContainerImages.DEVGUARD_SCANNER,
       pull_policy: inputValues.pull_policy,
       entrypoint: [""],
     },
@@ -78,8 +78,8 @@ export const DeployTemplateGitLab = defineJobGitLab(DeployJobInputsGitLab, (inpu
       },
     ],
     script: [
-      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `/crane push ${inputValues.image} ${inputValues.image_tag}`,
+      `crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
+      `crane push ${inputValues.image} ${inputValues.image_tag}`,
     ],
   },
 }));

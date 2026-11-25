@@ -57,13 +57,8 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
       `echo "Uses Kaniko to build Docker images securely without requiring privileged access (docker in docker needs privileged access).\\n The artifacts are not pushed to the registry until they have undergone security scanning to ensure vulnerabilities are addressed before deployment - therefore they are stored as artifacts rather than pushed to the registry."`,
     ],
     script: [
-      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `/kaniko/executor ${inputValues.build_args} --ignore-path=/devguard-scanner --ignore-path=/crane --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --tarPath ${inputValues.image_destination_path}" )`,
-
-      // kaniko might remove all files after building - thus a second login is necessary.
-      `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}`,
-      `/crane digest $([[ "${inputValues.push_image}" == "false" ]] && echo "--tarball=${inputValues.image_destination_path}" || echo "${inputValues.image_tag}" ) > image-digest.txt`,
-
+      `mkdir -p /kaniko/.docker && echo "{\\"auths\\":{\\"${inputValues.registry}\\":{\\"auth\\":\\"$(printf '%s:%s' "${inputValues.registry_user}" "${inputValues.registry_password}" | base64 | tr -d '\\n')\\"}}}" > /kaniko/.docker/config.json`,
+      `/kaniko/executor ${inputValues.build_args} --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} --digest-file image-digest.txt $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --image-format docker --tarPath ${inputValues.image_destination_path}" )`,
       `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
     ],
     artifacts: {

@@ -128,7 +128,7 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
       GIT_STRATEGY: inputValues.git_strategy,
     },
     image: {
-      name: ContainerImages.KANIKO,
+      name: ContainerImages.DEVGUARD_SCANNER,
       pull_policy: inputValues.pull_policy,
       entrypoint: [""],
     },
@@ -145,7 +145,7 @@ export const PushOciImageTemplate = defineJobGitLab(PushOciImageJobInputs, (inpu
         when: "on_success",
       },
     ],
-    script: `/crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
+    script: `crane auth login -u ${inputValues.registry_user} -p ${inputValues.registry_password} ${inputValues.registry}
 
 # Strip any "@sha256:..." digest suffix: the build job exports IMAGE_TAG as
 # "repo:tag@digest", and "crane push" against a tag+digest reference pushes by
@@ -157,7 +157,7 @@ IMAGE_REF=$(echo "\${IMAGE_REF}" | tr '[:upper:]' '[:lower:]')
 echo "Image: ${inputValues.image}"
 echo "Image Tag: \${IMAGE_REF}"
 
-/crane push ${inputValues.image} "\${IMAGE_REF}"
+crane push ${inputValues.image} "\${IMAGE_REF}"
 `,
   },
 }));
