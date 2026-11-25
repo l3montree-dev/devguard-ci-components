@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.20.0] — 2026-11-25
+
+Version bump to stay in sync with the DevGuard [Versioning Policy](https://github.com/l3montree-dev/devguard/blob/main/VERSIONING.md)
+
 ## [v1.19.1]
 
 ### Fixed
