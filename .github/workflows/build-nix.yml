@@ -117,7 +117,7 @@ jobs:
             ${{ inputs.nix-cache-substituter != '' && format('substituters = https://cache.nixos.org {0}', inputs.nix-cache-substituter) || '' }}
             ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
       - name: Install crane and devguard-scanner
-        run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
+        run: nix profile install github:l3montree-dev/devguard#crane github:l3montree-dev/devguard#devguardScanner
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem

@@ -180,7 +180,7 @@ devguard:build_oci_image$[[ inputs.job_suffix ]]:
         export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"
         nix copy $(nix-store -qR $(readlink result)) --to 's3://$[[ inputs.nix_cache_s3_bucket ]]?endpoint=$[[ inputs.nix_cache_s3_endpoint ]]&region=$[[ inputs.nix_cache_region ]]&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true
       fi
-    - nix run nixpkgs#crane -- digest --tarball="image.tar" > image-digest.txt
+    - nix run github:l3montree-dev/devguard#crane -- digest --tarball="image.tar" > image-digest.txt
   artifacts:
     paths:
       - image.tar

@@ -208,7 +208,7 @@ jobs:
             ${{ inputs.nix-cache-substituter != '' && format('substituters = https://cache.nixos.org {0}', inputs.nix-cache-substituter) || '' }}
             ${{ inputs.nix-cache-public-key != '' && format('trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= {0}', inputs.nix-cache-public-key) || '' }}
       - name: Install crane and devguard-scanner
-        run: nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner
+        run: nix profile install github:l3montree-dev/devguard#crane github:l3montree-dev/devguard#devguardScanner
       - name: Write Nix cache secret key
         if: inputs.nix-cache-s3-endpoint != ''
         run: echo "${{ secrets.nix-cache-secret-key }}" > /tmp/nix-cache-priv-key.pem
@@ -328,10 +328,18 @@ jobs:
           else
             echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
           fi
-      - name: Setup crane
-        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
-        run: crane pull $(cat image-tag.txt) image.tar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |-
+          IMAGE_TAG=$(cat image-tag.txt)
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e GITHUB_ACTOR -e GITHUB_TOKEN -e IMAGE_TAG \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            sh -c 'crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN" && crane pull "$IMAGE_TAG" image.tar'
         if: "false"
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
@@ -379,10 +387,27 @@ jobs:
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
-      - name: Setup crane
-        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+      - name: Log in to ghcr.io
+        run: |-
+          mkdir -p ${HOME}/.docker
+          sudo chown -R 53111:53111 ${HOME}/.docker || true
+          sudo chmod 700 ${HOME}/.docker || true
+          docker run --rm \
+            --user 53111:53111 \
+            -v "${HOME}/.docker:/tmp/.docker" \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        if: "true"
       - name: Push oci image to GitHub image Registry
-        run: crane push image.tar "$(cat image-tag.txt)"
+        run: |-
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            -v "${HOME}/.docker:/tmp/.docker:ro" \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            crane push image.tar "$(cat image-tag.txt)"
         if: "true"
     needs:
       - devguard_build_nix

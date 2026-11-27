@@ -142,10 +142,18 @@ jobs:
           else
             echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
           fi
-      - name: Setup crane
-        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
-        run: crane pull $(cat image-tag.txt) image.tar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |-
+          IMAGE_TAG=$(cat image-tag.txt)
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e GITHUB_ACTOR -e GITHUB_TOKEN -e IMAGE_TAG \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            sh -c 'crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN" && crane pull "$IMAGE_TAG" image.tar'
         if: format('{0}', inputs.fetch-image-from-registry) == 'true'
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main

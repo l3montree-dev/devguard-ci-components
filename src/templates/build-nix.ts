@@ -3,6 +3,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { CRANE_FLAKE } from "../container-image-versions";
 
 // Job 1: generate image tag (Nix variant - uses scanner:main directly)
 export const BuildNixGenerateTagJobInputs = defineInputsGitLab({
@@ -150,7 +151,7 @@ export const BuildNixTemplateGitHub = defineJobGitHub(BuildNixJobInputsGitHub, (
       },
       {
         name: "Install crane and devguard-scanner",
-        run: `nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner`,
+        run: `nix profile install ${CRANE_FLAKE} github:l3montree-dev/devguard#devguardScanner`,
       },
       {
         name: "Write Nix cache secret key",
@@ -280,7 +281,7 @@ export const BuildNixTemplate = defineJobGitLab(BuildNixJobInputs, (inputValues)
       `nix build -L ".#${inputValues.nix_target}" --no-update-lock-file $([[ "${inputValues.nix_impure}" == "true" ]] && echo --impure)`,
       `gzip -cd result > "${inputValues.image}"`,
       `if [[ -n "${inputValues.nix_cache_s3_endpoint}" && -n "$NIX_CACHE_AWS_ACCESS_KEY_ID" ]]; then\n  export AWS_ACCESS_KEY_ID="$NIX_CACHE_AWS_ACCESS_KEY_ID"\n  export AWS_SECRET_ACCESS_KEY="$NIX_CACHE_AWS_SECRET_ACCESS_KEY"\n  nix copy $(nix-store -qR $(readlink result)) --to 's3://${inputValues.nix_cache_s3_bucket}?endpoint=${inputValues.nix_cache_s3_endpoint}&region=${inputValues.nix_cache_region}&scheme=https&profile=nix-cache&secret-key=/tmp/nix-cache-priv-key.pem' || true\nfi`,
-      `nix run nixpkgs#crane -- digest --tarball="${inputValues.image}" > image-digest.txt`,
+      `nix run ${CRANE_FLAKE} -- digest --tarball="${inputValues.image}" > image-digest.txt`,
     ],
     artifacts: {
       paths: [inputValues.image, `image-digest.txt`],

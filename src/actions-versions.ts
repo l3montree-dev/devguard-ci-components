@@ -11,5 +11,3 @@ export const DOCKER_SETUP_BUILDX_ACTION = "docker/setup-buildx-action@c887d9748d
 export const DOCKER_LOGIN_ACTION = "docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870"; // v4.2.0
 
 export const CACHIX_INSTALL_NIX_ACTION = "cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3"; // v31.10.6
-
-export const IMJASONH_SETUP_CRANE = "imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2"; // v0.6

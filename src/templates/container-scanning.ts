@@ -2,7 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub, githubInputEquals } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 export const ContainerScanningJobInputs = defineInputsGitLab({
   ...InputGroups.devguardCore,
@@ -121,12 +121,18 @@ else
 fi`,
       },
       {
-        name: "Setup crane",
-        uses: IMJASONH_SETUP_CRANE,
-      },
-      {
         name: "Download OCI Image from registry",
-        run: "crane pull $(cat image-tag.txt) image.tar",
+        env: {
+          GITHUB_TOKEN: "${{ github.token }}",
+        },
+        run: `IMAGE_TAG=$(cat image-tag.txt)
+docker run --rm \\
+  --user "$(id -u):$(id -g)" \\
+  -e GITHUB_ACTOR -e GITHUB_TOKEN -e IMAGE_TAG \\
+  -v "$GITHUB_WORKSPACE:/workspace" \\
+  -w /workspace \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  sh -c 'crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN" && crane pull "$IMAGE_TAG" image.tar'`,
         if: githubInputEquals(inputValues.fetch_image_from_registry, "true"),
       },
       {

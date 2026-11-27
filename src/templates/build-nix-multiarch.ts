@@ -4,6 +4,7 @@ import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, ACTIONS_UPLOAD_ARTIFACT, CACHIX_INSTALL_NIX_ACTION } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
+import { CRANE_FLAKE } from "../container-image-versions";
 
 export const BuildNixMultiArchJobInputs = defineInputsGitLab({
   job_suffix: Inputs.job_suffix,
@@ -146,7 +147,7 @@ export const BuildNixMultiArchBuildImageTemplateGitHub = defineJobGitHub(BuildNi
       },
       {
         name: "Install crane and devguard-scanner",
-        run: `nix profile install nixpkgs#crane github:l3montree-dev/devguard#devguardScanner`,
+        run: `nix profile install ${CRANE_FLAKE} github:l3montree-dev/devguard#devguardScanner`,
       },
       {
         name: "Write Nix cache secret key",

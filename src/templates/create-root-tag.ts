@@ -2,7 +2,7 @@ import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { defineInputsGitHub, defineJobGitHub } from "../lib/JobBuilderGitHub";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 import { assetApiPath } from "../lib/asset-path";
 
@@ -65,18 +65,6 @@ export const CreateRootTagTemplateGitHub = defineJobGitHub(CreateRootTagJobInput
         },
       },
       {
-        name: "Setup crane",
-        uses: IMJASONH_SETUP_CRANE,
-      },
-      {
-        name: "Log in to registry",
-        env: {
-          REGISTRY: inputValues.registry,
-          REGISTRY_USER: inputValues.registry_user,
-        } as Record<string, string>,
-        run: 'crane auth login "$REGISTRY" -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD"',
-      },
-      {
         name: "Create and sign floating root tag",
         env: {
           DEVGUARD_TOKEN: "${{ secrets.devguard-token }}",
@@ -91,7 +79,10 @@ if [ "$ROOT_TAG" = "$IMAGE_TAG" ]; then
 else
   ROOT_TAG_ONLY="\${ROOT_TAG##*:}"
   echo "Creating floating root tag: $ROOT_TAG_ONLY -> $IMAGE_TAG"
-  crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
+  docker run --rm \\
+    -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD -e IMAGE_TAG -e ROOT_TAG_ONLY \\
+    ${ ContainerImages.DEVGUARD_SCANNER } \\
+    sh -c 'crane auth login "$REGISTRY" -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" && crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"'
 
   echo "Signing floating root tag: $ROOT_TAG"
   docker run --rm ${ ContainerImages.DEVGUARD_SCANNER } devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline

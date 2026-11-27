@@ -2,7 +2,7 @@ import { defineInputsGitHub, defineJobGitHub, githubInputEquals } from "../lib/J
 import { defineInputsGitLab, defineJobGitLab } from "../lib/JobBuilderGitLab";
 import { InputGroups, Inputs, Secrets } from "./inputs";
 import { ContainerImages } from "../container-image-versions";
-import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT, IMJASONH_SETUP_CRANE } from "../actions-versions";
+import { ACTIONS_CHECKOUT, ACTIONS_DOWNLOAD_ARTIFACT } from "../actions-versions";
 import { GitHubReusableSteps } from "../github-resusable-steps";
 
 export const DeployJobInputsGitHub = defineInputsGitHub({
@@ -129,12 +129,28 @@ export const DeployTemplateGitHub = defineJobGitHub(DeployJobInputsGitHub, (inpu
         },
       },
       {
-        name: "Setup crane",
-        uses: IMJASONH_SETUP_CRANE,
+        name: "Log in to ghcr.io",
+        run: `mkdir -p \${HOME}/.docker
+sudo chown -R 53111:53111 \${HOME}/.docker || true
+sudo chmod 700 \${HOME}/.docker || true
+docker run --rm \\
+  --user 53111:53111 \\
+  -v "\${HOME}/.docker:/tmp/.docker" \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN"`,
+        env: {
+          GITHUB_TOKEN: "${{ github.token }}",
+        },
+        if: githubInputEquals(inputValues.image_already_in_registry, "false"),
       },
       {
         name: "Push oci image to GitHub image Registry",
-        run: 'crane push image.tar "$(cat image-tag.txt)"',
+        run: `docker run --rm \\
+  -v "$GITHUB_WORKSPACE:/workspace" \\
+  -w /workspace \\
+  -v "\${HOME}/.docker:/tmp/.docker:ro" \\
+  ${ContainerImages.DEVGUARD_SCANNER} \\
+  crane push image.tar "$(cat image-tag.txt)"`,
         if: githubInputEquals(inputValues.image_already_in_registry, "false"),
       },
     ],

@@ -475,10 +475,18 @@ jobs:
           else
             echo "ARTIFACT_NAME=$DEVGUARD_ARTIFACT_NAME" >> $GITHUB_ENV
           fi
-      - name: Setup crane
-        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
       - name: Download OCI Image from registry
-        run: crane pull $(cat image-tag.txt) image.tar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |-
+          IMAGE_TAG=$(cat image-tag.txt)
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e GITHUB_ACTOR -e GITHUB_TOKEN -e IMAGE_TAG \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            sh -c 'crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN" && crane pull "$IMAGE_TAG" image.tar'
         if: format('{0}', inputs.disable-artifact-registry-as-image-store) == 'true'
       - name: DevGuard Container-Scanning
         uses: docker://ghcr.io/l3montree-dev/devguard/scanner:main
@@ -526,10 +534,27 @@ jobs:
         with:
           name: image-digest${{ inputs.image-suffix }}
           path: .
-      - name: Setup crane
-        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
+      - name: Log in to ghcr.io
+        run: |-
+          mkdir -p ${HOME}/.docker
+          sudo chown -R 53111:53111 ${HOME}/.docker || true
+          sudo chmod 700 ${HOME}/.docker || true
+          docker run --rm \
+            --user 53111:53111 \
+            -v "${HOME}/.docker:/tmp/.docker" \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        if: format('{0}', inputs.disable-artifact-registry-as-image-store) == 'false'
       - name: Push oci image to GitHub image Registry
-        run: crane push image.tar "$(cat image-tag.txt)"
+        run: |-
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            -v "${HOME}/.docker:/tmp/.docker:ro" \
+            ghcr.io/l3montree-dev/devguard/scanner:main \
+            crane push image.tar "$(cat image-tag.txt)"
         if: format('{0}', inputs.disable-artifact-registry-as-image-store) == 'false'
     needs:
       - devguard_build_oci_image
@@ -615,13 +640,6 @@ jobs:
         with:
           name: image-tag${{ inputs.image-suffix }}
           path: .
-      - name: Setup crane
-        uses: imjasonh/setup-crane@cacf28038427f6fb033ef9022f6a2281f23cb3f2
-      - name: Log in to registry
-        env:
-          REGISTRY: ${{ inputs.registry }}
-          REGISTRY_USER: ${{ inputs.registry-user }}
-        run: crane auth login "$REGISTRY" -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD"
       - name: Create and sign floating root tag
         env:
           DEVGUARD_TOKEN: ${{ secrets.devguard-token }}
@@ -636,7 +654,10 @@ jobs:
           else
             ROOT_TAG_ONLY="${ROOT_TAG##*:}"
             echo "Creating floating root tag: $ROOT_TAG_ONLY -> $IMAGE_TAG"
-            crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"
+            docker run --rm \
+              -e REGISTRY -e REGISTRY_USER -e REGISTRY_PASSWORD -e IMAGE_TAG -e ROOT_TAG_ONLY \
+              ghcr.io/l3montree-dev/devguard/scanner:main \
+              sh -c 'crane auth login "$REGISTRY" -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" && crane tag "$IMAGE_TAG" "$ROOT_TAG_ONLY"'
 
             echo "Signing floating root tag: $ROOT_TAG"
             docker run --rm ghcr.io/l3montree-dev/devguard/scanner:main devguard-scanner sign -u "$REGISTRY_USER" -r "$REGISTRY" -p "$REGISTRY_PASSWORD" --token="$DEVGUARD_TOKEN" "$ROOT_TAG" --offline
