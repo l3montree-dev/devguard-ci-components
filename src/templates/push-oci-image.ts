@@ -101,7 +101,10 @@ docker run --rm \\
   --user 53111:53111 \\
   -v "\${HOME}/.docker:/tmp/.docker" \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN`,
+  crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN"`,
+        env: {
+          GITHUB_TOKEN: "${{ github.token }}",
+        },
       },
       {
         name: "Push OCI image",

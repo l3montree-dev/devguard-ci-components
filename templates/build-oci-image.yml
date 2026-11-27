@@ -79,7 +79,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   script:
     - mkdir -p /kaniko/.docker && echo "{\"auths\":{\"$[[ inputs.registry ]]\":{\"auth\":\"$(printf '%s:%s' "$[[ inputs.registry_user ]]" "$[[ inputs.registry_password ]]" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor $[[ inputs.build_args ]] --pre-cleanup --cleanup --preserve-context --destination $[[ inputs.image_tag ]] --digest-file image-digest.txt $( [ "$[[ inputs.push_image ]]" = "false" ] && echo "--no-push --image-format docker --tarPath $[[ inputs.image_destination_path ]]" )
-    - echo "IMAGE_TAG=$[[ inputs.image_tag ]]@$(cat image-digest.txt)" > variables.env
+    - echo "IMAGE_TAG=$[[ inputs.image_tag ]]$( [ "$[[ inputs.push_image ]]" = "false" ] || echo "@$(cat image-digest.txt)" )" > variables.env
   artifacts:
     paths:
       - $[[ inputs.image_destination_path ]]

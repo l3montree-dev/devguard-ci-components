@@ -13,7 +13,6 @@ import {
 } from "./templates/static-application-security-testing";
 import { CIComponentGroupTemplateGitHub, CIComponentGroupTemplateGitLab, ConfigInputs } from "./lib/types";
 import { ExportCIComponentsGitHub, ExportCIComponentsGitLab } from "./lib/utils";
-import { BuildOciImageWDockerTemplate } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplate, SignManifestMultiArchTemplate } from "./templates/create-manifest-multi-arch";
 import { CreateRootTagTemplate, CreateRootTagTemplateGitHub } from "./templates/create-root-tag";
 import { DiscoverBaseimageAttestationsTemplate } from "./templates/discover-baseimage-attestations";
@@ -41,7 +40,6 @@ import { PushOciImageTemplateGitHub } from "./templates/push-oci-image";
 import { SbomUploadTemplateGitHub } from "./templates/sbom-upload";
 import { VexUploadTemplateGitHub } from "./templates/vex-upload";
 import { ReleaseTemplateGitHub } from "./templates/release";
-import { BuildOciImageWDockerTemplateGitHub } from "./templates/build-oci-image-w-docker";
 import { CreateManifestMultiArchTemplateGitHub } from "./templates/create-manifest-multi-arch";
 import { DiscoverBaseimageAttestationsTemplateGitHub } from "./templates/discover-baseimage-attestations";
 import { SarifUploadTemplateGitHub } from "./templates/sarif-upload";
@@ -742,7 +740,6 @@ export const templates: CIComponentGroupTemplateGitLab = {
   "software-composition-analysis": [SoftwareCompositionAnalysisTemplate({})],
   "generate-tag": [GenerateTagTemplate({})],
   "build-oci-image": [BuildOciImageTemplate({})],
-  "build-oci-image-w-docker": [BuildOciImageWDockerTemplate({})],
   "container-scanning": [ContainerScanningTemplate({})],
   "push-oci-image": [PushOciImageTemplate({})],
   "sign-oci-image": [SignOciImageTemplate({})],
@@ -1127,7 +1124,6 @@ export const templatesGitHub: CIComponentGroupTemplateGitHub = {
   "sbom-upload": [SbomUploadTemplateGitHub({})],
   "vex-upload": [VexUploadTemplateGitHub({})],
   release: [ReleaseTemplateGitHub({})],
-  "build-image-w-docker": [BuildOciImageWDockerTemplateGitHub({})],
   "create-manifest-multi-arch": [CreateManifestMultiArchTemplateGitHub({})],
   "discover-baseimage-attestations": [DiscoverBaseimageAttestationsTemplateGitHub({})],
   "sarif-upload": [SarifUploadTemplateGitHub({})],

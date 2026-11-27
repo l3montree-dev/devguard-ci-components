@@ -12,7 +12,6 @@ go install github.com/homeport/dyff/cmd/dyff@latest
 dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/attest.yml templates/attest.yml (OK)
 # TODO (also why is it using remotes as triggers...?) dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/build-nix-multiarch.yml templates/build-nix-multiarch.yml
 dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/build-nix.yml templates/build-nix.yml (OK)
-dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/build-oci-image-w-docker.yml templates/build-oci-image-w-docker.yml (OK)
 dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/build-oci-image.yml templates/build-oci-image.yml (OK)
 dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/container-scanning.yml templates/container-scanning.yml (OK)
 # TODO.. dyff between https://gitlab.opencode.de/l3montree/devguard-ci-components/-/raw/main/templates/create-manifest-multi-arch.yml templates/create-manifest-multi-arch.yml

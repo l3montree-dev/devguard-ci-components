@@ -2,7 +2,6 @@ import { AttestJobInputs, AttestJobInputsGitHub, AttestTemplate, AttestTemplateG
 import { BuildNixGenerateTagJobInputs, BuildNixGenerateTagTemplate, BuildNixJobInputs, BuildNixJobInputsGitHub, BuildNixTemplate, BuildNixTemplateGitHub } from "./build-nix";
 import { BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchBuildImageTemplateGitHub, BuildNixMultiArchCreateManifestTemplate, BuildNixMultiArchCreateManifestTemplateGitHub, BuildNixMultiArchJobInputs, BuildNixMultiArchJobInputsGitHub } from "./build-nix-multiarch";
 import { BuildOciImageJobInputs, BuildOciImageJobInputsGitHub, BuildOciImageTemplate, BuildOciImageTemplateGitHub } from "./build-oci-image";
-import { BuildOciImageWDockerJobInputs, BuildOciImageWDockerJobInputsGitHub, BuildOciImageWDockerTemplate, BuildOciImageWDockerTemplateGitHub } from "./build-oci-image-w-docker";
 import { ContainerScanningJobInputs, ContainerScanningJobInputsGitHub, ContainerScanningTemplate, ContainerScanningTemplateGitHub } from "./container-scanning";
 import { CreateManifestMultiArchJobInputs, CreateManifestMultiArchJobInputsGitHub, CreateManifestMultiArchTemplate, CreateManifestMultiArchTemplateGitHub, SignManifestMultiArchJobInputs, SignManifestMultiArchTemplate } from "./create-manifest-multi-arch";
 import { DeployJobInputsGitHub, DeployJobInputsGitLab, DeployTemplateGitHub, DeployTemplateGitLab } from "./deploy";
@@ -30,7 +29,6 @@ export const templates: { gitlab: TemplateEntry[]; github: TemplateEntry[] } = {
     ["BuildNixMultiArchBuildImageTemplate", BuildNixMultiArchBuildImageTemplate, BuildNixMultiArchJobInputs],
     ["BuildNixMultiArchCreateManifestTemplate", BuildNixMultiArchCreateManifestTemplate, BuildNixMultiArchJobInputs],
     ["BuildOciImageTemplate", BuildOciImageTemplate, BuildOciImageJobInputs],
-    ["BuildOciImageWDockerTemplate", BuildOciImageWDockerTemplate, BuildOciImageWDockerJobInputs],
     ["ContainerScanningTemplate", ContainerScanningTemplate, ContainerScanningJobInputs],
     ["CreateManifestMultiArchTemplate", CreateManifestMultiArchTemplate, CreateManifestMultiArchJobInputs],
     ["SignManifestMultiArchTemplate", SignManifestMultiArchTemplate, SignManifestMultiArchJobInputs],
@@ -54,7 +52,6 @@ export const templates: { gitlab: TemplateEntry[]; github: TemplateEntry[] } = {
     ["BuildNixMultiArchCreateManifestTemplateGitHub", BuildNixMultiArchCreateManifestTemplateGitHub, BuildNixMultiArchJobInputsGitHub],
     ["BuildNixTemplateGitHub", BuildNixTemplateGitHub, BuildNixJobInputsGitHub],
     ["BuildOciImageTemplateGitHub", BuildOciImageTemplateGitHub, BuildOciImageJobInputsGitHub],
-    ["BuildOciImageWDockerTemplateGitHub", BuildOciImageWDockerTemplateGitHub, BuildOciImageWDockerJobInputsGitHub],
     ["ContainerScanningTemplateGitHub", ContainerScanningTemplateGitHub, ContainerScanningJobInputsGitHub],
     ["CreateManifestMultiArchTemplateGitHub", CreateManifestMultiArchTemplateGitHub, CreateManifestMultiArchJobInputsGitHub],
     ["DeployTemplateGitHub", DeployTemplateGitHub, DeployJobInputsGitHub],

@@ -59,7 +59,9 @@ export const BuildOciImageTemplate = defineJobGitLab(BuildOciImageJobInputs, (in
     script: [
       `mkdir -p /kaniko/.docker && echo "{\\"auths\\":{\\"${inputValues.registry}\\":{\\"auth\\":\\"$(printf '%s:%s' "${inputValues.registry_user}" "${inputValues.registry_password}" | base64 | tr -d '\\n')\\"}}}" > /kaniko/.docker/config.json`,
       `/kaniko/executor ${inputValues.build_args} --pre-cleanup --cleanup --preserve-context --destination ${inputValues.image_tag} --digest-file image-digest.txt $( [ "${inputValues.push_image}" = "false" ] && echo "--no-push --image-format docker --tarPath ${inputValues.image_destination_path}" )`,
-      `echo "IMAGE_TAG=${inputValues.image_tag}@$(cat image-digest.txt)" > variables.env`,
+      // without push, kaniko's digest belongs to kaniko's own layer compression - crane compresses differently when the
+      // push job pushes the tarball, so downstream jobs get the bare tag and resolve the pushed digest themselves
+      `echo "IMAGE_TAG=${inputValues.image_tag}$( [ "${inputValues.push_image}" = "false" ] || echo "@$(cat image-digest.txt)" )" > variables.env`,
     ],
     artifacts: {
       paths: [inputValues.image_destination_path, "image-digest.txt", "variables.env"],
@@ -235,7 +237,10 @@ docker run --rm \\
   --user 53111:53111 \\
   -v "\${HOME}/.docker:/tmp/.docker" \\
   ${ContainerImages.DEVGUARD_SCANNER} \\
-  crane auth login ghcr.io -u $GITHUB_ACTOR -p $GITHUB_TOKEN`,
+  crane auth login ghcr.io -u "$GITHUB_ACTOR" -p "$GITHUB_TOKEN"`,
+        env: {
+          GITHUB_TOKEN: "${{ github.token }}",
+        },
         if: "inputs.disable_artifact_registry_as_image_store == true",
       },
       {
