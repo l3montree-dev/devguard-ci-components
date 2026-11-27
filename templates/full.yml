@@ -231,7 +231,7 @@ $[[ inputs.job_prefix ]]devguard:build_oci_image$[[ inputs.job_suffix ]]:
   variables:
     GIT_STRATEGY: fetch
   image:
-    name: ghcr.io/osscontainertools/kaniko:v1.29.2-debug@sha256:b3cadc638a5b0a7e8ae7b3b76704821b2b5f191163222da401283541c8fa2d41
+    name: registry.opencode.de/oci-community/images/l3montree/kaniko:v1.29.0-debug@sha256:4e822783b12ae86940a3216e16912472b23513cb7c0224505ab956262e55991d
     pull_policy: $[[ inputs.pull_policy ]]
     entrypoint:
       - ""
